@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/mf_aggregator.iml" filepath="$PROJECT_DIR$/.idea/mf_aggregator.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../mf_aggregator/.idea/mf_aggregator.iml" filepath="$PROJECT_DIR$/../mf_aggregator/.idea/mf_aggregator.iml" />
     </modules>
   </component>
 </project>

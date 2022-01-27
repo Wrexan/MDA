@@ -12,6 +12,34 @@ from window_main import Ui_MainWindow
 
 
 strict_search = True
+latin_search = True
+search_column_numbers = {'+': [3, 4, 5],
+                         'Alcatel': [2, 4, 7],
+                         'Asus-тел': [2, 4, 7],
+                         'Asus-планш': [2, 4, 7],
+                         'doogee': [2, 3, 4],
+                         'Huawei': [2, 5, 6],
+                         'iPad': [1, 3, 5],
+                         'iPhone': [1, 3, 5],
+                         'Lenovo': [2, 4, 7],
+                         'LG': [3, 4, 9],
+                         'Meizu': [2, 3, 4],
+                         'Motorola': [2, 8, 9],
+                         'Nokia': [3, 5, 6],
+                         'OPPO': [3, 4, 5],
+                         'OnePlus': [3, 4, 5],
+                         'Oukitel': [3, 4, 5],
+                         'PIXEL': [3, 4, 5],
+                         'Realme': [3, 4, 5],
+                         'Samsung': [3, 5, 6],
+                         'Sony': [2, 4, 5],
+                         'XIAOMI': [2, 4, 5],
+                         'ZTE': [3, 4, 5],
+                         }
+models_trash = ['/', '\\', 'MI2/Mi2s', 'MI2a', 'mi3', 'Mi 9t', 'Mi Max 3',
+                'Red rice', 'Redmi 3', 'Redmi 4x', 'Redmi 6', 'Redmi 7', 'Redmi 7a',
+                'Redmi 8', 'Redmi 8a', 'Redmi Note 4', 'Redmi Note 5', 'Redmi Note 6',
+                'Redmi Note 6 Pro', 'Redmi Note 7', 'Redmi Note 8', 'Redmi note 9', 'Redmi Note 6']
 price_path = ''
 price_file = 'price.xls'
 
@@ -33,11 +61,16 @@ class App(QMainWindow):
         self.ui.setupUi(self)
         # text = self.input_search
 
-        self.ui.input_search.textChanged[str].connect(self.search_price_models)
+        self.ui.input_search.textChanged[str].connect(self.search_and_upd_model_buttons)
         self.ui.table_left.setHorizontalHeaderLabels(['Виды работ', 'Цена', 'Примечание'])
-        self.ui.table_right.setHorizontalHeaderLabels(['Тип', 'Фирма', 'Модель',	'Примечание',
-                                                      'Цена', 'К-во', 'Дата', 'Где'])
+        self.ui.table_right.setHorizontalHeaderLabels(['Тип', 'Фирма', 'Модель', 'Примечаiние',
+                                                       'Цена', 'К-во', 'Дата', 'Где'])
         # self.ui.scrollAreaWidgetContents.layout().addWidget(QPushButton('123'))
+
+    def search_and_upd_model_buttons(self, search_req):
+        self.search_price_models(search_req)
+        if self.models:
+            self.upd_model_buttons()
 
     def search_price_models(self, search_req):
         search_req_len = len(search_req)
@@ -47,61 +80,83 @@ class App(QMainWindow):
         self.models = {}
         for sheet in self.price_db:
             for row_num in range(sheet.nrows):
-                name_cell = str(sheet.row_values(row_num, 0, 1)[0]).strip().lower()
+                cell_value = sheet.row_values(row_num, 0, 2)
+                # print(f'{cell_value=} {len(cell_value)=}')
+                if not cell_value or not cell_value[0] or len(cell_value) < 2 or cell_value[0] in models_trash:
+                    continue
+                # print(f'{cell_value_0}')
+                name_cell = str(cell_value[0]).strip().lower()
                 a, b, = 0, len(name_cell)
                 while a < b:
                     found_pos = name_cell.find(search_req, a, b)
                     # print(f'{a=} {b=} {found_pos=} {name_cell=}')
                     if found_pos == -1: break
-                    if found_pos == 0 or name_cell[found_pos - 1] in "/\\ ": \
-                            # and \
+                    # if search request > 3 symbols, cut everything from left
+                    # for smaller, cut from both sides (more strict)
+                    if (search_req_len > 2  # and (found_pos == 0 or name_cell[found_pos - 1] in "/\\ ")
+                            or (search_req_len < 3 and (found_pos == 0 or name_cell[found_pos - 1] in "/\\ ")
+                                and (found_pos + search_req_len == b or
+                                     name_cell[found_pos + search_req_len] in '/\\ ' or
+                                     search_req[-1] == ' '))):
+                        # print(f'{name_cell}')
+                        # if found_pos == 0 or name_cell[found_pos - 1] in "/\\ ": \
+                        # and \
                         # (found_pos + search_req_len == b or
                         #  name_cell[found_pos + search_req_len] in '/\\ ' or
                         #  search_req[-1] == ' '):
                         # print(f'FOUND============={name_cell=}')
-
-                        if len(self.models) < 5:
+                        le = len(self.models)
+                        if le < 5:
                             self.models[name_cell] = [sheet, row_num]
-                            # print(f'{sheet=}')
+                            if le == 5:
+                                return
+                        else:
+                            return
 
                         # print(f'=========={name_cell}==========')
                         break
                     else:
                         a += found_pos + search_req_len
-        self.upd_model_buttons()
 
     def upd_model_buttons(self):
-        lay = self.ui.scrollAreaWidgetContents.layout()
+        lay = self.ui.scroll_models_layout.layout()
         self.clear_layout(lay)
+        # lay.addWidget(QSpacerItem.sizePolicy)
 
         le = len(self.models)
         for model in self.models.keys():
-            print(self.models.get(model))
+            # print(self.models.get(model))
             b = QPushButton(model)
-            b.clicked.connect(lambda: self.upd_price_table(self.models.get(model)))
-            lay.addWidget(b)
+            # b.setToolTip(str(position))
+            # print(b.text())
+            b.clicked.connect(self.upd_price_table)
+            lay.addWidget(b, le)
             le -= 1
         # self.ui.scroll_models.setLayout(lay)
 
-    def upd_price_table(self, position):
-        for sheet in self.price_db:
-            # print(f'{sheet=}')
-            if sheet == position[0]:
-                # for row in sheet.nrows:
-                #     name_cell = str(sheet.row_values(row, 0, 1)[0]).strip().lower()
-                #     a, b, = 0, len(name_cell)
-                #     if name_cell == model:
-                row = sheet.row_values(position[1], 0, 6)
-                # print(f'{row=}')
-                for i in range(position[1], sheet.nrows - 1):
-                    print(row)
-                    if i < sheet.nrows:
-                        row = sheet.row_values(i + 1, 0, 6)
-                        if row[0] != '':
-                            return
-                    else:
-                        return
-
+    def upd_price_table(self):
+        b = self.sender().text()
+        # print(b)
+        position = self.models[b]
+        # print(f'{position=}')
+        # print(f'{position[0].name=}')
+        col = search_column_numbers[position[0].name] or search_column_numbers[0]
+        # print(f'{col=}')
+        row = position[0].row_values(position[1], 0, 9)
+        # if position[1] == position[0].nrows or position[0].row_values(position[1]+1, 0, 1):
+        #     print(f'{row=} {position[1] == position[0].nrows=} {position[0].row_values(position[1]+1, 0, 1)=}')
+        #     return
+        for i in range(position[1], position[0].nrows - 1):
+            # print(row[col[0] - 1, col[1] - 1, col[2] - 1])
+            print(row[col[0] - 1], row[col[1] - 1], row[col[2] - 1])
+            if i < position[0].nrows:
+                # print(row[col[0] - 1, col[1] - 1, col[2] - 1])
+                row = position[0].row_values(i + 1, 0, 9)
+                if row[0] != '':
+                    return
+                # print(row[col[0]-1, col[1]-1, col[2]-1])
+            else:
+                return
 
     def clear_layout(self, layout):
         while layout.count():
@@ -110,16 +165,16 @@ class App(QMainWindow):
                 # print(child.widget())
                 child.widget().deleteLater()
 
-    def take_price_repairs(self, sheet, row_num):
-        row = sheet.row_values(row_num, 0, 6)
-        for i in range(row_num, sheet.nrows - 1):
-            print(row)
-            if i < sheet.nrows:
-                row = sheet.row_values(i + 1, 0, 6)
-                if row[0] != '':
-                    break
-            else:
-                break
+    # def take_price_repairs(self, sheet, row_num):
+    #     row = sheet.row_values(row_num, 0, 6)
+    #     for i in range(row_num, sheet.nrows - 1):
+    #         print(row)
+    #         if i < sheet.nrows:
+    #             row = sheet.row_values(i + 1, 0, 6)
+    #             if row[0] != '':
+    #                 break
+    #         else:
+    #             break
 
 
 if __name__ == "__main__":

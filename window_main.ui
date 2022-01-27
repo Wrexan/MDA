@@ -148,7 +148,7 @@
          <property name="widgetResizable">
           <bool>true</bool>
          </property>
-         <widget class="QWidget" name="scrollAreaWidgetContents">
+         <widget class="QWidget" name="scroll_models_layout">
           <property name="geometry">
            <rect>
             <x>0</x>
@@ -282,8 +282,17 @@
          <property name="sizeAdjustPolicy">
           <enum>QAbstractScrollArea::AdjustIgnored</enum>
          </property>
+         <property name="editTriggers">
+          <set>QAbstractItemView::NoEditTriggers</set>
+         </property>
          <property name="alternatingRowColors">
           <bool>false</bool>
+         </property>
+         <property name="selectionMode">
+          <enum>QAbstractItemView::SingleSelection</enum>
+         </property>
+         <property name="selectionBehavior">
+          <enum>QAbstractItemView::SelectRows</enum>
          </property>
          <property name="gridStyle">
           <enum>Qt::SolidLine</enum>
@@ -318,6 +327,15 @@
          </property>
          <property name="autoScrollMargin">
           <number>16</number>
+         </property>
+         <property name="editTriggers">
+          <set>QAbstractItemView::NoEditTriggers</set>
+         </property>
+         <property name="selectionMode">
+          <enum>QAbstractItemView::SingleSelection</enum>
+         </property>
+         <property name="selectionBehavior">
+          <enum>QAbstractItemView::SelectRows</enum>
          </property>
          <property name="columnCount">
           <number>8</number>
