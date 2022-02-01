@@ -1,3 +1,4 @@
+import os
 import sys
 import xlrd
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, \
@@ -5,7 +6,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, \
 from PyQt5 import QtCore
 from window_main import Ui_MainWindow
 
-REVERS_MODEL_LIST = True
+REVERS_MODEL_LIST = False
 # ==================SETTINGS
 STRICT_SEARCH = True
 LATIN_SEARCH = True
@@ -33,14 +34,12 @@ SEARCH_COLUMN_NUMBERS = {'+': [3, 4, 5],
                          'ZTE': [3, 4, 5],
                          }
 TRASH_IN_CELLS = ['/', '\\', 'MI2/Mi2s', 'MI2a', 'mi3', 'Mi 9t', 'Mi Max 3',
-                'Red rice', 'Redmi 3', 'Redmi 4x', 'Redmi 6', 'Redmi 7', 'Redmi 7a',
-                'Redmi 8', 'Redmi 8a', 'Redmi Note 4', 'Redmi Note 5', 'Redmi Note 6',
-                'Redmi Note 6 Pro', 'Redmi Note 7', 'Redmi Note 8', 'Redmi note 9', 'Redmi Note 6']
-PRICE_PATH = ''
-PRICE_NAME = 'price.xls'
+                  'Red rice', 'Redmi 3', 'Redmi 4x', 'Redmi 6', 'Redmi 7', 'Redmi 7a',
+                  'Redmi 8', 'Redmi 8a', 'Redmi Note 4', 'Redmi Note 5', 'Redmi Note 6',
+                  'Redmi Note 6 Pro', 'Redmi Note 7', 'Redmi Note 8', 'Redmi note 9', 'Redmi Note 6']
+PRICE_PATH = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop\\')
+PRICE_PARTIAL_NAME = 'Прайс'
 
-
-# price = xlrd.open_workbook(PRICE_PATH + PRICE_NAME, formatting_info=True)
 
 class App(QMainWindow):
     def __init__(self):
@@ -48,23 +47,40 @@ class App(QMainWindow):
         # self.setFocus()
         qApp.focusChanged.connect(self.on_focusChanged)
 
-        print(sys.path[0] + '\\' + PRICE_PATH + PRICE_NAME)
-        self.price_db = xlrd.open_workbook(sys.path[0] + '\\' + PRICE_PATH + PRICE_NAME, formatting_info=True)
+        # self.price_db = xlrd.open_workbook(sys.path[0] + '\\' + PRICE_PATH + PRICE_NAME, formatting_info=True)
+        # self.price_db = xlrd.open_workbook(PRICE_PATH + price_name, formatting_info=True)
         self.models = {}
         self.ui = Ui_MainWindow()
         self.initUI()
+        price_name = ''
+        for name in os.listdir(PRICE_PATH):
+            if PRICE_PARTIAL_NAME in name:
+                price_name = name
+                break
+        if price_name:
+            self.ui.price_name.setText(price_name)
+            self.price_db = xlrd.open_workbook(PRICE_PATH + price_name, formatting_info=True)
+        else:
+            self.ui.model_lable.setText('ОШИБКА! Файл "Прайс..xls" не найден')
+            self.ui.price_name.setText('Расположите файл "Прайс..xls" на рабочем столе')
+            self.price_db = ''
+
 
     def initUI(self):
         self.ui.setupUi(self)
 
         self.ui.input_search.textChanged[str].connect(self.search_and_upd_model_buttons)
         self.ui.table_left.verticalHeader().setDefaultSectionSize(14)
-        self.ui.table_right.verticalHeader().setDefaultSectionSize(14)
+        self.ui.table_parts.verticalHeader().setDefaultSectionSize(14)
+        self.ui.table_accesory.verticalHeader().setDefaultSectionSize(14)
         self.ui.table_left.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
-        self.ui.table_left.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        self.ui.table_parts.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        self.ui.table_accesory.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.ui.table_left.setHorizontalHeaderLabels(['Виды работ', 'Цена', 'Примечание'])
-        self.ui.table_right.setHorizontalHeaderLabels(['Тип', 'Фирма', 'Модель', 'Примечаiние',
+        self.ui.table_parts.setHorizontalHeaderLabels(['Тип', 'Фирма', 'Модель', 'Примечание',
                                                        'Цена', 'К-во', 'Дата', 'Где'])
+        self.ui.table_accesory.setHorizontalHeaderLabels(['Тип', 'Фирма', 'Модель', 'Примечание',
+                                                          'Цена', 'К-во', 'Дата', 'Где'])
 
     def search_and_upd_model_buttons(self, search_req):
         self.search_price_models(search_req)
@@ -127,39 +143,46 @@ class App(QMainWindow):
         sp = QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Expanding)
         lay.addItem(sp)
         le = len(self.models)
-        if REVERS_MODEL_LIST: ml = reversed(list(self.models.keys()))
-        else: ml = list(self.models.keys())
+        if REVERS_MODEL_LIST:
+            ml = reversed(list(self.models.keys()))
+        else:
+            ml = list(self.models.keys())
         for model in ml:
             b = QPushButton(model)
             b.clicked.connect(self.upd_price_table)
             lay.addWidget(b, 0)
             le -= 1
 
-    def upd_price_table(self):
+    def upd_price_table(self):  # 'xiaomi mi a2 m1804d2sg'
         b = self.sender().text()
         # print(b)
-        position = self.models[b]
+        position = self.models[b]  # [Sheet 27:<XIAOMI>, 813]
         # print(f'{position=}')
         # print(f'{position[0].name=}')
         if position[0].name in SEARCH_COLUMN_NUMBERS:
-            col = SEARCH_COLUMN_NUMBERS[position[0].name]
+            col = SEARCH_COLUMN_NUMBERS[position[0].name]  # [2, 4, 5]
         else:
             col = SEARCH_COLUMN_NUMBERS['+']
         # print(f'{col=}')
-        row = position[0].row_values(position[1], 0, 9)
+        row = position[0].row_values(position[1], 0, 9)  # ['Xiaomi Mi A2 M1804D2SG ', '', '', 0.0, '', '', '', '', '']
         # if position[1] == position[0].nrows or position[0].row_values(position[1]+1, 0, 1):
         #     print(f'{row=} {position[1] == position[0].nrows=} {position[0].row_values(position[1]+1, 0, 1)=}')
         #     return
         r = 0
         # self.ui.table_left.clearContents()
         self.ui.table_left.setRowCount(0)
+        self.ui.model_lable.setText(self.list_to_string(row))
+        # self.ui.table_left.setItem(r, 0, QTableWidgetItem(str(row[0])))
+        # self.ui.table_left.setItem(r, 1, QTableWidgetItem(str(row[col[1] - 1])))
         for i in range(position[1], position[0].nrows - 1):
             # print(row[col[0] - 1, col[1] - 1, col[2] - 1])
             if len(row) < (col[2]):
-                print(row)
+                # print('SHORT row:' + str(row))
+                self.ui.table_left.insertRow(r)
+                self.ui.table_left.setItem(r, 0, QTableWidgetItem(self.list_to_string(row)))
                 return
             else:
-                print(row)
+                # print(row)
                 r0 = str(row[col[0] - 1])
                 r1 = str(row[col[1] - 1])
                 if r0 or len(r1) > 3:
@@ -168,12 +191,13 @@ class App(QMainWindow):
                     self.ui.table_left.setItem(r, 1, QTableWidgetItem(r1))
                     self.ui.table_left.setItem(r, 2, QTableWidgetItem(str(row[col[2] - 1])))
                     r += 1
-                    print(row[col[0] - 1], row[col[1] - 1], row[col[2] - 1])
+                    # print(row[col[0] - 1], row[col[1] - 1], row[col[2] - 1])
                 if i < position[0].nrows:
                     # print(row[col[0] - 1, col[1] - 1, col[2] - 1])
                     row = position[0].row_values(i + 1, 0, 9)
                     if row[0] != '':
-                        return
+                        if row[0] not in TRASH_IN_CELLS:
+                            return
                     # print(row[col[0]-1, col[1]-1, col[2]-1])
                 else:
                     return
@@ -185,21 +209,19 @@ class App(QMainWindow):
                 # print(child.widget())
                 child.widget().deleteLater()
 
+    def list_to_string(self, lst):
+        return ' '.join([str(elem) for elem in lst if len(str(elem)) > 3])
+
     @QtCore.pyqtSlot("QWidget*", "QWidget*")
     def on_focusChanged(self, old, now):
-
         if now == None:
-            print(f"\nwindow is the active window: {self.isActiveWindow()}")
-
-            # window lost focus
-            # do what you want
-
+            pass
+            # print(f"\nwindow is the active window: {self.isActiveWindow()}")
             # self.setWindowState(QtCore.Qt.WindowMinimized)
-
         else:
             self.ui.input_search.setFocus()
             self.ui.input_search.selectAll()
-            print(f"window is the active window: {self.isActiveWindow()}")
+            # print(f"window is the active window: {self.isActiveWindow()}")
 
 
 if __name__ == "__main__":
