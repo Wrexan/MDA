@@ -38,7 +38,7 @@ TRASH_IN_CELLS = ['/', '\\', 'MI2/Mi2s', 'MI2a', 'mi3', 'Mi 9t', 'Mi Max 3',
                   'Redmi 8', 'Redmi 8a', 'Redmi Note 4', 'Redmi Note 5', 'Redmi Note 6',
                   'Redmi Note 6 Pro', 'Redmi Note 7', 'Redmi Note 8', 'Redmi note 9', 'Redmi Note 6']
 PRICE_PATH = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop\\')
-PRICE_PARTIAL_NAME = 'Прайс'
+PRICE_PARTIAL_NAME = ['Прайс', '.xls']
 
 
 class App(QMainWindow):
@@ -47,24 +47,12 @@ class App(QMainWindow):
         # self.setFocus()
         qApp.focusChanged.connect(self.on_focusChanged)
 
-        # self.price_db = xlrd.open_workbook(sys.path[0] + '\\' + PRICE_PATH + PRICE_NAME, formatting_info=True)
-        # self.price_db = xlrd.open_workbook(PRICE_PATH + price_name, formatting_info=True)
+        # self.PRICE_DB = xlrd.open_workbook(sys.path[0] + '\\' + PRICE_PATH + PRICE_NAME, formatting_info=True)
+        # self.PRICE_DB = xlrd.open_workbook(PRICE_PATH + price_name, formatting_info=True)
         self.models = {}
         self.ui = Ui_MainWindow()
         self.initUI()
-        price_name = ''
-        for name in os.listdir(PRICE_PATH):
-            if PRICE_PARTIAL_NAME in name:
-                price_name = name
-                break
-        if price_name:
-            self.ui.price_name.setText(price_name)
-            self.price_db = xlrd.open_workbook(PRICE_PATH + price_name, formatting_info=True)
-        else:
-            self.ui.model_lable.setText('ОШИБКА! Файл "Прайс..xls" не найден')
-            self.ui.price_name.setText('Расположите файл "Прайс..xls" на рабочем столе')
-            self.price_db = ''
-
+        self.PRICE_DB = self.load_price()
 
     def initUI(self):
         self.ui.setupUi(self)
@@ -95,7 +83,7 @@ class App(QMainWindow):
         search_req = search_req.lower()  # input('Введите модель: ').lower()
         # print(search_req)
         self.models = {}
-        for sheet in self.price_db:
+        for sheet in self.PRICE_DB:
             for row_num in range(sheet.nrows):
                 cell_value = sheet.row_values(row_num, 0, 2)
                 # print(f'{cell_value=} {len(cell_value)=}')
@@ -201,6 +189,20 @@ class App(QMainWindow):
                     # print(row[col[0]-1, col[1]-1, col[2]-1])
                 else:
                     return
+    
+    def load_price(self):
+        price_name = ''
+        for name in os.listdir(PRICE_PATH):
+            if name[-4:] == PRICE_PARTIAL_NAME[1] and PRICE_PARTIAL_NAME[0] in name:
+                price_name = name
+                break
+        if price_name:
+            self.ui.price_name.setText(price_name)
+            return xlrd.open_workbook(PRICE_PATH + price_name, formatting_info=True)
+        else:
+            self.ui.model_lable.setText('ОШИБКА! Файл "Прайс..xls" не найден')
+            self.ui.price_name.setText('Расположите файл "Прайс..xls" на рабочем столе')
+            return ''
 
     def clear_layout(self, layout):
         while layout.count():
