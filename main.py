@@ -1,15 +1,29 @@
 import os
 import sys
+import requests
+from requests.auth import HTTPBasicAuth
 import xlrd
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, \
     QSpacerItem, QSizePolicy, QTableWidgetItem, QHeaderView, qApp
 from PyQt5 import QtCore
+from bs4 import BeautifulSoup
+
 from window_main import Ui_MainWindow
 
+# ============================================
+# ==================SETTINGS==================
 REVERS_MODEL_LIST = False
-# ==================SETTINGS
+STRICT_SEARCH_LEN = 2
+
+DK9_LOGIN = 'masterP'  # admin
+DK9_PASSWORD = '4832101'  # 123456
+
+# ============================================
+# ====================MENU====================
 STRICT_SEARCH = True
 LATIN_SEARCH = True
+# ============================================
+# ====================VARS====================
 SEARCH_COLUMN_NUMBERS = {'+': [3, 4, 5],
                          'Alcatel': [2, 4, 7],
                          'Asus-тел': [2, 4, 7],
@@ -53,6 +67,8 @@ class App(QMainWindow):
         self.ui = Ui_MainWindow()
         self.initUI()
         self.PRICE_DB = self.load_price()
+        print(self.login())
+        self.temp()
 
     def initUI(self):
         self.ui.setupUi(self)
@@ -79,7 +95,7 @@ class App(QMainWindow):
 
     def search_price_models(self, search_req):
         search_req_len = len(search_req)
-        if search_req_len < 2: return
+        if STRICT_SEARCH and search_req_len < STRICT_SEARCH_LEN: return
         search_req = search_req.lower()  # input('Введите модель: ').lower()
         # print(search_req)
         self.models = {}
@@ -104,13 +120,6 @@ class App(QMainWindow):
                                 and (found_pos + search_req_len == b or
                                      name_cell[found_pos + search_req_len] in '/\\ ' or
                                      search_req[-1] == ' '))):
-                        # print(f'{name_cell}')
-                        # if found_pos == 0 or name_cell[found_pos - 1] in "/\\ ": \
-                        # and \
-                        # (found_pos + search_req_len == b or
-                        #  name_cell[found_pos + search_req_len] in '/\\ ' or
-                        #  search_req[-1] == ' '):
-                        # print(f'FOUND============={name_cell=}')
                         le = len(self.models)
                         # print(f'{le=} {self.models=} {name_cell=} {sheet=} {row_num=}')
                         if le < 10:
@@ -189,7 +198,7 @@ class App(QMainWindow):
                     # print(row[col[0]-1, col[1]-1, col[2]-1])
                 else:
                     return
-    
+
     def load_price(self):
         price_name = ''
         for name in os.listdir(PRICE_PATH):
@@ -203,6 +212,104 @@ class App(QMainWindow):
             self.ui.model_lable.setText('ОШИБКА! Файл "Прайс..xls" не найден')
             self.ui.price_name.setText('Расположите файл "Прайс..xls" на рабочем столе')
             return ''
+
+    def login(self):
+        return requests.get('http://dimkak9-001-site1.htempurl.com/Login.aspx', auth=('masterP', '4832101'))
+        # response = requests.get(url, params=params, headers=headers)
+
+    def temp(self):
+        # dburi = 'http://localhost:8086/write?db=pesdb'
+        # dbuser = 'pesuser'
+        # dbpass = 'pespass'
+
+        headers = {
+            # 'user-agent': 'Mozilla/5.0 (Windows NT x.y; Win64; x64; rv:10.0) Gecko/20100101 Firefox/10.0'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+                          '(KHTML, like Gecko) Chrome/93.0.4577.82 Safari/537.36'
+        }
+
+        LoginData = {
+            'TextBoxName': DK9_LOGIN,
+            'TextBoxPassword': DK9_PASSWORD,
+            'ButtonLogin': 'Submit',
+            # 'ctl00$ContentPlaceHolder1$TextBoxManufacture': 'mi8',
+            # 'ctl00$ContentPlaceHolder1$ButtonSearch': 'Submit',
+        }
+
+        with requests.Session() as s:
+            url = "http://dimkak9-001-site1.htempurl.com/Login.aspx"
+            r = s.get(url, headers=headers)
+            # print(r.text)
+            soup = BeautifulSoup(r.content, 'html.parser')
+
+            # LoginData['__VIEWSTATE'] = soup.find('input', attrs={'id': '__VIEWSTATE'})['value']
+            # LoginData['__VIEWSTATEGENERATOR'] = soup.find('input', attrs={'id': '__VIEWSTATEGENERATOR'})['value']
+            # LoginData['__EVENTVALIDATION'] = soup.find('input', attrs={'id': '__EVENTVALIDATION'})['value']
+            VData = {
+                '__VIEWSTATE': soup.find('input', attrs={'id': '__VIEWSTATE'})['value'],
+                '__VIEWSTATEGENERATOR': soup.find('input', attrs={'id': '__VIEWSTATEGENERATOR'})['value'],
+                '__EVENTVALIDATION': soup.find('input', attrs={'id': '__EVENTVALIDATION'})['value']}
+
+            # print(f'{LoginData=} {headers=}')
+            data = {**LoginData, **VData}
+            r = s.post(url, data=data, headers=headers)
+            soup = BeautifulSoup(r.content, 'html.parser')
+            # LoginData['Button2'] = 'Submit'
+            print(f'{data=}')
+            print(f'SOUP_1={soup}')
+
+
+            PushButton2Data = {
+                'Button2': 'submit'
+            }
+            data = {**PushButton2Data, **VData}
+            r = s.post(url, data=data, headers=headers)
+            soup = BeautifulSoup(r.content, 'html.parser')
+            # tables = soup.find_all('table')
+            # print(f'{LoginData=}')
+            print(f'{data=}')
+            print(f'SOUP_2={soup}')
+            inputs = soup.find_all('input', attrs={'type': 'text'})
+
+            # print(f'{tables=}')
+            print(f'{inputs=}')
+
+            # MeterID = soup.find("span", id="MainContent_lblMeterID").contents[0]
+
+            # print(f'{soup=}')
+            # iframe = soup.find('iframe', attrs={'id': 'myIframe1'})
+            # print(f'{iframe=}')
+            # inside_frame = iframe.find('input', attrs={'name': 'ctl00$ContentPlaceHolder1$TextBoxManufacture'})
+            # print(f'{inside_frame=}')
+
+            PushSearchData = {
+                'ctl00$ContentPlaceHolder1$TextBoxManufacture': 'mi8'
+            }
+
+            r = s.post(url, data=PushSearchData, headers=headers)
+            soup = BeautifulSoup(r.content, 'html.parser')
+
+            # tables = soup.find_all('table')
+            # tables = soup.find_all('table', attrs={'id': 'ctl00_ContentPlaceHolder1_GridView1'})
+
+            inputs = soup.find_all('input', attrs={'type': 'text'})
+
+            # print(f'{tables=}')
+            print(f'{inputs=}')
+
+            # print(f'{soup=}')
+
+            # GetSearchData = {
+            #     'ctl00_ContentPlaceHolder1_GridView1': 'mi8'
+            # }
+
+            # r = s.get(url, headers=headers)
+            # soup = BeautifulSoup(r.content, 'html.parser')
+            # table = soup.find('table', attrs={'id': 'ctl00_ContentPlaceHolder1_GridView1'})
+            #
+            # print(f'{table=}')
+            # dbres = requests.post(dburi, data=dbpayload, auth=HTTPBasicAuth(dbuser, dbpass))
+            # print(dbres.status_code)
 
     def clear_layout(self, layout):
         while layout.count():
