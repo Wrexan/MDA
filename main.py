@@ -11,18 +11,16 @@ from window_main import Ui_MainWindow
 
 # ============================================
 # ==================SETTINGS==================
-MODEL_LIST_REVERSED = False
-MODEL_LIST_SIZE = 15
-STRICT_SEARCH_LEN = 2  # start search after 2 symbols
-
 DK9_LOGIN = 'masterP'  # admin
 DK9_PASSWORD = '4832101'  # 123456
+
+MODEL_LIST_SIZE = 15
 
 # tables
 PRICE_COLORED = True  # work slower if True
 DK9_COLORED = True  # work slower if True
 DK9_COL_DIFF = 14  # difference of odd/even bg
-TABLE_FONT_SIZE = 16
+TABLE_FONT_SIZE = 12
 
 # ============================================
 # ====================MENU====================
@@ -30,6 +28,8 @@ STRICT_SEARCH = True
 LATIN_SEARCH = True
 # ============================================
 # ====================VARS====================
+MODEL_LIST_REVERSED = False
+STRICT_SEARCH_LEN = 2  # start search after 2 symbols
 PRICE_SEARCH_COLUMN_NUMBERS = {'+': [3, 4, 5],
                          'Alcatel': [2, 4, 7],
                          'Asus-тел': [2, 4, 7],
@@ -128,9 +128,9 @@ class App(QMainWindow):
         self.ui.table_accesory.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.ui.table_left.setHorizontalHeaderLabels(['Виды работ', 'Цена', 'Примечание'])
         self.ui.table_parts.setHorizontalHeaderLabels(['Тип', 'Фирма', 'Модель', 'Примечание',
-                                                       'Цена', 'К-во', 'Дата', 'Где'])
+                                                       'Цена', 'Шт', 'Дата', 'Где'])
         self.ui.table_accesory.setHorizontalHeaderLabels(['Тип', 'Фирма', 'Модель', 'Примечание',
-                                                          'Цена', 'К-во', 'Дата', 'Где'])
+                                                          'Цена', 'Шт', 'Дата', 'Где'])
 
     def search_and_upd_model_buttons(self, search_req):
         self.search_price_models(search_req)
@@ -359,7 +359,7 @@ class App(QMainWindow):
         return ' '.join([str(elem) for elem in lst if len(str(elem)) > 3])
 
     @QtCore.pyqtSlot("QWidget*", "QWidget*")
-    def on_focus_changed(self, old, now):
+    def on_focusChanged(self, old, now):
         if now is None:
             pass
             # print(f"\nwindow is the active window: {self.isActiveWindow()}")

@@ -6,12 +6,16 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1024</width>
-    <height>760</height>
+    <width>1200</width>
+    <height>800</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>MFAggregator</string>
+  </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>icon64.png</normaloff>icon64.png</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
@@ -137,9 +141,6 @@
              </item>
              <item>
               <widget class="QPushButton" name="pushButton_2">
-               <property name="enabled">
-                <bool>false</bool>
-               </property>
                <property name="maximumSize">
                 <size>
                  <width>120</width>
@@ -338,7 +339,7 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>507</width>
+            <width>595</width>
             <height>118</height>
            </rect>
           </property>
@@ -476,7 +477,7 @@
              </size>
             </property>
             <property name="horizontalScrollBarPolicy">
-             <enum>Qt::ScrollBarAlwaysOff</enum>
+             <enum>Qt::ScrollBarAsNeeded</enum>
             </property>
             <property name="sizeAdjustPolicy">
              <enum>QAbstractScrollArea::AdjustIgnored</enum>
@@ -536,6 +537,9 @@
        </item>
        <item>
         <widget class="QTabWidget" name="tab_widget">
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
          <property name="tabShape">
           <enum>QTabWidget::Rounded</enum>
          </property>
@@ -565,6 +569,12 @@
            <string>   ЗАПЧАСТИ   </string>
           </attribute>
           <layout class="QVBoxLayout" name="verticalLayout_5">
+           <property name="spacing">
+            <number>0</number>
+           </property>
+           <property name="sizeConstraint">
+            <enum>QLayout::SetMaximumSize</enum>
+           </property>
            <property name="leftMargin">
             <number>0</number>
            </property>
@@ -579,17 +589,11 @@
            </property>
            <item>
             <widget class="QTableWidget" name="table_parts">
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>16777215</height>
-              </size>
+             <property name="frameShape">
+              <enum>QFrame::Panel</enum>
              </property>
              <property name="horizontalScrollBarPolicy">
-              <enum>Qt::ScrollBarAlwaysOff</enum>
-             </property>
-             <property name="sizeAdjustPolicy">
-              <enum>QAbstractScrollArea::AdjustIgnored</enum>
+              <enum>Qt::ScrollBarAsNeeded</enum>
              </property>
              <property name="autoScrollMargin">
               <number>16</number>
@@ -603,17 +607,20 @@
              <property name="selectionBehavior">
               <enum>QAbstractItemView::SelectRows</enum>
              </property>
+             <property name="showGrid">
+              <bool>false</bool>
+             </property>
              <property name="columnCount">
               <number>8</number>
              </property>
-             <attribute name="horizontalHeaderCascadingSectionResizes">
-              <bool>false</bool>
-             </attribute>
              <attribute name="horizontalHeaderMinimumSectionSize">
-              <number>14</number>
+              <number>4</number>
              </attribute>
              <attribute name="horizontalHeaderDefaultSectionSize">
               <number>60</number>
+             </attribute>
+             <attribute name="horizontalHeaderHighlightSections">
+              <bool>false</bool>
              </attribute>
              <attribute name="horizontalHeaderStretchLastSection">
               <bool>true</bool>
@@ -644,6 +651,12 @@
            <string>  АКСЕССУАРЫ  </string>
           </attribute>
           <layout class="QVBoxLayout" name="verticalLayout_6">
+           <property name="spacing">
+            <number>0</number>
+           </property>
+           <property name="sizeConstraint">
+            <enum>QLayout::SetMaximumSize</enum>
+           </property>
            <property name="leftMargin">
             <number>0</number>
            </property>
@@ -658,17 +671,11 @@
            </property>
            <item>
             <widget class="QTableWidget" name="table_accesory">
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>16777215</height>
-              </size>
+             <property name="frameShape">
+              <enum>QFrame::Panel</enum>
              </property>
              <property name="horizontalScrollBarPolicy">
-              <enum>Qt::ScrollBarAlwaysOff</enum>
-             </property>
-             <property name="sizeAdjustPolicy">
-              <enum>QAbstractScrollArea::AdjustIgnored</enum>
+              <enum>Qt::ScrollBarAsNeeded</enum>
              </property>
              <property name="autoScrollMargin">
               <number>16</number>
@@ -682,17 +689,20 @@
              <property name="selectionBehavior">
               <enum>QAbstractItemView::SelectRows</enum>
              </property>
+             <property name="showGrid">
+              <bool>false</bool>
+             </property>
              <property name="columnCount">
               <number>8</number>
              </property>
-             <attribute name="horizontalHeaderCascadingSectionResizes">
-              <bool>false</bool>
-             </attribute>
              <attribute name="horizontalHeaderMinimumSectionSize">
-              <number>14</number>
+              <number>4</number>
              </attribute>
              <attribute name="horizontalHeaderDefaultSectionSize">
               <number>60</number>
+             </attribute>
+             <attribute name="horizontalHeaderHighlightSections">
+              <bool>false</bool>
              </attribute>
              <attribute name="horizontalHeaderStretchLastSection">
               <bool>true</bool>
