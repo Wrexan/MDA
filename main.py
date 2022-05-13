@@ -11,8 +11,8 @@ from window_main import Ui_MainWindow
 
 # ============================================
 # ==================SETTINGS==================
-DK9_LOGIN = 'masterP'  # admin
-DK9_PASSWORD = '4832101'  # 123456
+DK9_LOGIN = xxxx
+DK9_PASSWORD = xxxx
 
 MODEL_LIST_SIZE = 15
 
