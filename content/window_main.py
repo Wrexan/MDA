@@ -15,9 +15,8 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1200, 800)
-        icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("icon64.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        MainWindow.setWindowIcon(icon)
+        MainWindow.setWindowTitle("MDA")
+        MainWindow.setIconSize(QtCore.QSize(64, 64))
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.verticalLayout = QtWidgets.QVBoxLayout(self.centralwidget)
@@ -284,7 +283,6 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MFAggregator"))
         self.pushButton_2.setText(_translate("MainWindow", "Настройки"))
         self.chb_search_strict.setText(_translate("MainWindow", "Строго"))
         self.chb_search_eng.setText(_translate("MainWindow", "Латиница"))

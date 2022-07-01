@@ -1,13 +1,16 @@
 import os
 import sys
+import configparser
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, \
-    QSpacerItem, QSizePolicy, QTableWidgetItem, QHeaderView, qApp, QLineEdit
+    QSpacerItem, QSizePolicy, QTableWidgetItem, QHeaderView, qApp
 from PyQt5 import QtCore, QtGui
-from PyQt5.Qt import Qt, QEvent
+from PyQt5.Qt import Qt
 
-from dk9 import DK9Parser
-from price import Price
-from window_main import Ui_MainWindow
+from content.dk9 import DK9Parser
+from content.price import Price
+from content.window_main import Ui_MainWindow
+
+# from win32com.client import GetObject
 
 # ============================================
 # ==================SETTINGS==================
@@ -28,6 +31,7 @@ STRICT_SEARCH = True
 LATIN_SEARCH = True
 # ============================================
 # ====================VARS====================
+PATH = QtCore.QFileInfo(__file__).absolutePath()
 MODEL_LIST_REVERSED = False
 STRICT_SEARCH_LEN = 2  # start search after 2 symbols
 PRICE_SEARCH_COLUMN_NUMBERS = {'+': [3, 4, 5],
@@ -92,6 +96,7 @@ class App(QMainWindow):
     def __init__(self):
         super().__init__()
         # self.setFocus()
+        self.setWindowIcon(QtGui.QIcon(f'{PATH}/content/start.png'))
         qApp.focusChanged.connect(self.on_focusChanged)
 
         # self.PRICE_DB = xlrd.open_workbook(sys.path[0] + '\\' + PRICE_PATH + PRICE_NAME, formatting_info=True)
@@ -105,14 +110,14 @@ class App(QMainWindow):
         self.SESSION = None
         self.validation_data = None
         self.old_search = ''
-        print('Creating DK9')
+        # print('Creating DK9')
         self.DK9 = DK9Parser(DK9_LOGIN_URL, DK9_SEARCH_URL, DK9_HEADERS, DK9_LOGIN_DATA)
         print('Login to DK9')
         self.DK9.login()
-        print('Creating Price')
+        print('Loading Price')
         self.Price = Price(PRICE_PATH, PRICE_PARTIAL_NAME, PRICE_TRASH_IN_CELLS)
         self.ui.price_name.setText(self.Price.message)
-        self.update_dk9_data('mi8 lite')
+        # self.update_dk9_data('mi8 lite')
 
     def initUI(self):
         self.ui.setupUi(self)
@@ -300,11 +305,10 @@ class App(QMainWindow):
     #     return QMainWindow.event(self, event)
 
     def keyPressEvent(self, event) -> None:
-        print(f'KEYPRESS: {event.key()}')
+        # print(f'KEYPRESS: {event.key()}')
         if self.models:
             if event.key() in (Qt.Key_Return, Qt.Key_Enter):
                 self.model_buttons[self.current_model_button_index].click()
-                print(f'Enter: {self.current_model_button_index}')
             elif event.key() == Qt.Key_Up:
                 self.model_buttons[self.current_model_button_index].setDefault(False)
                 self.current_model_button_index -= 1
@@ -329,6 +333,19 @@ class App(QMainWindow):
                 self.ui.tab_widget.setCurrentIndex(1)
             else:
                 self.ui.tab_widget.setCurrentIndex(0)
+
+    def handle_config(self):
+        config = configparser.ConfigParser()
+        dir_path = os.path.dirname(os.path.realpath(__file__)) + '/server'
+
+    # @staticmethod
+    # def close_cmd():
+    #     WMI = GetObject('winmgmts:')
+    #     processes = WMI.InstancesOf('Win32_Process')
+    #
+    #     for p in WMI.ExecQuery('select * from Win32_Process where Name="cmd.exe"'):
+    #         print("Killing PID:", p.Properties_('ProcessId').Value)
+    #         os.system("taskkill /pid " + str(p.Properties_('ProcessId').Value))
 
 
 if __name__ == "__main__":
