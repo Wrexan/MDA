@@ -3,7 +3,7 @@ import xlrd
 
 
 class Price:
-    def __init__(self, PRICE_PATH: str, PRICE_PARTIAL_NAME: tuple, PRICE_TRASH_IN_CELLS: tuple):
+    def __init__(self, PATH: str, PRICE_PATH: str, PRICE_PARTIAL_NAME: tuple, PRICE_TRASH_IN_CELLS: tuple):
         self.PRICE_TRASH_IN_CELLS = PRICE_TRASH_IN_CELLS
         self.message = ''
         self.DB = self._load_price(PRICE_PATH, PRICE_PARTIAL_NAME)
@@ -21,16 +21,19 @@ class Price:
         else:
             # self.ui.model_lable.setText('ОШИБКА! Файл "Прайс..xls" не найден')
             # self.ui.price_name.setText('Расположите файл "Прайс..xls" на рабочем столе')
-            self.message = 'Расположите файл "Прайс..xls" на рабочем столе'
+            self.message = 'Не найден файл "*Прайс*.xls"'
             return None
 
-    def get_row_by_model(self, position: tuple):
+    @staticmethod
+    def get_row_in_pos(position: tuple):
         return position[0].row_values(position[1], 0, 9)  # ['Xiaomi Mi A2 M1804D2SG ', '', '', 0.0, '', '', '', '', '']
 
     def search_price_models(self, search_req: str, MODEL_LIST_SIZE: int):
         search_req_len = len(search_req)
         models = {}
         # print(self.PRICE_DB.sheets())
+        if not self.DB:
+            return
         for sheet in self.DB:
             # print(f'{sheet=}')
             for row_num in range(sheet.nrows):
@@ -45,7 +48,8 @@ class Price:
                 while a < b:
                     found_pos = name_cell.find(search_req, a, b)
                     # print(f'{a=} {b=} {found_pos=} {name_cell=}')
-                    if found_pos == -1: break
+                    if found_pos == -1:
+                        break
                     # if search request > 3 symbols, cut everything from left
                     # for smaller, cut from both sides (more strict)
                     # print(f'{len(self.models)=} {self.models=} {name_cell=} {sheet=} {row_num=}')  # ERROR LOG

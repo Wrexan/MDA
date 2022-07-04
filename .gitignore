@@ -1,3 +1,5 @@
 __pycache__
 *.log
 .idea
+/user_config.ini
+/output/
