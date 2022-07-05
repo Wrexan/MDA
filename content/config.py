@@ -75,15 +75,10 @@ class Config:
         # ====================DK9====================
         # Preparing background colors for DK9
         self.DK9_BG_P_COLOR1 = (204, 204, 255)
-        self.DK9_BG_P_COLOR2 = \
-            (self.DK9_BG_P_COLOR1[0] - self.DK9_COL_DIFF if self.DK9_BG_P_COLOR1[0] >= self.DK9_COL_DIFF else 0,
-             self.DK9_BG_P_COLOR1[1] - self.DK9_COL_DIFF if self.DK9_BG_P_COLOR1[1] >= self.DK9_COL_DIFF else 0,
-             self.DK9_BG_P_COLOR1[2] - self.DK9_COL_DIFF if self.DK9_BG_P_COLOR1[2] >= self.DK9_COL_DIFF else 0)
+        self.DK9_BG_P_COLOR2 = (0, 0, 0)
         self.DK9_BG_A_COLOR1 = (204, 255, 153)
-        self.DK9_BG_A_COLOR2 = \
-            (self.DK9_BG_A_COLOR1[0] - self.DK9_COL_DIFF if self.DK9_BG_A_COLOR1[0] >= self.DK9_COL_DIFF else 0,
-             self.DK9_BG_A_COLOR1[1] - self.DK9_COL_DIFF if self.DK9_BG_A_COLOR1[1] >= self.DK9_COL_DIFF else 0,
-             self.DK9_BG_A_COLOR1[2] - self.DK9_COL_DIFF if self.DK9_BG_A_COLOR1[2] >= self.DK9_COL_DIFF else 0)
+        self.DK9_BG_A_COLOR2 = (0, 0, 0)
+        self.precalculate_color_diffs()
 
         self.DK9_BG_COLORS = {'GreenYellow': (173, 255, 47),
                               'LightBlue': (173, 216, 230),
@@ -112,6 +107,16 @@ class Config:
     @staticmethod
     def set_desktop_path():
         return os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop\\')
+
+    def precalculate_color_diffs(self):
+        self.DK9_BG_P_COLOR2 = self._precalculate_color_diff(self.DK9_BG_P_COLOR1)
+        self.DK9_BG_A_COLOR2 = self._precalculate_color_diff(self.DK9_BG_A_COLOR1)
+
+    def _precalculate_color_diff(self, color: tuple):
+        return \
+            (color[0] - self.DK9_COL_DIFF if color[0] >= self.DK9_COL_DIFF else 0,
+             color[1] - self.DK9_COL_DIFF if color[1] >= self.DK9_COL_DIFF else 0,
+             color[2] - self.DK9_COL_DIFF if color[2] >= self.DK9_COL_DIFF else 0)
 
     def handle_config(self):
         config = configparser.ConfigParser()

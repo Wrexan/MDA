@@ -27,7 +27,9 @@ class App(QMainWindow):
         self.model_buttons = {}
         self.current_model_button_index = 0
         self.ui = Ui_MainWindow()
-        self.initUI()
+        self.ui.setupUi(self)
+        self.init_ui_statics()
+        self.init_ui_dynamics()
         self.SESSION = None
         self.validation_data = None
         self.old_search = ''
@@ -40,16 +42,21 @@ class App(QMainWindow):
         self.ui.price_name.setText(self.Price.message)
         # self.update_dk9_data('mi8 lite')
 
-    def initUI(self):
-        self.ui.setupUi(self)
-
-        font = QtGui.QFont()
-        # font.setBold(True)
-        font.setPixelSize(C.TABLE_FONT_SIZE)
-
+    def init_ui_statics(self):
         self.ui.input_search.textChanged[str].connect(self.search_and_upd_model_buttons)
         self.ui.chb_search_strict.stateChanged[int].connect(self.search_on_strict_change)
         self.ui.settings_button.clicked.connect(self.open_settings)
+
+        self.ui.table_left.setHorizontalHeaderLabels(('', 'Виды работ', 'Цена', 'Прим', '', ''))
+        self.ui.table_parts.setHorizontalHeaderLabels(('Тип', 'Фирма', 'Модель', 'Примечание',
+                                                       'Цена', 'Шт', 'Дата', 'Где'))
+        self.ui.table_accesory.setHorizontalHeaderLabels(('Тип', 'Фирма', 'Модель', 'Примечание',
+                                                          'Цена', 'Шт', 'Дата', 'Где'))
+
+    def init_ui_dynamics(self):
+        font = QtGui.QFont()
+        # font.setBold(True)
+        font.setPixelSize(C.TABLE_FONT_SIZE)
 
         self.ui.table_left.verticalHeader().setDefaultSectionSize(C.TABLE_FONT_SIZE + 4)
         self.ui.table_left.verticalHeader().setMaximumWidth(self.ui.table_left.width())
@@ -62,11 +69,6 @@ class App(QMainWindow):
         self.ui.table_left.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.ui.table_parts.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.ui.table_accesory.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
-        self.ui.table_left.setHorizontalHeaderLabels(('', 'Виды работ', 'Цена', 'Прим', '', ''))
-        self.ui.table_parts.setHorizontalHeaderLabels(('Тип', 'Фирма', 'Модель', 'Примечание',
-                                                       'Цена', 'Шт', 'Дата', 'Где'))
-        self.ui.table_accesory.setHorizontalHeaderLabels(('Тип', 'Фирма', 'Модель', 'Примечание',
-                                                          'Цена', 'Шт', 'Дата', 'Где'))
 
     def search_on_strict_change(self, state):
         C.STRICT_SEARCH = state
@@ -294,7 +296,7 @@ class App(QMainWindow):
         # settings_ui.win.setupUi(self)
         # settings_ui.buttonBox.accepted.connect()
         # settings_ui.buttonBox.accepted.connect()
-        settings_ui = Config()
+        settings_ui = ConfigWindow()
         settings_ui.exec_()
         settings_ui.show()
 
@@ -305,12 +307,34 @@ class App(QMainWindow):
         print(f'REJECTED')
 
 
-class Config(QDialog):
+class ConfigWindow(QDialog):
     def __init__(self):
         super().__init__()
         self.ui = Ui_settings_window()
         self.ui.setupUi(self)
-        # self.ui.
+        self.ui.web_login.setText(C.DK9_LOGIN)
+        self.ui.web_password.setText(C.DK9_PASSWORD)
+        self.ui.ui_models_num.setValue(C.MODEL_LIST_SIZE)
+        self.ui.zebra_contrast.setValue(C.DK9_COL_DIFF)
+        self.ui.tables_font_size.setValue(C.TABLE_FONT_SIZE)
+        self.ui.colored_web_table.setCheckState(2 if C.DK9_COLORED else 0)
+        self.ui.colored_price_table.setCheckState(2 if C.PRICE_COLORED else 0)
+        # self.ui.buttonBox.button()..accept.connect(self.apply_settings())
+        self.ui.buttonBox.accepted.connect(self.apply_settings)
+
+    def apply_settings(self):
+        print('Applying settings')
+        C.DK9_LOGIN = self.ui.web_login.text()
+        C.DK9_PASSWORD = self.ui.web_password.text()
+        C.MODEL_LIST_SIZE = self.ui.ui_models_num.value()
+        C.DK9_COL_DIFF = self.ui.zebra_contrast.value()
+        C.TABLE_FONT_SIZE = self.ui.tables_font_size.value()
+        C.DK9_COLORED = True if self.ui.colored_web_table.checkState() == 2 else False
+        C.PRICE_COLORED = True if self.ui.colored_price_table.checkState() == 2 else False
+        print(f'{C.DK9_COL_DIFF}')
+        window.init_ui_dynamics()
+        C.precalculate_color_diffs()
+        C.save_user_config()
 
 
 if __name__ == "__main__":
