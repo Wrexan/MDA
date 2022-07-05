@@ -116,7 +116,11 @@ class App(QMainWindow):
         self.update_price_table(model)
         if self.ui.input_search.text() != self.old_search:
             self.old_search = self.ui.input_search.text()
-            self.update_dk9_data(self.old_search)
+            model = (self.old_search.split())[0].lower()
+            if model in C.NOT_FULL_MODEL_NAMES:  # For models with divided name like iPhone | 11
+                self.update_dk9_data(model)
+            else:
+                self.update_dk9_data(self.old_search)
 
     def update_dk9_data(self, search):
         part_table_soup, accessory_table_soup = self.DK9.search(search)
@@ -163,7 +167,7 @@ class App(QMainWindow):
                     for j, txt in enumerate(cells_texts):
                         self.ui.table_left.setItem(new_row_num, j, QTableWidgetItem(txt))
 
-                        if C.PRICE_COLORED:
+                        if C.PRICE_COLORED and txt:
                             bgd = self.Price.DB.colour_map. \
                                 get(self.Price.DB.xf_list[position[0].
                                     cell(i, columns[j]).xf_index].background.pattern_colour_index)

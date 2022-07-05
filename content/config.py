@@ -69,6 +69,7 @@ class Config:
                                      'Red rice', 'Redmi 3', 'Redmi 4x', 'Redmi 6', 'Redmi 7', 'Redmi 7a',
                                      'Redmi 8', 'Redmi 8a', 'Redmi Note 4', 'Redmi Note 5', 'Redmi Note 6',
                                      'Redmi Note 6 Pro', 'Redmi Note 7', 'Redmi Note 8', 'Redmi note 9', 'Redmi Note 6')
+        self.NOT_FULL_MODEL_NAMES = ('ipad', 'iphone')
         self.PRICE_PATH = self.set_desktop_path()
         self.PRICE_PARTIAL_NAME = ('Прайс', '.xls')
 
