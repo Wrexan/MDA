@@ -289,11 +289,12 @@ class App(QMainWindow):
     #     def __init__(self):
     #         super().__init__()
     def open_settings(self):
-        settings_ui = QDialog()
-        settings_ui.win = Ui_settings_window()
-        settings_ui.win.setupUi(self)
+        # settings_ui = QDialog()
+        # settings_ui.win = Ui_settings_window()
+        # settings_ui.win.setupUi(self)
         # settings_ui.buttonBox.accepted.connect()
         # settings_ui.buttonBox.accepted.connect()
+        settings_ui = Config()
         settings_ui.exec_()
         settings_ui.show()
 
@@ -302,6 +303,14 @@ class App(QMainWindow):
 
     def reject(self):
         print(f'REJECTED')
+
+
+class Config(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.ui = Ui_settings_window()
+        self.ui.setupUi(self)
+        # self.ui.
 
 
 if __name__ == "__main__":
