@@ -40,7 +40,7 @@ class App(QMainWindow):
         print('Loading Price')
         self.Price = Price(C.PATH, C.PRICE_PATH, C.PRICE_PARTIAL_NAME, C.PRICE_TRASH_IN_CELLS)
         self.ui.price_name.setText(self.Price.message)
-        # self.update_dk9_data('mi8 lite')
+        self.update_dk9_data('mi8 lite')
 
     def init_ui_statics(self):
         self.ui.input_search.textChanged[str].connect(self.search_and_upd_model_buttons)
@@ -52,6 +52,8 @@ class App(QMainWindow):
                                                        'Цена', 'Шт', 'Дата', 'Где'))
         self.ui.table_accesory.setHorizontalHeaderLabels(('Тип', 'Фирма', 'Модель', 'Примечание',
                                                           'Цена', 'Шт', 'Дата', 'Где'))
+        self.ui.table_parts.doubleClicked.connect(self.copy_table_item)
+        self.ui.table_accesory.doubleClicked.connect(self.copy_table_item)
 
     def init_ui_dynamics(self):
         font = QtGui.QFont()
@@ -223,6 +225,18 @@ class App(QMainWindow):
                     c += 1
             r += 1
 
+    def copy_table_item(self):
+        font = QtGui.QFont()
+        # font.setBold(True)
+        font.setUnderline(True)
+        selected_row = self.sender().selectedItems()
+        text = ''
+        for i in range(4):
+            text = f'{text} {selected_row[i].text()} '
+            # selected_row[i].setSelected(False)
+            selected_row[i].setFont(font)
+        clipboard.setText(text)
+
     @staticmethod
     def clear_layout(layout):
         while layout.count():
@@ -343,6 +357,7 @@ class ConfigWindow(QDialog):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    clipboard = app.clipboard()
     window = App()
     window.show()
     window.ui.input_search.setFocus()
