@@ -7,18 +7,15 @@ class Config:
         self.user_config_name = 'user_config.ini'
         self.price_config_name = 'price_config.ini'
 
-        # ====================MENU====================
-        self.STRICT_SEARCH = 2
-        self.LATIN_SEARCH = 2
-        self.MODEL_LIST_REVERSED = False
-
         self.PATH = os.path.dirname(os.path.realpath(__file__))
         self.DK9_LOGIN = ''
         self.DK9_PASSWORD = ''
 
-        self.MODEL_LIST_SIZE = 5
+        self.MODEL_LIST_SIZE = 15
 
         # tables
+        self.WIDE_MONITOR = False
+        self.TABLE_COLUMN_SIZE_MAX = 160  # best for 1240 font 10
         self.PRICE_COLORED = True  # work slower if True
         self.DK9_COLORED = True  # work slower if True
         self.DK9_COL_DIFF = 14  # difference of odd/even bg
@@ -27,8 +24,8 @@ class Config:
         # ============================================
         # =============APP SETTINGS====================
         # ====================MENU====================
-        self.STRICT_SEARCH = 2
-        self.LATIN_SEARCH = 2
+        self.STRICT_SEARCH = True
+        self.LATIN_SEARCH = True
         self.MODEL_LIST_REVERSED = False
         # ====================PRICE====================
         self.STRICT_SEARCH_LEN = 2  # start search after 2 symbols
@@ -127,10 +124,12 @@ class Config:
             self.DK9_LOGIN = config['WEB DATABASE']['DK9_LOGIN']
             self.DK9_PASSWORD = config['WEB DATABASE']['DK9_PASSWORD']
             self.MODEL_LIST_SIZE = int(config['SETTINGS']['MODEL_LIST_SIZE'])
-            self.PRICE_COLORED = bool(config['SETTINGS']['PRICE_COLORED'])
-            self.DK9_COLORED = bool(config['SETTINGS']['DK9_COLORED'])
+            self.PRICE_COLORED = True if config['SETTINGS']['PRICE_COLORED'] == 'True' else False
+            self.DK9_COLORED = True if config['SETTINGS']['DK9_COLORED'] == 'True' else False
             self.DK9_COL_DIFF = int(config['SETTINGS']['DK9_COL_DIFF'])
             self.TABLE_FONT_SIZE = int(config['SETTINGS']['TABLE_FONT_SIZE'])
+            self.WIDE_MONITOR = True if config['SETTINGS']['WIDE_MONITOR'] == 'True' else False
+            self.TABLE_COLUMN_SIZE_MAX = int(config['SETTINGS']['TABLE_COLUMN_SIZE_MAX'])
         else:
             self.save_user_config()
 
@@ -159,6 +158,8 @@ class Config:
         config['SETTINGS']['DK9_COLORED'] = str(self.DK9_COLORED)
         config['SETTINGS']['DK9_COL_DIFF'] = str(self.DK9_COL_DIFF)
         config['SETTINGS']['TABLE_FONT_SIZE'] = str(self.TABLE_FONT_SIZE)
+        config['SETTINGS']['WIDE_MONITOR'] = str(self.WIDE_MONITOR)
+        config['SETTINGS']['TABLE_COLUMN_SIZE_MAX'] = str(self.TABLE_COLUMN_SIZE_MAX)
 
         with open(self.user_config_name, 'w') as conf:
             config.write(conf)

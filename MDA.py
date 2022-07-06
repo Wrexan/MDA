@@ -10,14 +10,13 @@ from content.price import Price
 from content.window_main import Ui_MainWindow
 from content.window_settings import Ui_settings_window
 
-try:
-    # Включите в блок try/except, если вы также нацелены на Mac/Linux
-    from PyQt5.QtWinExtras import QtWin  # !!!
-
-    myappid = 'mycompany.myproduct.subproduct.version'  # !!!
-    QtWin.setCurrentProcessExplicitAppUserModelID(myappid)  # !!!
-except ImportError:
-    pass
+# try:
+#     # Включите в блок try/except, если вы также нацелены на Mac/Linux
+#     from PyQt5.QtWinExtras import QtWin  # !!!
+#     myappid = 'mycompany.myproduct.subproduct.version'  # !!!
+#     QtWin.setCurrentProcessExplicitAppUserModelID(myappid)  # !!!
+# except ImportError:
+#     pass
 
 C = Config()
 
@@ -83,6 +82,12 @@ class App(QMainWindow):
         self.ui.table_left.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.ui.table_parts.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.ui.table_accesory.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        if not C.WIDE_MONITOR:
+            self.ui.table_parts.horizontalHeader().setMaximumSectionSize(C.TABLE_COLUMN_SIZE_MAX)
+            self.ui.table_accesory.horizontalHeader().setMaximumSectionSize(C.TABLE_COLUMN_SIZE_MAX)
+        else:
+            self.ui.table_parts.horizontalHeader().setMaximumSectionSize(2000)
+            self.ui.table_accesory.horizontalHeader().setMaximumSectionSize(2000)
 
     def search_on_strict_change(self, state):
         C.STRICT_SEARCH = state
@@ -221,29 +226,33 @@ class App(QMainWindow):
             row_palette = None
             if repr(dk9_row)[0] != "'":
                 # print(dk9_row)
-                if dk9_row.attrs:
+                if C.DK9_COLORED and dk9_row.attrs:
                     if 'style' in dk9_row.attrs:
                         style = str(dk9_row['style'])
                         row_palette = C.DK9_BG_COLORS[style[style.find(':') + 1: style.find(';')]]
                 c = 0
                 table.insertRow(r)
                 for dk9_td in dk9_row.findAll('td'):
+                    # if c == 3:
+                    #     print(f'{dk9_td.string} {}')
                     table.setItem(r, c, QTableWidgetItem(dk9_td.string))
-                    if row_palette:
-                        table.item(r, c). \
-                            setBackground(QtGui.QColor(row_palette[0], row_palette[1], row_palette[2]))
-                    elif dk9_td.attrs and 'style' in dk9_td.attrs:
-                        style = str(dk9_td['style'])
-                        td_palette = C.DK9_BG_COLORS[style[style.find(':') + 1: style.find(';')]]
-                        table.item(r, c). \
-                            setBackground(QtGui.QColor(td_palette[0], td_palette[1], td_palette[2]))
-                    # if 'align' in dk9_td.attrs:
-                    #     align = str(dk9_td['align'])
-                    #     if align == 'center':
-                    #         self.ui.table_parts.item(r, c).setTextAlignment(1)
-                    else:
-                        dbgc = def_bg_color1 if r % 2 else def_bg_color2
-                        table.item(r, c).setBackground(QtGui.QColor(dbgc[0], dbgc[1], dbgc[2]))
+                    table.item(r, c).setToolTip(dk9_td.string)
+                    if C.DK9_COLORED:
+                        if row_palette:
+                            table.item(r, c). \
+                                setBackground(QtGui.QColor(row_palette[0], row_palette[1], row_palette[2]))
+                        elif dk9_td.attrs and 'style' in dk9_td.attrs:
+                            style = str(dk9_td['style'])
+                            td_palette = C.DK9_BG_COLORS[style[style.find(':') + 1: style.find(';')]]
+                            table.item(r, c). \
+                                setBackground(QtGui.QColor(td_palette[0], td_palette[1], td_palette[2]))
+                        # if 'align' in dk9_td.attrs:
+                        #     align = str(dk9_td['align'])
+                        #     if align == 'center':
+                        #         self.ui.table_parts.item(r, c).setTextAlignment(1)
+                        else:
+                            dbgc = def_bg_color1 if r % 2 else def_bg_color2
+                            table.item(r, c).setBackground(QtGui.QColor(dbgc[0], dbgc[1], dbgc[2]))
                     c += 1
             r += 1
 
@@ -364,6 +373,8 @@ class ConfigWindow(QDialog):
         self.ui.tables_font_size.setValue(C.TABLE_FONT_SIZE)
         self.ui.colored_web_table.setCheckState(2 if C.DK9_COLORED else 0)
         self.ui.colored_price_table.setCheckState(2 if C.PRICE_COLORED else 0)
+        self.ui.wide_monitor.setCheckState(2 if C.WIDE_MONITOR else 0)
+        self.ui.column_width_max.setValue(C.TABLE_COLUMN_SIZE_MAX)
         # self.ui.buttonBox.button()..accept.connect(self.apply_settings())
         self.ui.buttonBox.accepted.connect(self.apply_settings)
 
@@ -376,6 +387,8 @@ class ConfigWindow(QDialog):
         C.TABLE_FONT_SIZE = self.ui.tables_font_size.value()
         C.DK9_COLORED = True if self.ui.colored_web_table.checkState() == 2 else False
         C.PRICE_COLORED = True if self.ui.colored_price_table.checkState() == 2 else False
+        C.WIDE_MONITOR = True if self.ui.wide_monitor.checkState() == 2 else False
+        C.TABLE_COLUMN_SIZE_MAX = self.ui.column_width_max.value()
         # print(f'{C.DK9_COL_DIFF}')
         window.init_ui_dynamics()
         C.precalculate_color_diffs()
