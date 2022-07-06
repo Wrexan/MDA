@@ -83,9 +83,11 @@ class App(QMainWindow):
         self.ui.table_parts.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.ui.table_accesory.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         if not C.WIDE_MONITOR:
+            self.ui.table_left.horizontalHeader().setMaximumSectionSize(int(C.TABLE_COLUMN_SIZE_MAX * 1.4))
             self.ui.table_parts.horizontalHeader().setMaximumSectionSize(C.TABLE_COLUMN_SIZE_MAX)
             self.ui.table_accesory.horizontalHeader().setMaximumSectionSize(C.TABLE_COLUMN_SIZE_MAX)
         else:
+            self.ui.table_left.horizontalHeader().setMaximumSectionSize(2000)
             self.ui.table_parts.horizontalHeader().setMaximumSectionSize(2000)
             self.ui.table_accesory.horizontalHeader().setMaximumSectionSize(2000)
 
@@ -176,8 +178,10 @@ class App(QMainWindow):
             # print(row[col[0] - 1, col[1] - 1, col[2] - 1])
             if row_len < columns[-1]:  # If row shorter, than we expect, then place all row in 0 column
                 # print('SHORT row:' + str(row))
+                cell_text = self.list_to_string(row)
                 self.ui.table_left.insertRow(new_row_num)
-                self.ui.table_left.setItem(new_row_num, 0, QTableWidgetItem(self.list_to_string(row)))
+                self.ui.table_left.setItem(new_row_num, 0, QTableWidgetItem(cell_text))
+                self.ui.table_left.item(new_row_num, 0).setToolTip(cell_text)
                 return
             else:
 
@@ -195,6 +199,7 @@ class App(QMainWindow):
                     self.ui.table_left.insertRow(new_row_num)
                     for j, txt in enumerate(cells_texts):
                         self.ui.table_left.setItem(new_row_num, j, QTableWidgetItem(txt))
+                        self.ui.table_left.item(new_row_num, j).setToolTip(txt)
 
                         if C.PRICE_COLORED and txt:
                             bgd = self.Price.DB.colour_map. \
