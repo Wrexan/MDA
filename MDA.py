@@ -10,6 +10,15 @@ from content.price import Price
 from content.window_main import Ui_MainWindow
 from content.window_settings import Ui_settings_window
 
+try:
+    # Включите в блок try/except, если вы также нацелены на Mac/Linux
+    from PyQt5.QtWinExtras import QtWin  # !!!
+
+    myappid = 'mycompany.myproduct.subproduct.version'  # !!!
+    QtWin.setCurrentProcessExplicitAppUserModelID(myappid)  # !!!
+except ImportError:
+    pass
+
 C = Config()
 
 
@@ -17,7 +26,7 @@ class App(QMainWindow):
     def __init__(self):
         super().__init__()
         # self.setFocus()
-        # self.setWindowIcon(QtGui.QIcon(f'{C.PATH}/content/start.png'))
+        # self.setWindowIcon(QtGui.QIcon(f'content/start_test.ico'))
         qApp.focusChanged.connect(self.on_focusChanged)
 
         # self.PRICE_DB = xlrd.open_workbook(sys.path[0] + '\\' + PRICE_PATH + PRICE_NAME, formatting_info=True)
@@ -40,7 +49,10 @@ class App(QMainWindow):
         print('Loading Price')
         self.Price = Price(C.PATH, C.PRICE_PATH, C.PRICE_PARTIAL_NAME, C.PRICE_TRASH_IN_CELLS)
         self.ui.price_name.setText(self.Price.message)
-        self.update_dk9_data('mi8 lite')
+        self.thread = QtCore.QThread
+        self.worker = None  # Worker(self.update_dk9_data, 'mi8 lite')
+        # self.thread.start(self.worker)
+        # self.update_dk9_data('mi8 lite')
 
     def init_ui_statics(self):
         self.ui.input_search.textChanged[str].connect(self.search_and_upd_model_buttons)
@@ -120,27 +132,36 @@ class App(QMainWindow):
             self.old_search = self.ui.input_search.text()
             model = (self.old_search.split())[0].lower()
             if model in C.NOT_FULL_MODEL_NAMES:  # For models with divided name like iPhone | 11
-                self.update_dk9_data(model)
+                curr_model = model
+                # self.update_dk9_data(model)
             else:
-                self.update_dk9_data(self.old_search)
+                curr_model = self.old_search
+                # self.update_dk9_data(self.old_search)
+            self.worker = Worker(self.DK9.search, curr_model)
+            self.worker.signals.result.connect(self.update_dk9_data)
+            # self.worker.signals.finished.connect(self.update_dk9_data)
+            # self.worker.signals.progress.connect(self.progress_fn)
+            self.thread.start(self.worker)
 
-    def update_dk9_data(self, search):
-        part_table_soup, accessory_table_soup = self.DK9.search(search)
-        self.fill_table_from_soup(part_table_soup, self.ui.table_parts, C.DK9_BG_P_COLOR1, C.DK9_BG_P_COLOR2)
-        self.fill_table_from_soup(accessory_table_soup, self.ui.table_accesory, C.DK9_BG_A_COLOR1, C.DK9_BG_A_COLOR2)
+    def update_dk9_data(self, table_soups):
+        # self.worker = Worker(self.DK9.search, search)
+        # self.thread.start(self.worker)
+        # part_table_soup, accessory_table_soup = *self.worker.result  #self.DK9.search(search)
+        self.fill_table_from_soup(table_soups[0], self.ui.table_parts, C.DK9_BG_P_COLOR1, C.DK9_BG_P_COLOR2)
+        self.fill_table_from_soup(table_soups[1], self.ui.table_accesory, C.DK9_BG_A_COLOR1, C.DK9_BG_A_COLOR2)
 
     def update_price_table(self, model):  # 'xiaomi mi a2 m1804d2sg'
         position = self.models[model]  # [Sheet 27:<XIAOMI>, 813] - sheet, row
-        print(f'{position=}')
+        # print(f'{position=}')
         # Take needed columns for exact model
         if position[0].name in C.PRICE_SEARCH_COLUMN_NUMBERS:
             columns = C.PRICE_SEARCH_COLUMN_NUMBERS[position[0].name]  # [2, 4, 5]
         else:
             columns = C.PRICE_SEARCH_COLUMN_NUMBERS['+']
-        print(f'{columns=}')
+        # print(f'{columns=}')
         row = Price.get_row_in_pos(position)
         row_len = len(row)
-        print(f'{row=}')
+        # print(f'{row=}')
 
         new_row_num = 0
         self.ui.table_left.setRowCount(0)
@@ -148,7 +169,7 @@ class App(QMainWindow):
         for i in range(position[1], position[0].nrows - 1):
             # print(row[col[0] - 1, col[1] - 1, col[2] - 1])
             if row_len < columns[-1]:  # If row shorter, than we expect, then place all row in 0 column
-                print('SHORT row:' + str(row))
+                # print('SHORT row:' + str(row))
                 self.ui.table_left.insertRow(new_row_num)
                 self.ui.table_left.setItem(new_row_num, 0, QTableWidgetItem(self.list_to_string(row)))
                 return
@@ -315,6 +336,7 @@ class App(QMainWindow):
         # settings_ui.buttonBox.accepted.connect()
         # settings_ui.buttonBox.accepted.connect()
         settings_ui = ConfigWindow()
+        settings_ui.setWindowIcon(QtGui.QIcon(f'content/start_test.png'))
         settings_ui.exec_()
         settings_ui.show()
 
@@ -327,7 +349,11 @@ class App(QMainWindow):
 
 class ConfigWindow(QDialog):
     def __init__(self):
-        super().__init__()
+        super().__init__(None,
+                         # QtCore.Qt.WindowSystemMenuHint |
+                         # QtCore.Qt.WindowTitleHint |
+                         QtCore.Qt.WindowCloseButtonHint
+                         )
         self.ui = Ui_settings_window()
         self.ui.setupUi(self)
         self.ui.web_login.setText(C.DK9_LOGIN)
@@ -349,16 +375,49 @@ class ConfigWindow(QDialog):
         C.TABLE_FONT_SIZE = self.ui.tables_font_size.value()
         C.DK9_COLORED = True if self.ui.colored_web_table.checkState() == 2 else False
         C.PRICE_COLORED = True if self.ui.colored_price_table.checkState() == 2 else False
-        print(f'{C.DK9_COL_DIFF}')
+        # print(f'{C.DK9_COL_DIFF}')
         window.init_ui_dynamics()
         C.precalculate_color_diffs()
         C.save_user_config()
 
 
+class Worker(QtCore.QThread):
+    def __init__(self, func, *args):
+        super(Worker, self).__init__()
+        self.func = func
+        self.args = args
+        self.signals = WorkerSignals()
+
+        # Add the callback to our kwargs
+        # self.kwargs['progress_callback'] = self.signals.progress
+
+    @QtCore.pyqtSlot()
+    def run(self):
+        try:
+            result = self.func(*self.args)
+        except Exception as err:
+            # traceback.print_exc()
+            exctype, value = sys.exc_info()[:2]
+            self.signals.error.emit((exctype, value, err))  # traceback.format_exc()))
+        else:
+            self.signals.result.emit(result)  # Return the result of the processing
+        finally:
+            self.signals.finished.emit()  # Done
+
+
+class WorkerSignals(QtCore.QObject):
+    finished = QtCore.pyqtSignal()
+    error = QtCore.pyqtSignal(tuple)
+    result = QtCore.pyqtSignal(object)
+    progress = QtCore.pyqtSignal(int)
+
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    app.setWindowIcon(QtGui.QIcon(f'content/start_test.png'))
     clipboard = app.clipboard()
     window = App()
+    window.setWindowIcon(QtGui.QIcon(f'content/start_test.png'))
     window.show()
     window.ui.input_search.setFocus()
     sys.exit(app.exec_())
