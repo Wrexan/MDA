@@ -1,3 +1,5 @@
+import encodings.mac_iceland
+
 import requests
 from bs4 import BeautifulSoup
 
@@ -31,6 +33,7 @@ class DK9Parser:
                 headers=self.HEADERS)
             # soup = BeautifulSoup(r.content, 'html.parser')
             # print(f'{"*" * 80}\nSOUP_1_ANS={soup}')
+            # encodings.mac_iceland.decoding_table
             # ===============================================================================================
             r = self.SESSION.get(self.SEARCH_URL, headers=self.HEADERS)
             self.validation_data = self.get_validation_data(BeautifulSoup(r.content, 'html.parser'))
@@ -49,7 +52,7 @@ class DK9Parser:
                 self.SEARCH_URL,
                 data={**data_to_send, **self.validation_data},
                 headers=self.HEADERS)
-            soup = BeautifulSoup(r.content, 'html.parser')
+            soup = BeautifulSoup(r.content, 'html.parser', from_encoding='utf-8')
             # print(f'{"*" * 80}\nSOUP_3_DEF={soup.find("table", attrs={"id": "ctl00_ContentPlaceHolder1_GridView1"})}')
             part_table_soup = soup.find("table", attrs={"id": "ctl00_ContentPlaceHolder1_GridView1"})
             # self.fill_table_from_soup(part_table_soup, self.ui.table_parts, DK9_BG_P_COLOR1, DK9_BG_P_COLOR2)
