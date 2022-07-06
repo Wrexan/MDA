@@ -107,6 +107,7 @@ class App(QMainWindow):
         lay.addItem(sp)
         le = len(self.models)
         self.model_buttons = {}
+        self.current_model_button_index = 0
         if C.MODEL_LIST_REVERSED:
             models_list = reversed((self.models.keys()))
             # models_list = reversed(list(self.models.keys()))
@@ -178,7 +179,7 @@ class App(QMainWindow):
                 # if cell is out of row, text will be empty
                 cells_texts = []
                 for c in range(len(columns)):
-                    if columns[c] <= row_len:
+                    if columns[c] < row_len:
                         cells_texts.append(str(row[columns[c]]))
                     else:
                         cells_texts.append('')
@@ -289,7 +290,7 @@ class App(QMainWindow):
 
     def keyPressEvent(self, event) -> None:
         # print(f'KEYPRESS: {event.key()}')
-        if self.models:
+        if self.models and 0 <= self.current_model_button_index < len(self.model_buttons):
             if event.key() in (Qt.Key_Return, Qt.Key_Enter):
                 self.model_buttons[self.current_model_button_index].click()
             elif event.key() == Qt.Key_Up:
