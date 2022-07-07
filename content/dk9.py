@@ -20,27 +20,35 @@ class DK9Parser:
             '__VIEWSTATEGENERATOR': soup.find('input', attrs={'id': '__VIEWSTATEGENERATOR'})['value'],
             '__EVENTVALIDATION': soup.find('input', attrs={'id': '__EVENTVALIDATION'})['value']}
 
-    def login(self):
+    def login(self, progress_callback):
+        progress_callback.emit(10)
         try:
             self.SESSION = requests.Session()
             r = self.SESSION.get(self.LOGIN_URL, headers=self.HEADERS)
+            progress_callback.emit(20)
             soup = BeautifulSoup(r.content, 'html.parser')
+            progress_callback.emit(40)
             # print(f'{"*"*80}\nSOUP_LOGIN={soup}')
             # ===============================================================================================
             self.SESSION.post(
                 self.LOGIN_URL,
                 data={**self.LOGIN_DATA, **self.get_validation_data(soup)},
                 headers=self.HEADERS)
+            progress_callback.emit(60)
             # soup = BeautifulSoup(r.content, 'html.parser')
             # print(f'{"*" * 80}\nSOUP_1_ANS={soup}')
             # encodings.mac_iceland.decoding_table
             # ===============================================================================================
             r = self.SESSION.get(self.SEARCH_URL, headers=self.HEADERS)
+            progress_callback.emit(90)
             self.validation_data = self.get_validation_data(BeautifulSoup(r.content, 'html.parser'))
+            progress_callback.emit(100)
         except Exception as err:
             print(f'ERROR while trying to login {self.LOGIN_URL} -> {err}')
 
-    def search(self, model: str) -> tuple:
+    def search(self, model: str, progress_callback) -> tuple:
+        print(f'Searching: {model}')
+        progress_callback.emit(10)
         try:
             # print(f'{"*"*80}\nSOUP_2_DEF={soup.find("div", attrs={"id": "ctl00_ContentPlaceHolder1_UpdatePanel2"})}')
             # ===============================================================================================
@@ -52,9 +60,12 @@ class DK9Parser:
                 self.SEARCH_URL,
                 data={**data_to_send, **self.validation_data},
                 headers=self.HEADERS)
+            progress_callback.emit(20)
             soup = BeautifulSoup(r.content, 'html.parser', from_encoding='utf-8')
+            progress_callback.emit(50)
             # print(f'{"*" * 80}\nSOUP_3_DEF={soup.find("table", attrs={"id": "ctl00_ContentPlaceHolder1_GridView1"})}')
             part_table_soup = soup.find("table", attrs={"id": "ctl00_ContentPlaceHolder1_GridView1"})
+            progress_callback.emit(60)
             # self.fill_table_from_soup(part_table_soup, self.ui.table_parts, DK9_BG_P_COLOR1, DK9_BG_P_COLOR2)
             accessory_table_soup = soup.find("table", attrs={"id": "ctl00_ContentPlaceHolder1_GridView2"})
             # self.fill_table_from_soup(accessory_table_soup, self.ui.table_accesory, DK9_BG_A_COLOR1, DK9_BG_A_COLOR2)

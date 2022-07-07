@@ -1,6 +1,6 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, \
-    QSpacerItem, QSizePolicy, QTableWidgetItem, QHeaderView, qApp, QDialog
+    QSpacerItem, QSizePolicy, QTableWidgetItem, QHeaderView, qApp, QDialog, QWidget, QLabel, QHBoxLayout
 from PyQt5 import QtCore, QtGui
 from PyQt5.Qt import Qt
 
@@ -41,15 +41,15 @@ class App(QMainWindow):
         self.SESSION = None
         self.validation_data = None
         self.old_search = ''
+        self.thread = QtCore.QThread
+        self.worker = None  # Worker(self.update_dk9_data, 'mi8 lite')
         # print('Creating DK9')
         self.DK9 = DK9Parser(C.DK9_LOGIN_URL, C.DK9_SEARCH_URL, C.DK9_HEADERS, C.DK9_LOGIN_DATA)
         print('Login to DK9')
-        self.DK9.login()
+        self.login_dk9()
         print('Loading Price')
         self.Price = Price(C.PATH, C.PRICE_PATH, C.PRICE_PARTIAL_NAME, C.PRICE_TRASH_IN_CELLS)
         self.ui.price_name.setText(self.Price.message)
-        self.thread = QtCore.QThread
-        self.worker = None  # Worker(self.update_dk9_data, 'mi8 lite')
         # self.thread.start(self.worker)
         # self.update_dk9_data('mi8 lite')
 
@@ -63,6 +63,25 @@ class App(QMainWindow):
                                                        'Цена', 'Шт', 'Дата', 'Где'))
         self.ui.table_accesory.setHorizontalHeaderLabels(('Тип', 'Фирма', 'Модель', 'Примечание',
                                                           'Цена', 'Шт', 'Дата', 'Где'))
+
+        # widget = QWidget()
+        # self.setCentralWidget(widget)
+        # pixmap1 = QtGui.QPixmap('/content/start_test.png')
+        # # pixmap1 = pixmap1.scaledToWidth(self.windowsize.width())
+        # pixmap1 = pixmap1.scaledToWidth(100)
+        # self.image = QLabel()
+        # self.image.setPixmap(pixmap1)
+
+        # layout_box = QHBoxLayout(widget)
+        # layout_box.setContentsMargins(0, 0, 0, 0)
+        # layout_box.addWidget(self.image)
+
+        # pixmap2 = QtGui.QPixmap('/content/start_test.png')
+        # self.image2 = QLabel(self.ui.table_left)
+        # self.image2.setPixmap(pixmap2)
+        # self.image2.setFixedSize(pixmap2.size())
+        # self.ui.table_left.addWidget(self.image2)
+
         self.ui.table_parts.doubleClicked.connect(self.copy_table_item)
         self.ui.table_accesory.doubleClicked.connect(self.copy_table_item)
 
@@ -131,12 +150,19 @@ class App(QMainWindow):
             lay.addWidget(self.model_buttons[num], 0)
             le -= 1
 
+    def login_dk9(self):
+        self.worker = Worker(self.DK9.login)
+        # self.worker.signals.result.connect(self.update_dk9_data)
+        self.worker.signals.progress.connect(self.load_progress)
+        self.worker.signals.finished.connect(self.finished)
+
+        self.thread.start(self.worker)
     # @QtCore.pyqtSlot
     def scheduler(self):
         # print('Start sheduler')
         model = self.sender().text()
         self.update_price_table(model)
-        if self.ui.input_search.text() != self.old_search:
+        if self.ui.input_search.text() and self.ui.input_search.text() != self.old_search:
             self.old_search = self.ui.input_search.text()
             model = (self.old_search.split())[0].lower()
             if model in C.NOT_FULL_MODEL_NAMES:  # For models with divided name like iPhone | 11
@@ -145,18 +171,23 @@ class App(QMainWindow):
             else:
                 curr_model = self.old_search
                 # self.update_dk9_data(self.old_search)
+
             self.worker = Worker(self.DK9.search, curr_model)
             self.worker.signals.result.connect(self.update_dk9_data)
-            # self.worker.signals.finished.connect(self.update_dk9_data)
-            # self.worker.signals.progress.connect(self.progress_fn)
+            self.worker.signals.progress.connect(self.load_progress)
+            self.worker.signals.finished.connect(self.finished)
+
             self.thread.start(self.worker)
 
     def update_dk9_data(self, table_soups):
         # self.worker = Worker(self.DK9.search, search)
         # self.thread.start(self.worker)
         # part_table_soup, accessory_table_soup = *self.worker.result  #self.DK9.search(search)
+        self.load_progress(70)
         self.fill_table_from_soup(table_soups[0], self.ui.table_parts, C.DK9_BG_P_COLOR1, C.DK9_BG_P_COLOR2)
+        self.load_progress(85)
         self.fill_table_from_soup(table_soups[1], self.ui.table_accesory, C.DK9_BG_A_COLOR1, C.DK9_BG_A_COLOR2)
+        self.load_progress(100)
 
     def update_price_table(self, model):  # 'xiaomi mi a2 m1804d2sg'
         position = self.models[model]  # [Sheet 27:<XIAOMI>, 813] - sheet, row
@@ -219,6 +250,12 @@ class App(QMainWindow):
                     # print(row[col[0]-1, col[1]-1, col[2]-1])
                 else:
                     return
+
+    def load_progress(self, progress):
+        self.ui.web_load_progress_bar.setValue(progress)
+
+    def finished(self):
+        self.ui.web_load_progress_bar.setValue(0)
 
     @staticmethod
     def fill_table_from_soup(soup, table, def_bg_color1, def_bg_color2):
@@ -401,21 +438,23 @@ class ConfigWindow(QDialog):
 
 
 class Worker(QtCore.QThread):
-    def __init__(self, func, *args):
+    def __init__(self, func, *args, **kwargs):
         super(Worker, self).__init__()
         self.func = func
         self.args = args
+        self.kwargs = kwargs
         self.signals = WorkerSignals()
 
         # Add the callback to our kwargs
-        # self.kwargs['progress_callback'] = self.signals.progress
+        self.kwargs['progress_callback'] = self.signals.progress
 
     @QtCore.pyqtSlot()
     def run(self):
         try:
-            result = self.func(*self.args)
+            result = self.func(*self.args, **self.kwargs)
         except Exception as err:
             # traceback.print_exc()
+            print(err)
             exctype, value = sys.exc_info()[:2]
             self.signals.error.emit((exctype, value, err))  # traceback.format_exc()))
         else:
