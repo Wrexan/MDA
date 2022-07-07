@@ -49,7 +49,12 @@ class App(QMainWindow):
     def init_ui_statics(self):
         self.ui.input_search.textChanged[str].connect(self.search_and_upd_model_buttons)
         self.ui.chb_search_strict.stateChanged[int].connect(self.search_on_strict_change)
+        self.ui.chb_search_strict.setToolTip('Запрещает поиск по одному символу.')
+        self.ui.smart_search.stateChanged[int].connect(self.search_smart_change)
+        self.ui.smart_search.setToolTip('Применяет к запросу фильтр и выдает более релевантный результат.\n'
+                                        'Отключение позволит найти всё, но может приводить к неожиданным последствиям.')
         self.ui.chb_search_eng.stateChanged[int].connect(self.search_latin_change)
+        self.ui.chb_search_eng.setToolTip('Переводит символы алфавита в латиницу нижнего регистра.')
         self.ui.settings_button.clicked.connect(self.open_settings)
 
         self.ui.table_left.setHorizontalHeaderLabels(('', 'Виды работ', 'Цена', 'Прим', '', ''))
@@ -91,6 +96,10 @@ class App(QMainWindow):
         C.STRICT_SEARCH = state
         self.search_and_upd_model_buttons(self.ui.input_search.text())
 
+    def search_smart_change(self, state):
+        C.SMART_SEARCH = state
+        self.search_and_upd_model_buttons(self.ui.input_search.text())
+
     def search_latin_change(self, state):
         C.LATIN_SEARCH = state
         self.search_and_upd_model_buttons(self.ui.input_search.text())
@@ -111,7 +120,7 @@ class App(QMainWindow):
             return
         # print(f'{len(search_req)=} {C.STRICT_SEARCH=}')
         search_req = search_req.lower()
-        self.models = self.Price.search_price_models(search_req, C.MODEL_LIST_SIZE)
+        self.models = self.Price.search_price_models(search_req, C.MODEL_LIST_SIZE, C.SMART_SEARCH)
         if self.models:
             self.upd_model_buttons(lay)
         else:

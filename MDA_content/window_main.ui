@@ -253,7 +253,7 @@
                 <item>
                  <widget class="QCheckBox" name="chb_search_strict">
                   <property name="text">
-                   <string>Строго</string>
+                   <string>Отсечка</string>
                   </property>
                   <property name="checked">
                    <bool>true</bool>
@@ -261,12 +261,12 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="QCheckBox" name="checkBox">
+                 <widget class="QCheckBox" name="smart_search">
                   <property name="enabled">
                    <bool>true</bool>
                   </property>
                   <property name="text">
-                   <string>Умно</string>
+                   <string>Фильтры</string>
                   </property>
                   <property name="checked">
                    <bool>true</bool>

@@ -27,6 +27,7 @@ class Config:
         # =============APP SETTINGS====================
         # ====================MENU====================
         self.STRICT_SEARCH = True
+        self.SMART_SEARCH = True
         self.LATIN_SEARCH = True
         self.MODEL_LIST_REVERSED = False
         # ====================PRICE====================
