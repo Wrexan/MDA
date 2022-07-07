@@ -9,6 +9,7 @@ from content.dk9 import DK9Parser
 from content.price import Price
 from content.window_main import Ui_MainWindow
 from content.window_settings import Ui_settings_window
+from content.window_simple import Ui_Dialog
 
 # try:
 #     # Включите в блок try/except, если вы также нацелены на Mac/Linux
@@ -84,6 +85,7 @@ class App(QMainWindow):
 
         self.ui.table_parts.doubleClicked.connect(self.copy_table_item)
         self.ui.table_accesory.doubleClicked.connect(self.copy_table_item)
+        self.ui.help.clicked.connect(self.open_help)
 
     def init_ui_dynamics(self):
         font = QtGui.QFont()
@@ -125,6 +127,8 @@ class App(QMainWindow):
         self.models = self.Price.search_price_models(search_req, C.MODEL_LIST_SIZE)
         if self.models:
             self.upd_model_buttons(lay)
+        else:
+            self.model_buttons = {}
 
     def upd_model_buttons(self, lay):
         # lay = self.ui.scroll_models_layout.layout()
@@ -369,6 +373,9 @@ class App(QMainWindow):
             else:
                 self.ui.tab_widget.setCurrentIndex(0)
 
+        self.ui.input_search.setFocus()
+        self.ui.input_search.selectAll()
+
     # @staticmethod
     # def close_cmd():
     #     WMI = GetObject('winmgmts:')
@@ -388,7 +395,7 @@ class App(QMainWindow):
         # settings_ui.buttonBox.accepted.connect()
         # settings_ui.buttonBox.accepted.connect()
         settings_ui = ConfigWindow()
-        settings_ui.setWindowIcon(QtGui.QIcon(f'content/start_test.png'))
+        settings_ui.setWindowIcon(QtGui.QIcon(f'start_test.ico'))
         settings_ui.exec_()
         settings_ui.show()
 
@@ -397,6 +404,25 @@ class App(QMainWindow):
 
     def reject(self):
         print(f'REJECTED')
+
+    def open_help(self):
+        help_ui = HelpWindow()
+        help_ui.setWindowIcon(QtGui.QIcon(f'start_test.ico'))
+        help_ui.exec_()
+        help_ui.show()
+
+
+
+class HelpWindow(QDialog):
+    def __init__(self):
+        super().__init__()
+        file = open('Инструкция.txt', 'r', encoding='utf-8')
+        with file:
+            text = file.read()
+
+        self.ui = Ui_Dialog()
+        self.ui.setupUi(self)
+        self.ui.text = text
 
 
 class ConfigWindow(QDialog):
@@ -472,10 +498,10 @@ class WorkerSignals(QtCore.QObject):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    app.setWindowIcon(QtGui.QIcon(f'content/start_test.png'))
+    app.setWindowIcon(QtGui.QIcon(f'start_test.ico'))
     clipboard = app.clipboard()
     window = App()
-    window.setWindowIcon(QtGui.QIcon(f'content/start_test.png'))
+    window.setWindowIcon(QtGui.QIcon(f'start_test.ico'))
     window.show()
     window.ui.input_search.setFocus()
     sys.exit(app.exec_())
