@@ -4,16 +4,20 @@ import configparser
 
 class Config:
     def __init__(self):
-        self.CONTENT_PATH = 'MDA_content/'
-        self.LOGO = f'{self.CONTENT_PATH}MDA.ico'
-        self.user_config_name = f'{self.CONTENT_PATH}user_config.ini'
-        self.price_config_name = 'price_config.ini'
+        self.PATH = f'{os.path.dirname(os.path.dirname(os.path.realpath(__file__)))}\\'
+        self.CONTENT_PATH = f'{self.PATH}MDA_content\\'
 
-        self.PATH = os.path.dirname(os.path.realpath(__file__))
+        self.LOGO = f'{self.CONTENT_PATH}MDA.ico'
+        self.USER_CONFIG = f'{self.CONTENT_PATH}user_config.ini'
+        self.HELP = f'{self.CONTENT_PATH}Инструкция.txt'
+
+        self.PRICE_PATH = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop\\')
+        self.PRICE_CONFIG = f'{self.CONTENT_PATH}price_config.ini'
+
         self.DK9_LOGIN = ''
         self.DK9_PASSWORD = ''
 
-        self.MODEL_LIST_SIZE = 15
+        self.MODEL_LIST_SIZE = 5
 
         # tables
         self.WIDE_MONITOR = False
@@ -70,7 +74,6 @@ class Config:
                                      'Redmi 8', 'Redmi 8a', 'Redmi Note 4', 'Redmi Note 5', 'Redmi Note 6',
                                      'Redmi Note 6 Pro', 'Redmi Note 7', 'Redmi Note 8', 'Redmi note 9', 'Redmi Note 6')
         self.NOT_FULL_MODEL_NAMES = ('ipad', 'iphone')
-        self.PRICE_PATH = self.set_desktop_path()
         self.PRICE_PARTIAL_NAME = ('Прайс', '.xls')
 
         # ====================DK9====================
@@ -114,9 +117,9 @@ class Config:
             self.PRICE_SEARCH_COLUMN_NUMBERS[list_name] = *(ord(letter.upper())-65 for letter in columns),
         # print(self.PRICE_SEARCH_COLUMN_NUMBERS)
 
-    @staticmethod
-    def set_desktop_path():
-        return os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop\\')
+    # @staticmethod
+    # def set_desktop_path():
+    #     return os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop\\')
 
     def precalculate_color_diffs(self):
         self.DK9_BG_P_COLOR2 = self._precalculate_color_diff(self.DK9_BG_P_COLOR1)
@@ -130,9 +133,9 @@ class Config:
 
     def handle_config(self):
         config = configparser.ConfigParser()
-        config.read(f"{self.user_config_name}")
+        config.read(self.USER_CONFIG)
         if 'SETTINGS' in config:
-            print(f'Reading {self.user_config_name}')
+            print(f'Reading {self.USER_CONFIG}')
             self.DK9_LOGIN = config['WEB DATABASE']['DK9_LOGIN']
             self.DK9_PASSWORD = config['WEB DATABASE']['DK9_PASSWORD']
             self.MODEL_LIST_SIZE = int(config['SETTINGS']['MODEL_LIST_SIZE'])
@@ -159,7 +162,7 @@ class Config:
     #     config.set('SETTINGS', 'TABLE_FONT_SIZE', str(self.TABLE_FONT_SIZE))
 
     def save_user_config(self):
-        print(f'Saving {self.user_config_name}')
+        print(f'Saving {self.USER_CONFIG}')
         config = configparser.ConfigParser()
         config['WEB DATABASE'] = {}
         config['WEB DATABASE']['DK9_LOGIN'] = str(self.DK9_LOGIN)
@@ -173,6 +176,6 @@ class Config:
         config['SETTINGS']['WIDE_MONITOR'] = str(self.WIDE_MONITOR)
         config['SETTINGS']['TABLE_COLUMN_SIZE_MAX'] = str(self.TABLE_COLUMN_SIZE_MAX)
 
-        with open(self.user_config_name, 'w') as conf:
+        with open(self.USER_CONFIG, 'w') as conf:
             config.write(conf)
-            print(f'Saved {self.user_config_name}')
+            print(f'Saved {self.USER_CONFIG}')

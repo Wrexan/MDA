@@ -1,9 +1,10 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, \
+from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton,\
     QSpacerItem, QSizePolicy, QTableWidgetItem, QHeaderView, qApp, QDialog
 from PyQt5 import QtCore, QtGui
 from PyQt5.Qt import Qt
 
+from MDA_content.windows import Messages as M
 from MDA_content.config import Config
 from MDA_content.dk9 import DK9Parser
 from MDA_content.price import Price
@@ -263,6 +264,7 @@ class App(QMainWindow):
         r = 0
         table.setRowCount(0)
         if not soup:
+            M.warning(f'Got zero soup:\n{table.objectName()}', 'still hungry :(')
             print(f'ERROR: Soup = {soup}')
             return
         for dk9_row in soup.tr.next_siblings:
@@ -376,35 +378,32 @@ class App(QMainWindow):
     @staticmethod
     def open_settings():
         settings_ui = ConfigWindow()
-        settings_ui.setWindowIcon(QtGui.QIcon(f'{C.LOGO}'))
+        settings_ui.setWindowIcon(QtGui.QIcon(C.LOGO))
         settings_ui.exec_()
         settings_ui.show()
-    #
-    # def accept(self):
-    #     print(f'ACCEPTED')
-    #
-    # def reject(self):
-    #     print(f'REJECTED')
 
     @staticmethod
     def open_help():
         help_ui = HelpWindow()
-        help_ui.setWindowIcon(QtGui.QIcon(f'{C.LOGO}'))
+        help_ui.setWindowIcon(QtGui.QIcon(C.LOGO))
         help_ui.exec_()
         help_ui.show()
-
 
 
 class HelpWindow(QDialog):
     def __init__(self):
         super().__init__()
-        file = open(f'{C.CONTENT_PATH}Инструкция.txt', 'r', encoding='utf-8')
-        with file:
-            text = file.read()
+        print(f'Reading {C.HELP}')
+        try:
+            file = open(C.HELP, 'r', encoding='utf-8')
+            with file:
+                text = file.read()
 
-        self.ui = Ui_Dialog()
-        self.ui.setupUi(self)
-        self.ui.text = text
+            self.ui = Ui_Dialog()
+            self.ui.setupUi(self)
+            self.ui.text.setPlainText(text)
+        except Exception as err:
+            M.warning(f'Error while reading help file:\n{C.HELP}', err)
 
 
 class ConfigWindow(QDialog):
@@ -462,7 +461,7 @@ class Worker(QtCore.QThread):
             result = self.func(*self.args, **self.kwargs)
         except Exception as err:
             # traceback.print_exc()
-            print(err)
+            M.warning(f'Error while executing thread using:\n{self.args}\n{self.kwargs}', err)
             exctype, value = sys.exc_info()[:2]
             self.signals.error.emit((exctype, value, err))  # traceback.format_exc()))
         else:
@@ -480,10 +479,10 @@ class WorkerSignals(QtCore.QObject):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    app.setWindowIcon(QtGui.QIcon(f'{C.LOGO}'))
+    app.setWindowIcon(QtGui.QIcon(C.LOGO))
     clipboard = app.clipboard()
     window = App()
-    window.setWindowIcon(QtGui.QIcon(f'{C.LOGO}'))
+    window.setWindowIcon(QtGui.QIcon(C.LOGO))
     window.show()
     window.ui.input_search.setFocus()
     sys.exit(app.exec_())
