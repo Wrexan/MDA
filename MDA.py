@@ -1,23 +1,15 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, \
-    QSpacerItem, QSizePolicy, QTableWidgetItem, QHeaderView, qApp, QDialog, QWidget, QLabel, QHBoxLayout
+    QSpacerItem, QSizePolicy, QTableWidgetItem, QHeaderView, qApp, QDialog
 from PyQt5 import QtCore, QtGui
 from PyQt5.Qt import Qt
 
-from content.config import Config
-from content.dk9 import DK9Parser
-from content.price import Price
-from content.window_main import Ui_MainWindow
-from content.window_settings import Ui_settings_window
-from content.window_simple import Ui_Dialog
-
-# try:
-#     # Включите в блок try/except, если вы также нацелены на Mac/Linux
-#     from PyQt5.QtWinExtras import QtWin  # !!!
-#     myappid = 'mycompany.myproduct.subproduct.version'  # !!!
-#     QtWin.setCurrentProcessExplicitAppUserModelID(myappid)  # !!!
-# except ImportError:
-#     pass
+from MDA_content.config import Config
+from MDA_content.dk9 import DK9Parser
+from MDA_content.price import Price
+from MDA_content.window_main import Ui_MainWindow
+from MDA_content.window_settings import Ui_settings_window
+from MDA_content.window_simple import Ui_Dialog
 
 C = Config()
 
@@ -57,6 +49,7 @@ class App(QMainWindow):
     def init_ui_statics(self):
         self.ui.input_search.textChanged[str].connect(self.search_and_upd_model_buttons)
         self.ui.chb_search_strict.stateChanged[int].connect(self.search_on_strict_change)
+        self.ui.chb_search_eng.stateChanged[int].connect(self.search_latin_change)
         self.ui.settings_button.clicked.connect(self.open_settings)
 
         self.ui.table_left.setHorizontalHeaderLabels(('', 'Виды работ', 'Цена', 'Прим', '', ''))
@@ -64,24 +57,6 @@ class App(QMainWindow):
                                                        'Цена', 'Шт', 'Дата', 'Где'))
         self.ui.table_accesory.setHorizontalHeaderLabels(('Тип', 'Фирма', 'Модель', 'Примечание',
                                                           'Цена', 'Шт', 'Дата', 'Где'))
-
-        # widget = QWidget()
-        # self.setCentralWidget(widget)
-        # pixmap1 = QtGui.QPixmap('/content/start_test.png')
-        # # pixmap1 = pixmap1.scaledToWidth(self.windowsize.width())
-        # pixmap1 = pixmap1.scaledToWidth(100)
-        # self.image = QLabel()
-        # self.image.setPixmap(pixmap1)
-
-        # layout_box = QHBoxLayout(widget)
-        # layout_box.setContentsMargins(0, 0, 0, 0)
-        # layout_box.addWidget(self.image)
-
-        # pixmap2 = QtGui.QPixmap('/content/start_test.png')
-        # self.image2 = QLabel(self.ui.table_left)
-        # self.image2.setPixmap(pixmap2)
-        # self.image2.setFixedSize(pixmap2.size())
-        # self.ui.table_left.addWidget(self.image2)
 
         self.ui.table_parts.doubleClicked.connect(self.copy_table_item)
         self.ui.table_accesory.doubleClicked.connect(self.copy_table_item)
@@ -114,12 +89,24 @@ class App(QMainWindow):
 
     def search_on_strict_change(self, state):
         C.STRICT_SEARCH = state
-        # print(f'{C.STRICT_SEARCH=} {state=}')
+        self.search_and_upd_model_buttons(self.ui.input_search.text())
+
+    def search_latin_change(self, state):
+        C.LATIN_SEARCH = state
         self.search_and_upd_model_buttons(self.ui.input_search.text())
 
     def search_and_upd_model_buttons(self, search_req):
         lay = self.ui.scroll_models_layout.layout()
         self.clear_layout(lay)
+        if C.LATIN_SEARCH:
+            lower_req = search_req.lower()
+            res_req = ''
+            for symbol in lower_req:
+                if symbol in C.SYMBOL_TO_LATIN:
+                    res_req = f'{res_req}{C.SYMBOL_TO_LATIN[symbol]}'
+                else:
+                    res_req = f'{res_req}{symbol}'
+            self.ui.input_search.setText(res_req)
         if C.STRICT_SEARCH and len(search_req) < C.STRICT_SEARCH_LEN or len(search_req) <= 0:
             return
         # print(f'{len(search_req)=} {C.STRICT_SEARCH=}')
@@ -161,6 +148,7 @@ class App(QMainWindow):
         self.worker.signals.finished.connect(self.finished)
 
         self.thread.start(self.worker)
+
     # @QtCore.pyqtSlot
     def scheduler(self):
         # print('Start sheduler')
@@ -376,38 +364,23 @@ class App(QMainWindow):
         self.ui.input_search.setFocus()
         self.ui.input_search.selectAll()
 
-    # @staticmethod
-    # def close_cmd():
-    #     WMI = GetObject('winmgmts:')
-    #     processes = WMI.InstancesOf('Win32_Process')
-    #
-    #     for p in WMI.ExecQuery('select * from Win32_Process where Name="cmd.exe"'):
-    #         print("Killing PID:", p.Properties_('ProcessId').Value)
-    #         os.system("taskkill /pid " + str(p.Properties_('ProcessId').Value))
-
-    # class Settings(QDialog):
-    #     def __init__(self):
-    #         super().__init__()
-    def open_settings(self):
-        # settings_ui = QDialog()
-        # settings_ui.win = Ui_settings_window()
-        # settings_ui.win.setupUi(self)
-        # settings_ui.buttonBox.accepted.connect()
-        # settings_ui.buttonBox.accepted.connect()
+    @staticmethod
+    def open_settings():
         settings_ui = ConfigWindow()
-        settings_ui.setWindowIcon(QtGui.QIcon(f'start_test.ico'))
+        settings_ui.setWindowIcon(QtGui.QIcon(f'{C.LOGO}'))
         settings_ui.exec_()
         settings_ui.show()
+    #
+    # def accept(self):
+    #     print(f'ACCEPTED')
+    #
+    # def reject(self):
+    #     print(f'REJECTED')
 
-    def accept(self):
-        print(f'ACCEPTED')
-
-    def reject(self):
-        print(f'REJECTED')
-
-    def open_help(self):
+    @staticmethod
+    def open_help():
         help_ui = HelpWindow()
-        help_ui.setWindowIcon(QtGui.QIcon(f'start_test.ico'))
+        help_ui.setWindowIcon(QtGui.QIcon(f'{C.LOGO}'))
         help_ui.exec_()
         help_ui.show()
 
@@ -416,7 +389,7 @@ class App(QMainWindow):
 class HelpWindow(QDialog):
     def __init__(self):
         super().__init__()
-        file = open('Инструкция.txt', 'r', encoding='utf-8')
+        file = open(f'{C.CONTENT_PATH}Инструкция.txt', 'r', encoding='utf-8')
         with file:
             text = file.read()
 
@@ -498,10 +471,10 @@ class WorkerSignals(QtCore.QObject):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    app.setWindowIcon(QtGui.QIcon(f'start_test.ico'))
+    app.setWindowIcon(QtGui.QIcon(f'{C.LOGO}'))
     clipboard = app.clipboard()
     window = App()
-    window.setWindowIcon(QtGui.QIcon(f'start_test.ico'))
+    window.setWindowIcon(QtGui.QIcon(f'{C.LOGO}'))
     window.show()
     window.ui.input_search.setFocus()
     sys.exit(app.exec_())

@@ -4,7 +4,9 @@ import configparser
 
 class Config:
     def __init__(self):
-        self.user_config_name = 'user_config.ini'
+        self.CONTENT_PATH = 'MDA_content/'
+        self.LOGO = f'{self.CONTENT_PATH}MDA.ico'
+        self.user_config_name = f'{self.CONTENT_PATH}user_config.ini'
         self.price_config_name = 'price_config.ini'
 
         self.PATH = os.path.dirname(os.path.realpath(__file__))
@@ -93,6 +95,15 @@ class Config:
             'TextBoxName': self.DK9_LOGIN,
             'TextBoxPassword': self.DK9_PASSWORD,
             'ButtonLogin': 'Submit',
+        }
+
+        self.SYMBOL_TO_LATIN = {
+            'й': 'q', 'ц': 'w', 'у': 'e', 'к': 'r', 'е': 't', 'н': 'y', 'г': 'u', 'ш': 'i', 'щ': 'o', 'з': 'p',
+            'х': '[', 'ъ': ']',
+            'ф': 'a', 'ы': 's', 'в': 'd', 'а': 'f', 'п': 'g', 'р': 'h', 'о': 'j', 'л': 'k', 'д': 'l', 'ж': ';',
+            'э': "'",
+            'я': 'z', 'ч': 'x', 'с': 'c', 'м': 'v', 'и': 'b', 'т': 'n', 'ь': 'm', 'б': ',', 'ю': '.', '.': '/',
+            'ї': ']', 'і': 's', 'є': "'",
         }
 
         self.handle_config()

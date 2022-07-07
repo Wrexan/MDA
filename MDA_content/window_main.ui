@@ -13,6 +13,10 @@
   <property name="windowTitle">
    <string notr="true">MDA</string>
   </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>MDA.ico</normaloff>MDA.ico</iconset>
+  </property>
   <property name="iconSize">
    <size>
     <width>64</width>
@@ -247,19 +251,6 @@
                  <number>9</number>
                 </property>
                 <item>
-                 <widget class="QCheckBox" name="chb_search_eng">
-                  <property name="enabled">
-                   <bool>false</bool>
-                  </property>
-                  <property name="text">
-                   <string>Латиница</string>
-                  </property>
-                  <property name="checked">
-                   <bool>true</bool>
-                  </property>
-                 </widget>
-                </item>
-                <item>
                  <widget class="QCheckBox" name="chb_search_strict">
                   <property name="text">
                    <string>Строго</string>
@@ -272,10 +263,23 @@
                 <item>
                  <widget class="QCheckBox" name="checkBox">
                   <property name="enabled">
-                   <bool>false</bool>
+                   <bool>true</bool>
                   </property>
                   <property name="text">
-                   <string>Умный поиск</string>
+                   <string>Умно</string>
+                  </property>
+                  <property name="checked">
+                   <bool>true</bool>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QCheckBox" name="chb_search_eng">
+                  <property name="enabled">
+                   <bool>true</bool>
+                  </property>
+                  <property name="text">
+                   <string>Латиница</string>
                   </property>
                   <property name="checked">
                    <bool>true</bool>
