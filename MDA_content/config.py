@@ -1,5 +1,6 @@
 import os
 import configparser
+from MDA_content.windows import Messages as M
 
 
 class Config:
@@ -176,6 +177,10 @@ class Config:
         config['SETTINGS']['WIDE_MONITOR'] = str(self.WIDE_MONITOR)
         config['SETTINGS']['TABLE_COLUMN_SIZE_MAX'] = str(self.TABLE_COLUMN_SIZE_MAX)
 
-        with open(self.USER_CONFIG, 'w') as conf:
-            config.write(conf)
-            print(f'Saved {self.USER_CONFIG}')
+        try:
+            with open(self.USER_CONFIG, 'w') as conf:
+                config.write(conf)
+                print(f'Saved {self.USER_CONFIG}')
+        except Exception as err:
+            M.warning(f'Error while trying to save config at:\n{self.USER_CONFIG}',
+                      f'Message:\n{err}')

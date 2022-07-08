@@ -192,66 +192,70 @@ class App(QMainWindow):
         self.load_progress(100)
 
     def update_price_table(self, model):  # 'xiaomi mi a2 m1804d2sg'
-        position = self.models[model]  # [Sheet 27:<XIAOMI>, 813] - sheet, row
-        # print(f'{position=}')
-        # Take needed columns for exact model
-        if position[0].name in C.PRICE_SEARCH_COLUMN_NUMBERS:
-            columns = C.PRICE_SEARCH_COLUMN_NUMBERS[position[0].name]  # [2, 4, 5]
-        else:
-            columns = C.PRICE_SEARCH_COLUMN_NUMBERS['+']
-        # print(f'{columns=}')
-        row = Price.get_row_in_pos(position)
-        row_len = len(row)
-        # print(f'{row=}')
-
-        new_row_num = 0
-        self.ui.table_left.setRowCount(0)
-        self.ui.model_lable.setText(self.list_to_string(row))
-        for i in range(position[1], position[0].nrows - 1):
-            # print(row[col[0] - 1, col[1] - 1, col[2] - 1])
-            if row_len < columns[-1]:  # If row shorter, than we expect, then place all row in 0 column
-                # print('SHORT row:' + str(row))
-                cell_text = self.list_to_string(row)
-                self.ui.table_left.insertRow(new_row_num)
-                self.ui.table_left.setItem(new_row_num, 0, QTableWidgetItem(cell_text))
-                self.ui.table_left.item(new_row_num, 0).setToolTip(cell_text)
-                return
+        try:
+            position = self.models[model]  # [Sheet 27:<XIAOMI>, 813] - sheet, row
+            # print(f'{position=}')
+            # Take needed columns for exact model
+            if position[0].name in C.PRICE_SEARCH_COLUMN_NUMBERS:
+                columns = C.PRICE_SEARCH_COLUMN_NUMBERS[position[0].name]  # [2, 4, 5]
             else:
+                columns = C.PRICE_SEARCH_COLUMN_NUMBERS['+']
+            # print(f'{columns=}')
+            row = Price.get_row_in_pos(position)
+            row_len = len(row)
+            # print(f'{row=}')
 
-                # if cell is out of row, text will be empty
-                cells_texts = []
-                for c in range(len(columns)):
-                    if columns[c] < row_len:
-                        cells_texts.append(str(row[columns[c]]))
-                    else:
-                        cells_texts.append('')
-
-                # cells_text = [str(row[columns[0]]), str(row[columns[1]])]
-                if cells_texts[0] or len(cells_texts[1]) > 3:
-
+            new_row_num = 0
+            self.ui.table_left.setRowCount(0)
+            self.ui.model_lable.setText(self.list_to_string(row))
+            for i in range(position[1], position[0].nrows - 1):
+                # print(row[col[0] - 1, col[1] - 1, col[2] - 1])
+                if row_len < columns[-1]:  # If row shorter, than we expect, then place all row in 0 column
+                    # print('SHORT row:' + str(row))
+                    cell_text = self.list_to_string(row)
                     self.ui.table_left.insertRow(new_row_num)
-                    for j, txt in enumerate(cells_texts):
-                        self.ui.table_left.setItem(new_row_num, j, QTableWidgetItem(txt))
-                        self.ui.table_left.item(new_row_num, j).setToolTip(txt)
-
-                        if C.PRICE_COLORED and txt:
-                            bgd = self.Price.DB.colour_map. \
-                                get(self.Price.DB.xf_list[position[0].
-                                    cell(i, columns[j]).xf_index].background.pattern_colour_index)
-                            if bgd:
-                                self.ui.table_left.item(new_row_num, j). \
-                                    setBackground(QtGui.QColor(bgd[0], bgd[1], bgd[2]))
-
-                    new_row_num += 1
-                if i < position[0].nrows:
-                    # print(row[col[0] - 1, col[1] - 1, col[2] - 1])
-                    row = position[0].row_values(i + 1, 0, 9)
-                    if row[0] != '':
-                        if row[0] not in C.PRICE_TRASH_IN_CELLS:
-                            return
-                    # print(row[col[0]-1, col[1]-1, col[2]-1])
-                else:
+                    self.ui.table_left.setItem(new_row_num, 0, QTableWidgetItem(cell_text))
+                    self.ui.table_left.item(new_row_num, 0).setToolTip(cell_text)
                     return
+                else:
+
+                    # if cell is out of row, text will be empty
+                    cells_texts = []
+                    for c in range(len(columns)):
+                        if columns[c] < row_len:
+                            cells_texts.append(str(row[columns[c]]))
+                        else:
+                            cells_texts.append('')
+
+                    # cells_text = [str(row[columns[0]]), str(row[columns[1]])]
+                    if cells_texts[0] or len(cells_texts[1]) > 3:
+
+                        self.ui.table_left.insertRow(new_row_num)
+                        for j, txt in enumerate(cells_texts):
+                            self.ui.table_left.setItem(new_row_num, j, QTableWidgetItem(txt))
+                            self.ui.table_left.item(new_row_num, j).setToolTip(txt)
+
+                            if C.PRICE_COLORED and txt:
+                                bgd = self.Price.DB.colour_map. \
+                                    get(self.Price.DB.xf_list[position[0].
+                                        cell(i, columns[j]).xf_index].background.pattern_colour_index)
+                                if bgd:
+                                    self.ui.table_left.item(new_row_num, j). \
+                                        setBackground(QtGui.QColor(bgd[0], bgd[1], bgd[2]))
+
+                        new_row_num += 1
+                    if i < position[0].nrows:
+                        # print(row[col[0] - 1, col[1] - 1, col[2] - 1])
+                        row = position[0].row_values(i + 1, 0, 9)
+                        if row[0] != '':
+                            if row[0] not in C.PRICE_TRASH_IN_CELLS:
+                                return
+                        # print(row[col[0]-1, col[1]-1, col[2]-1])
+                    else:
+                        return
+        except Exception as err:
+            M.warning(f'Error updating price table for:\n{model}',
+                      f'Message:\n{err}')
 
     def load_progress(self, progress):
         self.ui.web_load_progress_bar.setValue(progress)
@@ -261,45 +265,48 @@ class App(QMainWindow):
 
     @staticmethod
     def fill_table_from_soup(soup, table, def_bg_color1, def_bg_color2):
-        r = 0
-        table.setRowCount(0)
-        if not soup:
-            M.warning(f'Got zero soup:\n{table.objectName()}', 'still hungry :(')
-            print(f'ERROR: Soup = {soup}')
-            return
-        for dk9_row in soup.tr.next_siblings:
-            row_palette = None
-            if repr(dk9_row)[0] != "'":
-                # print(dk9_row)
-                if C.DK9_COLORED and dk9_row.attrs:
-                    if 'style' in dk9_row.attrs:
-                        style = str(dk9_row['style'])
-                        row_palette = C.DK9_BG_COLORS[style[style.find(':') + 1: style.find(';')]]
-                c = 0
-                table.insertRow(r)
-                for dk9_td in dk9_row.findAll('td'):
-                    # if c == 3:
-                    #     print(f'{dk9_td.string} {}')
-                    table.setItem(r, c, QTableWidgetItem(dk9_td.string))
-                    table.item(r, c).setToolTip(dk9_td.string)
-                    if C.DK9_COLORED:
-                        if row_palette:
-                            table.item(r, c). \
-                                setBackground(QtGui.QColor(row_palette[0], row_palette[1], row_palette[2]))
-                        elif dk9_td.attrs and 'style' in dk9_td.attrs:
-                            style = str(dk9_td['style'])
-                            td_palette = C.DK9_BG_COLORS[style[style.find(':') + 1: style.find(';')]]
-                            table.item(r, c). \
-                                setBackground(QtGui.QColor(td_palette[0], td_palette[1], td_palette[2]))
-                        # if 'align' in dk9_td.attrs:
-                        #     align = str(dk9_td['align'])
-                        #     if align == 'center':
-                        #         self.ui.table_parts.item(r, c).setTextAlignment(1)
-                        else:
-                            dbgc = def_bg_color1 if r % 2 else def_bg_color2
-                            table.item(r, c).setBackground(QtGui.QColor(dbgc[0], dbgc[1], dbgc[2]))
-                    c += 1
-            r += 1
+        try:
+            r = 0
+            table.setRowCount(0)
+            if not soup:
+                M.warning(f'Got zero soup:\n{table.objectName()}', 'still hungry :(')
+                return
+            for dk9_row in soup.tr.next_siblings:
+                row_palette = None
+                if repr(dk9_row)[0] != "'":
+                    # print(dk9_row)
+                    if C.DK9_COLORED and dk9_row.attrs:
+                        if 'style' in dk9_row.attrs:
+                            style = str(dk9_row['style'])
+                            row_palette = C.DK9_BG_COLORS[style[style.find(':') + 1: style.find(';')]]
+                    c = 0
+                    table.insertRow(r)
+                    for dk9_td in dk9_row.findAll('td'):
+                        # if c == 3:
+                        #     print(f'{dk9_td.string} {}')
+                        table.setItem(r, c, QTableWidgetItem(dk9_td.string))
+                        table.item(r, c).setToolTip(dk9_td.string)
+                        if C.DK9_COLORED:
+                            if row_palette:
+                                table.item(r, c). \
+                                    setBackground(QtGui.QColor(row_palette[0], row_palette[1], row_palette[2]))
+                            elif dk9_td.attrs and 'style' in dk9_td.attrs:
+                                style = str(dk9_td['style'])
+                                td_palette = C.DK9_BG_COLORS[style[style.find(':') + 1: style.find(';')]]
+                                table.item(r, c). \
+                                    setBackground(QtGui.QColor(td_palette[0], td_palette[1], td_palette[2]))
+                            # if 'align' in dk9_td.attrs:
+                            #     align = str(dk9_td['align'])
+                            #     if align == 'center':
+                            #         self.ui.table_parts.item(r, c).setTextAlignment(1)
+                            else:
+                                dbgc = def_bg_color1 if r % 2 else def_bg_color2
+                                table.item(r, c).setBackground(QtGui.QColor(dbgc[0], dbgc[1], dbgc[2]))
+                        c += 1
+                r += 1
+        except Exception as err:
+            M.warning(f'Error updating table:\n{table}',
+                      f'Message:\n{err}')
 
     def copy_table_item(self):
         font = QtGui.QFont()
@@ -478,11 +485,15 @@ class WorkerSignals(QtCore.QObject):
 
 
 if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    app.setWindowIcon(QtGui.QIcon(C.LOGO))
-    clipboard = app.clipboard()
-    window = App()
-    window.setWindowIcon(QtGui.QIcon(C.LOGO))
-    window.show()
-    window.ui.input_search.setFocus()
-    sys.exit(app.exec_())
+    try:
+        app = QApplication(sys.argv)
+        app.setWindowIcon(QtGui.QIcon(C.LOGO))
+        clipboard = app.clipboard()
+        window = App()
+        window.setWindowIcon(QtGui.QIcon(C.LOGO))
+        window.show()
+        window.ui.input_search.setFocus()
+        sys.exit(app.exec_())
+    except Exception as err:
+        M.warning(f'Error:\nGLOBAL',
+                  f'Message:\n{err}')

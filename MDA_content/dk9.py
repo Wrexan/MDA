@@ -1,7 +1,6 @@
-import encodings.mac_iceland
-
 import requests
 from bs4 import BeautifulSoup
+from MDA_content.windows import Messages as M
 
 
 class DK9Parser:
@@ -11,8 +10,8 @@ class DK9Parser:
         self.SEARCH_URL = search_url
         self.HEADERS = headers
         self.LOGIN_DATA = login_data
-        self.SESSION: type(requests)
-        self.validation_data: dict
+        self.SESSION: type(requests) = ()
+        self.validation_data: dict = {}
 
     def get_validation_data(self, soup: type(BeautifulSoup)):
         return {
@@ -44,7 +43,8 @@ class DK9Parser:
             self.validation_data = self.get_validation_data(BeautifulSoup(r.content, 'html.parser'))
             progress_callback.emit(100)
         except Exception as err:
-            print(f'ERROR while trying to login {self.LOGIN_URL} -> {err}')
+            M.warning(f'Error while trying to login as:\n{self.LOGIN_DATA}',
+                      f'Message:\n{err}')
 
     def search(self, model: str, progress_callback) -> tuple:
         print(f'Searching: {model}')
@@ -77,4 +77,5 @@ class DK9Parser:
             # ctl00_ContentPlaceHolder1_GridView1 - запчасти
             # ctl00_ContentPlaceHolder1_GridView2 - аксессуары
         except Exception as err:
-            print(f'ERROR while trying to search {self.SEARCH_URL} -> {err}')
+            M.warning(f'Error while trying to search:\n{model}',
+                      f'Message:\n{err}')
