@@ -1,10 +1,13 @@
 import os
 import configparser
-from MDA_content.windows import Messages as M
+
+
+# from MDA_content.windows import Messages as M
 
 
 class Config:
     def __init__(self):
+        self.error = None
         self.PATH = f'{os.path.dirname(os.path.dirname(os.path.realpath(__file__)))}\\'
         self.CONTENT_PATH = f'{self.PATH}MDA_content\\'
 
@@ -96,11 +99,10 @@ class Config:
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
                           '(KHTML, like Gecko) Chrome/93.0.4577.82 Safari/537.36 Firefox/10.0'}
 
-        self.DK9_LOGIN_DATA = {
-            'TextBoxName': self.DK9_LOGIN,
-            'TextBoxPassword': self.DK9_PASSWORD,
-            'ButtonLogin': 'Submit',
-        }
+        self.DK9_LOGIN_DATA = self.data()
+
+        self.WEB_STATUSES = {0: 'Нет соединения', 1: 'Не залогинен', 2: 'Подключен',
+                             3: 'Перенаправление', 4: 'Запрос отклонен', 5: 'Ошибка сервера'}
 
         self.SYMBOL_TO_LATIN = {
             'й': 'q', 'ц': 'w', 'у': 'e', 'к': 'r', 'е': 't', 'н': 'y', 'г': 'u', 'ш': 'i', 'щ': 'o', 'з': 'p',
@@ -115,7 +117,7 @@ class Config:
 
     def convert_columns_to_nums(self):
         for list_name, columns in self.PRICE_SEARCH_COLUMN_SYMBOLS.items():
-            self.PRICE_SEARCH_COLUMN_NUMBERS[list_name] = *(ord(letter.upper())-65 for letter in columns),
+            self.PRICE_SEARCH_COLUMN_NUMBERS[list_name] = *(ord(letter.upper()) - 65 for letter in columns),
         # print(self.PRICE_SEARCH_COLUMN_NUMBERS)
 
     # @staticmethod
@@ -146,8 +148,16 @@ class Config:
             self.TABLE_FONT_SIZE = int(config['SETTINGS']['TABLE_FONT_SIZE'])
             self.WIDE_MONITOR = True if config['SETTINGS']['WIDE_MONITOR'] == 'True' else False
             self.TABLE_COLUMN_SIZE_MAX = int(config['SETTINGS']['TABLE_COLUMN_SIZE_MAX'])
+            self.DK9_LOGIN_DATA = self.data()
         else:
             self.save_user_config()
+
+    def data(self):
+        return {
+            'TextBoxName': self.DK9_LOGIN,
+            'TextBoxPassword': self.DK9_PASSWORD,
+            'ButtonLogin': 'Submit',
+        }
 
     # def save_user_config(self):
     #     config = configparser.ConfigParser()
@@ -176,11 +186,11 @@ class Config:
         config['SETTINGS']['TABLE_FONT_SIZE'] = str(self.TABLE_FONT_SIZE)
         config['SETTINGS']['WIDE_MONITOR'] = str(self.WIDE_MONITOR)
         config['SETTINGS']['TABLE_COLUMN_SIZE_MAX'] = str(self.TABLE_COLUMN_SIZE_MAX)
-
+        self.DK9_LOGIN_DATA = self.data()
         try:
             with open(self.USER_CONFIG, 'w') as conf:
                 config.write(conf)
                 print(f'Saved {self.USER_CONFIG}')
         except Exception as err:
-            M.warning(f'Error while trying to save config at:\n{self.USER_CONFIG}',
-                      f'Message:\n{err}')
+            print(f'Error while trying to save config at:\n{self.USER_CONFIG}', err)
+            # error.emit(f'Error while trying to save config at:\n{self.USER_CONFIG}', err)

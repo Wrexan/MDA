@@ -1,10 +1,10 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton,\
-    QSpacerItem, QSizePolicy, QTableWidgetItem, QHeaderView, qApp, QDialog
+
+from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, \
+    QSpacerItem, QSizePolicy, QTableWidgetItem, QHeaderView, qApp, QDialog, QMessageBox
 from PyQt5 import QtCore, QtGui
 from PyQt5.Qt import Qt
 
-from MDA_content.windows import Messages as M
 from MDA_content.config import Config
 from MDA_content.dk9 import DK9Parser
 from MDA_content.price import Price
@@ -13,11 +13,13 @@ from MDA_content.window_settings import Ui_settings_window
 from MDA_content.window_simple import Ui_Dialog
 
 C = Config()
+DK9 = DK9Parser(C.DK9_LOGIN_URL, C.DK9_SEARCH_URL, C.DK9_HEADERS, C.DK9_LOGIN_DATA)
 
 
 class App(QMainWindow):
     def __init__(self):
         super().__init__()
+
         # self.setFocus()
         # self.setWindowIcon(QtGui.QIcon(f'content/start_test.ico'))
         qApp.focusChanged.connect(self.on_focusChanged)
@@ -32,18 +34,22 @@ class App(QMainWindow):
         self.ui.setupUi(self)
         self.init_ui_statics()
         self.init_ui_dynamics()
-        self.SESSION = None
-        self.validation_data = None
+
+
+        # self.SESSION = None
+        # self.validation_data = None
+        self.next_model = ''
+        self.curr_model = ''
         self.old_search = ''
         self.thread = QtCore.QThread
         self.worker = None  # Worker(self.update_dk9_data, 'mi8 lite')
-        # print('Creating DK9')
-        self.DK9 = DK9Parser(C.DK9_LOGIN_URL, C.DK9_SEARCH_URL, C.DK9_HEADERS, C.DK9_LOGIN_DATA)
-        print('Login to DK9')
-        self.login_dk9()
         print('Loading Price')
         self.Price = Price(C.PATH, C.PRICE_PATH, C.PRICE_PARTIAL_NAME, C.PRICE_TRASH_IN_CELLS)
-        self.ui.price_name.setText(self.Price.message)
+        print('Login to DK9')
+        print(f'{C.DK9_LOGIN=} {C.DK9_PASSWORD=} {C.DK9_LOGIN_DATA=} ')
+        self.web_status = 0
+        self.login_dk9()
+        self.update_price_status()
         # self.thread.start(self.worker)
         # self.update_dk9_data('mi8 lite')
 
@@ -84,6 +90,10 @@ class App(QMainWindow):
         self.ui.table_left.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.ui.table_parts.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.ui.table_accesory.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        self.ui.table_left.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
+        self.ui.table_parts.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        self.ui.table_accesory.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+
         if not C.WIDE_MONITOR:
             self.ui.table_left.horizontalHeader().setMaximumSectionSize(int(C.TABLE_COLUMN_SIZE_MAX * 1.4))
             self.ui.table_parts.horizontalHeader().setMaximumSectionSize(C.TABLE_COLUMN_SIZE_MAX)
@@ -151,13 +161,8 @@ class App(QMainWindow):
             lay.addWidget(self.model_buttons[num], 0)
             le -= 1
 
-    def login_dk9(self):
-        self.worker = Worker(self.DK9.login)
-        # self.worker.signals.result.connect(self.update_dk9_data)
-        self.worker.signals.progress.connect(self.load_progress)
-        self.worker.signals.finished.connect(self.finished)
-
-        self.thread.start(self.worker)
+    def update_price_status(self):
+        self.ui.price_status.setText(f'{self.Price.message if self.Price else "Прайс не найден"}')
 
     # @QtCore.pyqtSlot
     def scheduler(self):
@@ -168,27 +173,61 @@ class App(QMainWindow):
             self.old_search = self.ui.input_search.text()
             model = (self.old_search.split())[0].lower()
             if model in C.NOT_FULL_MODEL_NAMES:  # For models with divided name like iPhone | 11
-                curr_model = model
-                # self.update_dk9_data(model)
+                self.curr_model = model
             else:
-                curr_model = self.old_search
-                # self.update_dk9_data(self.old_search)
+                self.curr_model = self.old_search
+            self.search_dk9()
 
-            self.worker = Worker(self.DK9.search, curr_model)
-            self.worker.signals.result.connect(self.update_dk9_data)
-            self.worker.signals.progress.connect(self.load_progress)
+    def update_web_status(self, status: int):
+        if status in C.WEB_STATUSES:
+            self.web_status = status
+            self.ui.web_status.setText(C.WEB_STATUSES[status])
+            if status != 2:
+                self.curr_model = ''
+        else:
+            print(f'Error: status code {status} not present {C.WEB_STATUSES=}')
+
+    def search_dk9(self):
+        print(f'SEARCH AGAIN: {self.next_model=} {self.curr_model}')
+        if self.next_model:
+            self.worker = Worker(DK9.search, self.next_model)
+            self.next_model = ''
+        else:
+            self.worker = Worker(DK9.search, self.curr_model)
+        self.worker.signals.result.connect(self.update_dk9_data)
+        self.worker.signals.progress.connect(self.load_progress)
+        self.worker.signals.finished.connect(self.finished)
+        self.worker.signals.error.connect(self.error)
+        self.worker.signals.status.connect(self.update_web_status)
+
+        self.thread.start(self.worker)
+
+    def login_dk9(self):
+        self.worker = Worker(DK9.login)
+        self.worker.signals.progress.connect(self.load_progress)
+        self.worker.signals.status.connect(self.update_web_status)
+        self.worker.signals.error.connect(self.error)
+        if self.curr_model:
+            self.next_model = self.curr_model
+            print(f'GO TO SEARCH AGAIN: {self.next_model=} {self.curr_model}')
+            self.worker.signals.finished.connect(self.search_dk9)
+        else:
             self.worker.signals.finished.connect(self.finished)
+        print('Starting thread to login')
 
-            self.thread.start(self.worker)
+        self.thread.start(self.worker)
 
     def update_dk9_data(self, table_soups):
-        # self.worker = Worker(self.DK9.search, search)
-        # self.thread.start(self.worker)
-        # part_table_soup, accessory_table_soup = *self.worker.result  #self.DK9.search(search)
-        self.load_progress(70)
-        self.fill_table_from_soup(table_soups[0], self.ui.table_parts, C.DK9_BG_P_COLOR1, C.DK9_BG_P_COLOR2)
-        self.load_progress(85)
-        self.fill_table_from_soup(table_soups[1], self.ui.table_accesory, C.DK9_BG_A_COLOR1, C.DK9_BG_A_COLOR2)
+        if not table_soups or not table_soups[0]:
+            self.update_web_status(0)
+
+        if self.web_status == 2:
+            self.load_progress(70)
+            self.fill_table_from_soup(table_soups[0], self.ui.table_parts, C.DK9_BG_P_COLOR1, C.DK9_BG_P_COLOR2)
+            self.load_progress(85)
+            self.fill_table_from_soup(table_soups[1], self.ui.table_accesory, C.DK9_BG_A_COLOR1, C.DK9_BG_A_COLOR2)
+        else:
+            self.login_dk9()
         self.load_progress(100)
 
     def update_price_table(self, model):  # 'xiaomi mi a2 m1804d2sg'
@@ -254,22 +293,27 @@ class App(QMainWindow):
                     else:
                         return
         except Exception as err:
-            M.warning(f'Error updating price table for:\n{model}',
-                      f'Message:\n{err}')
+            self.error((f'Error updating price table for:\n{model}', err))
 
     def load_progress(self, progress):
+        # if self.web_status not in (1, 2):
+        #     self.ui.web_load_progress_bar.setValue(90)
+        # else:
         self.ui.web_load_progress_bar.setValue(progress)
 
     def finished(self):
-        self.ui.web_load_progress_bar.setValue(0)
+        if self.web_status not in (1, 2):
+            self.ui.web_load_progress_bar.setValue(100)
+        else:
+            self.ui.web_load_progress_bar.setValue(0)
+        # self.update_status()
 
-    @staticmethod
-    def fill_table_from_soup(soup, table, def_bg_color1, def_bg_color2):
+    def fill_table_from_soup(self, soup, table, def_bg_color1, def_bg_color2):
         try:
             r = 0
             table.setRowCount(0)
             if not soup:
-                M.warning(f'Got zero soup:\n{table.objectName()}', 'still hungry :(')
+                # M.warning(f'Got zero soup:\n{table.objectName()}', 'still hungry :(')
                 return
             for dk9_row in soup.tr.next_siblings:
                 row_palette = None
@@ -305,8 +349,7 @@ class App(QMainWindow):
                         c += 1
                 r += 1
         except Exception as err:
-            M.warning(f'Error updating table:\n{table}',
-                      f'Message:\n{err}')
+            self.error((f'Error updating table:\n{table}', err))
 
     def copy_table_item(self):
         font = QtGui.QFont()
@@ -341,6 +384,7 @@ class App(QMainWindow):
         else:
             self.ui.input_search.setFocus()
             self.ui.input_search.selectAll()
+            # self.update_status()
             # print(f"window is the active window: {self.isActiveWindow()}")
 
     # def event(self, event):
@@ -396,6 +440,30 @@ class App(QMainWindow):
         help_ui.exec_()
         help_ui.show()
 
+    @staticmethod
+    def error(errors: tuple):
+        msg_box = QMessageBox()
+        text, info = '', ''
+        for i, e in enumerate(errors):
+            if i == 1:
+                text = str(e)
+            else:
+                info = f'{info}\n{str(e)}'
+        print(f'{text}\n -> {info}')
+        msg_box.setText(text)
+        msg_box.setIcon(QMessageBox.Warning)
+        msg_box.setInformativeText(str(info))
+        msg_box.setWindowTitle("Warning")
+        msg_box.setStandardButtons(QMessageBox.Ok)
+        # msg_box.show()
+        msg_box.exec_()
+        msg_box.show()
+
+
+# class MessageBox(QMessageBox):
+#     def __init__(self):
+#         super().__init__()
+
 
 class HelpWindow(QDialog):
     def __init__(self):
@@ -410,7 +478,7 @@ class HelpWindow(QDialog):
             self.ui.setupUi(self)
             self.ui.text.setPlainText(text)
         except Exception as err:
-            M.warning(f'Error while reading help file:\n{C.HELP}', err)
+            App.error((f'Error while reading help file:\n{C.HELP}', err))
 
 
 class ConfigWindow(QDialog):
@@ -445,7 +513,6 @@ class ConfigWindow(QDialog):
         C.PRICE_COLORED = True if self.ui.colored_price_table.checkState() == 2 else False
         C.WIDE_MONITOR = True if self.ui.wide_monitor.checkState() == 2 else False
         C.TABLE_COLUMN_SIZE_MAX = self.ui.column_width_max.value()
-        # print(f'{C.DK9_COL_DIFF}')
         window.init_ui_dynamics()
         C.precalculate_color_diffs()
         C.save_user_config()
@@ -460,7 +527,9 @@ class Worker(QtCore.QThread):
         self.signals = WorkerSignals()
 
         # Add the callback to our kwargs
-        self.kwargs['progress_callback'] = self.signals.progress
+        self.kwargs['progress'] = self.signals.progress
+        self.kwargs['error'] = self.signals.error
+        self.kwargs['status'] = self.signals.status
 
     @QtCore.pyqtSlot()
     def run(self):
@@ -468,7 +537,7 @@ class Worker(QtCore.QThread):
             result = self.func(*self.args, **self.kwargs)
         except Exception as err:
             # traceback.print_exc()
-            M.warning(f'Error while executing thread using:\n{self.args}\n{self.kwargs}', err)
+            # App.error(f'Error while executing thread using:\n{self.args}\n{self.kwargs}', err)
             exctype, value = sys.exc_info()[:2]
             self.signals.error.emit((exctype, value, err))  # traceback.format_exc()))
         else:
@@ -480,6 +549,7 @@ class Worker(QtCore.QThread):
 class WorkerSignals(QtCore.QObject):
     finished = QtCore.pyqtSignal()
     error = QtCore.pyqtSignal(tuple)
+    status = QtCore.pyqtSignal(int)
     result = QtCore.pyqtSignal(object)
     progress = QtCore.pyqtSignal(int)
 
@@ -495,5 +565,4 @@ if __name__ == "__main__":
         window.ui.input_search.setFocus()
         sys.exit(app.exec_())
     except Exception as err:
-        M.warning(f'Error:\nGLOBAL',
-                  f'Message:\n{err}')
+        App.error((f'Error:\nGLOBAL', err))
