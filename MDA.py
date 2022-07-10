@@ -20,13 +20,14 @@ from MDA_content.window_simple import Ui_Dialog
 
 
 C = Config()
-DK9 = DK9Parser(C.DK9_LOGIN_URL, C.DK9_SEARCH_URL, C.DK9_HEADERS, C.DK9_LOGIN_DATA)
+DK9 = DK9Parser(C.DK9_LOGIN_URL, C.DK9_SEARCH_URL, C.DK9_HEADERS, C.data())
 
 
 class App(QMainWindow):
     def __init__(self):
         super().__init__()
         qApp.focusChanged.connect(self.on_focusChanged)
+        self.latin_process = False
         self.models = {}
         self.model_buttons = {}
         self.current_model_button_index = 0
@@ -41,7 +42,7 @@ class App(QMainWindow):
         self.thread = QtCore.QThread
         self.worker = None  # Worker(self.update_dk9_data, 'mi8 lite')
         print('Loading Price')
-        self.Price = Price(C.PATH, C.PRICE_PATH, C.PRICE_PARTIAL_NAME, C.PRICE_TRASH_IN_CELLS)
+        self.Price = Price(C)
         print('Login to DK9')
         self.web_status = 0
         self.login_dk9()
@@ -75,7 +76,7 @@ class App(QMainWindow):
         font.setPixelSize(C.TABLE_FONT_SIZE)
 
         self.ui.table_left.verticalHeader().setDefaultSectionSize(C.TABLE_FONT_SIZE + 4)
-        self.ui.table_left.verticalHeader().setMaximumWidth(self.ui.table_left.width())
+        # self.ui.table_left.verticalHeader().setMaximumWidth(self.ui.table_left.width())
         # [self.ui.table_left.verticalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents) for i in range(5)]
         self.ui.table_parts.verticalHeader().setDefaultSectionSize(C.TABLE_FONT_SIZE + 4)
         self.ui.table_accesory.verticalHeader().setDefaultSectionSize(C.TABLE_FONT_SIZE + 4)
@@ -83,8 +84,10 @@ class App(QMainWindow):
         self.ui.table_parts.setFont(font)
         self.ui.table_accesory.setFont(font)
 
-        # if not C.WIDE_MONITOR:
-        self.ui.table_parts.horizontalHeader().setStretchLastSection(False)
+        # self.ui.table_parts.setMouseTracking(True)
+        # self.ui.table_accesory.setMouseTracking(True)
+        # self.ui.table_accesory.mouseMoveEvent(QtGui.QMouseEvent)
+
         for i in range(self.ui.table_parts.columnCount()):
             if i == 3:
                 self.ui.table_parts.horizontalHeader().setSectionResizeMode(i, QHeaderView.Stretch)
@@ -117,30 +120,43 @@ class App(QMainWindow):
         self.search_and_upd_model_buttons(self.ui.input_search.text())
 
     def search_and_upd_model_buttons(self, search_req):
+        self.model_buttons = {}
+        if self.latin_process:
+            self.latin_process = False
+            return
         lay = self.ui.scroll_models_layout.layout()
         self.clear_layout(lay)
+        res_req = ''
         if C.LATIN_SEARCH:
             lower_req = search_req.lower()
-            res_req = ''
             for symbol in lower_req:
                 if symbol in C.SYMBOL_TO_LATIN:
                     res_req = f'{res_req}{C.SYMBOL_TO_LATIN[symbol]}'
                 else:
                     res_req = f'{res_req}{symbol}'
-            self.ui.input_search.setText(res_req)
-        if C.STRICT_SEARCH and len(search_req) < C.STRICT_SEARCH_LEN or len(search_req) <= 0:
+            # self.latin_process = True
+            # self.ui.input_search.setText(res_req)
+        else:
+            res_req = search_req
+        if C.STRICT_SEARCH and len(res_req) < C.STRICT_SEARCH_LEN or len(res_req) <= 0:
+            if C.LATIN_SEARCH:
+                self.ui.input_search.setText(res_req)
             return
-        # print(f'{len(search_req)=} {C.STRICT_SEARCH=}')
-        search_req = search_req.lower()
-        self.models = self.Price.search_price_models(search_req, C.MODEL_LIST_SIZE, C.SMART_SEARCH)
+        # print(f'{len(res_req)=} {self.models=}')
+
+        # if not self.latin_process:
+        self.models = self.Price.search_price_models(res_req, C.MODEL_LIST_SIZE, C.SMART_SEARCH)
         if self.models:
             self.upd_model_buttons(lay)
+        elif DK9.addiction() and self.Price.APPROVED and res_req:
+            self.add_search_button(lay, res_req)
         else:
             self.model_buttons = {}
+        if C.LATIN_SEARCH:
+            self.ui.input_search.setText(res_req)
+        # self.latin_process = False
 
     def upd_model_buttons(self, lay):
-        # lay = self.ui.scroll_models_layout.layout()
-        # self.clear_layout(lay)
         sp = QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Expanding)
         lay.addItem(sp)
         le = len(self.models)
@@ -148,19 +164,26 @@ class App(QMainWindow):
         self.current_model_button_index = 0
         if C.MODEL_LIST_REVERSED:
             models_list = reversed((self.models.keys()))
-            # models_list = reversed(list(self.models.keys()))
         else:
             models_list = (self.models.keys())
         for num, model in enumerate(models_list):
             self.model_buttons[num] = QPushButton(model)
-            # b = QPushButton(model)
             self.model_buttons[num].clicked.connect(self.scheduler)
             if num == 0:
                 self.model_buttons[num].setDefault(True)
-                # b.setFocus()
-                # b.setChecked(True)
             lay.addWidget(self.model_buttons[num], 0)
             le -= 1
+
+    def add_search_button(self, lay, search_req: str):
+        sp = QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Expanding)
+        lay.addItem(sp)
+        self.current_model_button_index = 0
+        # print(f'{search_req=}')
+        if search_req:
+            self.model_buttons[0] = QPushButton(search_req)
+            self.model_buttons[0].clicked.connect(self.scheduler)
+            self.model_buttons[0].setDefault(True)
+            lay.addWidget(self.model_buttons[0], 0)
 
     def update_price_status(self):
         self.ui.price_status.setText(f'{self.Price.message if self.Price else "Прайс не найден"}')
@@ -189,8 +212,8 @@ class App(QMainWindow):
             print(f'Error: status code {status} not present {C.WEB_STATUSES=}')
 
     def search_dk9(self):
-        print(f'SEARCH AGAIN: {self.next_model=} {self.curr_model}')
         if self.next_model:
+            print(f'SEARCH AGAIN: {self.next_model=} {self.curr_model}')
             self.worker = Worker(DK9.search, self.next_model)
             self.next_model = ''
         else:
@@ -210,7 +233,7 @@ class App(QMainWindow):
         self.worker.signals.error.connect(self.error)
         if self.curr_model:
             self.next_model = self.curr_model
-            print(f'GO TO SEARCH AGAIN: {self.next_model=} {self.curr_model}')
+            # print(f'GO TO SEARCH AGAIN: {self.next_model=} {self.curr_model}')
             self.worker.signals.finished.connect(self.search_dk9)
         else:
             self.worker.signals.finished.connect(self.finished)
@@ -233,66 +256,67 @@ class App(QMainWindow):
 
     def update_price_table(self, model):  # 'xiaomi mi a2 m1804d2sg'
         try:
-            position = self.models[model]  # [Sheet 27:<XIAOMI>, 813] - sheet, row
-            # print(f'{position=}')
-            # Take needed columns for exact model
-            if position[0].name in C.PRICE_SEARCH_COLUMN_NUMBERS:
-                columns = C.PRICE_SEARCH_COLUMN_NUMBERS[position[0].name]  # [2, 4, 5]
-            else:
-                columns = C.PRICE_SEARCH_COLUMN_NUMBERS['+']
-            # print(f'{columns=}')
-            row = Price.get_row_in_pos(position)
-            row_len = len(row)
-            # print(f'{row=}')
-
-            new_row_num = 0
-            self.ui.table_left.setRowCount(0)
-            self.ui.model_lable.setText(self.list_to_string(row))
-            for i in range(position[1], position[0].nrows - 1):
-                # print(row[col[0] - 1, col[1] - 1, col[2] - 1])
-                if row_len < columns[-1]:  # If row shorter, than we expect, then place all row in 0 column
-                    # print('SHORT row:' + str(row))
-                    cell_text = self.list_to_string(row)
-                    self.ui.table_left.insertRow(new_row_num)
-                    self.ui.table_left.setItem(new_row_num, 0, QTableWidgetItem(cell_text))
-                    self.ui.table_left.item(new_row_num, 0).setToolTip(cell_text)
-                    return
+            if model in self.models:
+                position = self.models[model]  # [Sheet 27:<XIAOMI>, 813] - sheet, row
+                # print(f'{position=}')
+                # Take needed columns for exact model
+                if position[0].name in C.PRICE_SEARCH_COLUMN_NUMBERS:
+                    columns = C.PRICE_SEARCH_COLUMN_NUMBERS[position[0].name]  # [2, 4, 5]
                 else:
+                    columns = C.PRICE_SEARCH_COLUMN_NUMBERS['+']
+                # print(f'{columns=}')
+                row = Price.get_row_in_pos(position)
+                row_len = len(row)
+                # print(f'{row=}')
 
-                    # if cell is out of row, text will be empty
-                    cells_texts = []
-                    for c in range(len(columns)):
-                        if columns[c] < row_len:
-                            cells_texts.append(str(row[columns[c]]))
-                        else:
-                            cells_texts.append('')
-
-                    # cells_text = [str(row[columns[0]]), str(row[columns[1]])]
-                    if cells_texts[0] or len(cells_texts[1]) > 3:
-
+                new_row_num = 0
+                self.ui.table_left.setRowCount(0)
+                self.ui.model_lable.setText(self.list_to_string(row))
+                for i in range(position[1], position[0].nrows - 1):
+                    # print(row[col[0] - 1, col[1] - 1, col[2] - 1])
+                    if row_len < columns[-1]:  # If row shorter, than we expect, then place all row in 0 column
+                        # print('SHORT row:' + str(row))
+                        cell_text = self.list_to_string(row)
                         self.ui.table_left.insertRow(new_row_num)
-                        for j, txt in enumerate(cells_texts):
-                            self.ui.table_left.setItem(new_row_num, j, QTableWidgetItem(txt))
-                            self.ui.table_left.item(new_row_num, j).setToolTip(txt)
-
-                            if C.PRICE_COLORED and txt:
-                                bgd = self.Price.DB.colour_map. \
-                                    get(self.Price.DB.xf_list[position[0].
-                                        cell(i, columns[j]).xf_index].background.pattern_colour_index)
-                                if bgd:
-                                    self.ui.table_left.item(new_row_num, j). \
-                                        setBackground(QtGui.QColor(bgd[0], bgd[1], bgd[2]))
-
-                        new_row_num += 1
-                    if i < position[0].nrows:
-                        # print(row[col[0] - 1, col[1] - 1, col[2] - 1])
-                        row = position[0].row_values(i + 1, 0, 9)
-                        if row[0] != '':
-                            if row[0] not in C.PRICE_TRASH_IN_CELLS:
-                                return
-                        # print(row[col[0]-1, col[1]-1, col[2]-1])
-                    else:
+                        self.ui.table_left.setItem(new_row_num, 0, QTableWidgetItem(cell_text))
+                        self.ui.table_left.item(new_row_num, 0).setToolTip(cell_text)
                         return
+                    else:
+
+                        # if cell is out of row, text will be empty
+                        cells_texts = []
+                        for c in range(len(columns)):
+                            if columns[c] < row_len:
+                                cells_texts.append(str(row[columns[c]]))
+                            else:
+                                cells_texts.append('')
+
+                        # cells_text = [str(row[columns[0]]), str(row[columns[1]])]
+                        if cells_texts[0] or len(cells_texts[1]) > 3:
+
+                            self.ui.table_left.insertRow(new_row_num)
+                            for j, txt in enumerate(cells_texts):
+                                self.ui.table_left.setItem(new_row_num, j, QTableWidgetItem(txt))
+                                self.ui.table_left.item(new_row_num, j).setToolTip(txt)
+
+                                if C.PRICE_COLORED and txt:
+                                    bgd = self.Price.DB.colour_map. \
+                                        get(self.Price.DB.xf_list[position[0].
+                                            cell(i, columns[j]).xf_index].background.pattern_colour_index)
+                                    if bgd:
+                                        self.ui.table_left.item(new_row_num, j). \
+                                            setBackground(QtGui.QColor(bgd[0], bgd[1], bgd[2]))
+
+                            new_row_num += 1
+                        if i < position[0].nrows:
+                            # print(row[col[0] - 1, col[1] - 1, col[2] - 1])
+                            row = position[0].row_values(i + 1, 0, 9)
+                            if row[0] != '':
+                                if row[0] not in C.PRICE_TRASH_IN_CELLS:
+                                    return
+                            # print(row[col[0]-1, col[1]-1, col[2]-1])
+                        else:
+                            return
         except Exception as err:
             self.error((f'Error updating price table for:\n{model}', err))
 
@@ -394,9 +418,15 @@ class App(QMainWindow):
     #         print(f'TAB {self.ui.tab_widget.currentIndex()=} {event.key()=}')
     #     return QMainWindow.event(self, event)
 
+    # def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
+    #     index = event.pos()
+    #     print(f'{index=}')
+
     def keyPressEvent(self, event) -> None:
         # print(f'KEYPRESS: {event.key()}')
-        if self.models and 0 <= self.current_model_button_index < len(self.model_buttons):
+        if self.models and 0 <= self.current_model_button_index < len(self.model_buttons)\
+                or len(self.model_buttons) == 1:
+            # print(f'{self.current_model_button_index=} {self.model_buttons=} ')
             if event.key() in (Qt.Key_Return, Qt.Key_Enter):
                 self.model_buttons[self.current_model_button_index].click()
             elif event.key() == Qt.Key_Up:
@@ -524,6 +554,8 @@ class ConfigWindow(QDialog):
         except Exception as err:
             App.error((f'Error while saving config file:\n{C.HELP}', err))
         if login:
+            DK9.change_data(C.data())
+            print(f'{DK9.DATA=}')
             self.login_func()
 
 

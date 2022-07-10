@@ -327,7 +327,7 @@ class Ui_MainWindow(object):
         self.settings_button.setText(_translate("MainWindow", "Настройки"))
         self.web_status.setText(_translate("MainWindow", "Подключен"))
         self.pushButton.setText(_translate("MainWindow", "Показать лист"))
-        self.chb_search_strict.setText(_translate("MainWindow", "Отсечка"))
+        self.chb_search_strict.setText(_translate("MainWindow", "Минимум 2"))
         self.smart_search.setText(_translate("MainWindow", "Фильтры"))
         self.chb_search_eng.setText(_translate("MainWindow", "Латиница"))
         self.tab_widget.setTabText(self.tab_widget.indexOf(self.tab_3), _translate("MainWindow", "   ЗАПЧАСТИ   "))

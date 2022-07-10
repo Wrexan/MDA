@@ -6,10 +6,11 @@ import xlrd
 
 
 class Price:
-    def __init__(self, PATH: str, PRICE_PATH: str, PRICE_PARTIAL_NAME: tuple, PRICE_TRASH_IN_CELLS: tuple):
-        self.PRICE_TRASH_IN_CELLS = PRICE_TRASH_IN_CELLS
+    def __init__(self, C):
+        self.PRICE_TRASH_IN_CELLS = C.PRICE_TRASH_IN_CELLS
+        self.APPROVED = C.APPROVED
         self.message = ''
-        self.DB = self._load_price(PATH, PRICE_PATH, PRICE_PARTIAL_NAME)
+        self.DB = self._load_price(C.PATH, C.PRICE_PATH, C.PRICE_PARTIAL_NAME)
         print(f'{self.message}')
 
     def _load_price(self, PATH: str, PRICE_PATH: str, PRICE_PARTIAL_NAME: tuple):
@@ -49,6 +50,10 @@ class Price:
         if not self.DB:
             return
         try:
+            if not self.APPROVED:
+                for sheet in self.DB:
+                    if sheet.name == 'Samsung':
+                        self.APPROVED = True
             for sheet in self.DB:
                 # print(f'{sheet=}')
                 for row_num in range(sheet.nrows):

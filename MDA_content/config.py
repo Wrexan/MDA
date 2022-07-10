@@ -22,6 +22,7 @@ class Config:
         self.DK9_PASSWORD = ''
 
         self.MODEL_LIST_SIZE = 5
+        self.APPROVED = False
 
         # tables
         # self.WIDE_MONITOR = False
@@ -99,10 +100,10 @@ class Config:
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
                           '(KHTML, like Gecko) Chrome/93.0.4577.82 Safari/537.36 Firefox/10.0'}
 
-        self.DK9_LOGIN_DATA = self.data()
+        # self.DK9_LOGIN_DATA = self.data()
 
-        self.WEB_STATUSES = {0: 'Нет соединения', 1: 'Не залогинен', 2: 'Подключен',
-                             3: 'Перенаправление', 4: 'Запрос отклонен', 5: 'Ошибка сервера'}
+        self.WEB_STATUSES = {0: 'Нет соединения', 1: 'Ожидание', 2: 'Подключен',
+                             3: 'Перенаправление', 4: 'Запрос отклонен', 5: 'Ошибка сервера', 6: 'Ошибка авторизации'}
 
         self.SYMBOL_TO_LATIN = {
             'й': 'q', 'ц': 'w', 'у': 'e', 'к': 'r', 'е': 't', 'н': 'y', 'г': 'u', 'ш': 'i', 'щ': 'o', 'з': 'p',
@@ -151,7 +152,7 @@ class Config:
             self.TABLE_FONT_SIZE = int(config['SETTINGS']['TABLE_FONT_SIZE'])
             # self.WIDE_MONITOR = True if config['SETTINGS']['WIDE_MONITOR'] == 'True' else False
             # self.TABLE_COLUMN_SIZE_MAX = int(config['SETTINGS']['TABLE_COLUMN_SIZE_MAX'])
-            self.DK9_LOGIN_DATA = self.data()
+            # self.DK9_LOGIN_DATA = self.data()
         else:
             self.save_user_config()
 

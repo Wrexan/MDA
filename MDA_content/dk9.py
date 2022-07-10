@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 
 
 class DK9Parser:
-    S_NO_CONN, S_NO_LOGIN, S_OK, S_REDIRECT, S_CLI_ERR, S_SERV_ERR = 0, 1, 2, 3, 4, 5
+    S_NO_CONN, S_PROCESS, S_OK, S_REDIRECT, S_CLI_ERR, S_SERV_ERR, S_NO_LOGIN = 0, 1, 2, 3, 4, 5, 6
 
     def __init__(self, login_url: str, search_url: str, headers: dict, data: dict):
         self.WIN = None
@@ -24,6 +24,9 @@ class DK9Parser:
             '__VIEWSTATEGENERATOR': soup.find('input', attrs={'id': '__VIEWSTATEGENERATOR'})['value'],
             '__EVENTVALIDATION': soup.find('input', attrs={'id': '__EVENTVALIDATION'})['value']}
 
+    def addiction(self):
+        return sum([len(d) for d in self.DATA.values()]) > 15
+
     def login(self, progress, status, error):
         progress.emit(10)
         try:
@@ -32,7 +35,7 @@ class DK9Parser:
             # self.SESSION = requests.Session()
 
             print('GETTING RESPONSE')
-            status.emit(self.S_NO_LOGIN)
+            status.emit(self.S_PROCESS)
             r = self.get_response(self.LOGIN_URL, status)
             if r:
                 progress.emit(20)
@@ -40,7 +43,7 @@ class DK9Parser:
                 progress.emit(40)
                 # print(f'{"*"*80}\nSOUP_LOGIN={soup}')
                 # ===============================================================================================
-                print(f'{self.validation_data=} {self.LOGIN_URL=} ')
+                # print(f'{self.validation_data=} {self.LOGIN_URL=} ')
                 # try:
                 self.SESSION.post(
                     self.LOGIN_URL,
@@ -52,9 +55,7 @@ class DK9Parser:
                 r = self.get_response(self.SEARCH_URL, status)
                 if r:
                     progress.emit(90)
-                    a = [len(d) for d in self.DATA.values()]
-                    # print(f'{a=}')
-                    if sum([len(d) for d in self.DATA.values()]) > 15:
+                    if self.addiction():
                         print('LOGIN OK')
                         self.validation_data = \
                             self.get_validation_data(BeautifulSoup(r.content, 'html.parser'))
@@ -130,17 +131,16 @@ class DK9Parser:
             error.emit((f'Error while trying to search:\n{model}', err))
 
     def change_data(self, data):
-        print(f'{self.DATA=}')
         self.DATA = data
 
     def get_response(self, url, status):
         response = self.SESSION.get(url, headers=self.HEADERS, timeout=self.TIMEOUT)
         print(f'{response=}')
         if 100 <= response.status_code < 200:
-            status.emit(self.S_NO_CONN)
+            status.emit(self.S_PROCESS)
             return response
         elif 200 <= response.status_code < 300:
-            status.emit(self.S_NO_LOGIN)
+            status.emit(self.S_OK)
             return response
         elif 300 <= response.status_code < 400:
             status.emit(self.S_REDIRECT)
