@@ -427,9 +427,8 @@ class App(QMainWindow):
         self.ui.input_search.setFocus()
         self.ui.input_search.selectAll()
 
-    @staticmethod
-    def open_settings():
-        settings_ui = ConfigWindow()
+    def open_settings(self):
+        settings_ui = ConfigWindow(self.login_dk9)
         settings_ui.setWindowIcon(QtGui.QIcon(C.LOGO))
         settings_ui.exec_()
         settings_ui.show()
@@ -483,12 +482,13 @@ class HelpWindow(QDialog):
 
 
 class ConfigWindow(QDialog):
-    def __init__(self):
+    def __init__(self, login_func):
         super().__init__(None,
                          # QtCore.Qt.WindowSystemMenuHint |
                          # QtCore.Qt.WindowTitleHint |
                          QtCore.Qt.WindowCloseButtonHint
                          )
+        self.login_func = login_func
         self.ui = Ui_settings_window()
         self.ui.setupUi(self)
         self.ui.web_login.setText(C.DK9_LOGIN)
@@ -505,6 +505,9 @@ class ConfigWindow(QDialog):
 
     def apply_settings(self):
         print('Applying settings')
+        login = False
+        if C.DK9_LOGIN != self.ui.web_login.text() or C.DK9_PASSWORD != self.ui.web_password.text():
+            login = True
         C.DK9_LOGIN = self.ui.web_login.text()
         C.DK9_PASSWORD = self.ui.web_password.text()
         C.MODEL_LIST_SIZE = self.ui.ui_models_num.value()
@@ -520,6 +523,8 @@ class ConfigWindow(QDialog):
             C.save_user_config()
         except Exception as err:
             App.error((f'Error while saving config file:\n{C.HELP}', err))
+        if login:
+            self.login_func()
 
 
 class Worker(QtCore.QThread):
