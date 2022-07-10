@@ -24,8 +24,8 @@ class Config:
         self.MODEL_LIST_SIZE = 5
 
         # tables
-        self.WIDE_MONITOR = False
-        self.TABLE_COLUMN_SIZE_MAX = 160  # best for 1240 font 10
+        # self.WIDE_MONITOR = False
+        # self.TABLE_COLUMN_SIZE_MAX = 160  # best for 1240 font 10
         self.PRICE_COLORED = True  # work slower if True
         self.DK9_COLORED = True  # work slower if True
         self.DK9_COL_DIFF = 14  # difference of odd/even bg
@@ -113,7 +113,10 @@ class Config:
             'ї': ']', 'і': 's', 'є': "'",
         }
 
-        self.handle_config()
+        self.load_or_generate_config()
+
+    def set_error_signal(self, signal):
+        self.error = signal
 
     def convert_columns_to_nums(self):
         for list_name, columns in self.PRICE_SEARCH_COLUMN_SYMBOLS.items():
@@ -134,7 +137,7 @@ class Config:
              color[1] - self.DK9_COL_DIFF if color[1] >= self.DK9_COL_DIFF else 0,
              color[2] - self.DK9_COL_DIFF if color[2] >= self.DK9_COL_DIFF else 0)
 
-    def handle_config(self):
+    def load_or_generate_config(self):
         config = configparser.ConfigParser()
         config.read(self.USER_CONFIG)
         if 'SETTINGS' in config:
@@ -146,8 +149,8 @@ class Config:
             self.DK9_COLORED = True if config['SETTINGS']['DK9_COLORED'] == 'True' else False
             self.DK9_COL_DIFF = int(config['SETTINGS']['DK9_COL_DIFF'])
             self.TABLE_FONT_SIZE = int(config['SETTINGS']['TABLE_FONT_SIZE'])
-            self.WIDE_MONITOR = True if config['SETTINGS']['WIDE_MONITOR'] == 'True' else False
-            self.TABLE_COLUMN_SIZE_MAX = int(config['SETTINGS']['TABLE_COLUMN_SIZE_MAX'])
+            # self.WIDE_MONITOR = True if config['SETTINGS']['WIDE_MONITOR'] == 'True' else False
+            # self.TABLE_COLUMN_SIZE_MAX = int(config['SETTINGS']['TABLE_COLUMN_SIZE_MAX'])
             self.DK9_LOGIN_DATA = self.data()
         else:
             self.save_user_config()
@@ -184,8 +187,8 @@ class Config:
         config['SETTINGS']['DK9_COLORED'] = str(self.DK9_COLORED)
         config['SETTINGS']['DK9_COL_DIFF'] = str(self.DK9_COL_DIFF)
         config['SETTINGS']['TABLE_FONT_SIZE'] = str(self.TABLE_FONT_SIZE)
-        config['SETTINGS']['WIDE_MONITOR'] = str(self.WIDE_MONITOR)
-        config['SETTINGS']['TABLE_COLUMN_SIZE_MAX'] = str(self.TABLE_COLUMN_SIZE_MAX)
+        # config['SETTINGS']['WIDE_MONITOR'] = str(self.WIDE_MONITOR)
+        # config['SETTINGS']['TABLE_COLUMN_SIZE_MAX'] = str(self.TABLE_COLUMN_SIZE_MAX)
         self.DK9_LOGIN_DATA = self.data()
         try:
             with open(self.USER_CONFIG, 'w') as conf:

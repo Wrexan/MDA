@@ -1,5 +1,7 @@
 import os
 import xlrd
+
+
 # from MDA_content.windows import Messages as M
 
 
@@ -29,8 +31,8 @@ class Price:
             # self.ui.model_lable.setText('ОШИБКА! Файл "Прайс..xls" не найден')
             # self.ui.price_name.setText('Расположите файл "Прайс..xls" на рабочем столе')
             print(f'File not found:\n{PRICE_PARTIAL_NAME[0]}',
-                      f'it must be on desktop or next to this app and have format:\n'
-                      f'*{PRICE_PARTIAL_NAME[0]}*{PRICE_PARTIAL_NAME[1]}')
+                  f'it must be on desktop or next to this app and have format:\n'
+                  f'*{PRICE_PARTIAL_NAME[0]}*{PRICE_PARTIAL_NAME[1]}')
             # M.warning(f'File not found:\n{PRICE_PARTIAL_NAME[0]}',
             #           f'it must be on desktop or next to this app and have format:\n'
             #           f'*{PRICE_PARTIAL_NAME[0]}*{PRICE_PARTIAL_NAME[1]}')
@@ -100,8 +102,8 @@ class Price:
             return models
         except Exception as err:
             print(f'Error while searching:\n{search_req}',
-                      f'Found cells:\n{models}\n'
-                      f'Message:\n{err}')
+                  f'Found cells:\n{models}\n'
+                  f'Message:\n{err}')
             # M.warning(f'Error while searching:\n{search_req}',
             #           f'Found cells:\n{models}\n'
             #           f'Message:\n{err}')

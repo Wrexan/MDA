@@ -12,6 +12,13 @@ from MDA_content.window_main import Ui_MainWindow
 from MDA_content.window_settings import Ui_settings_window
 from MDA_content.window_simple import Ui_Dialog
 
+
+# class Conf(Config):
+#     def __init__(self):
+#         super(Conf, self).__init__()
+#         self.error = QtCore.pyqtSignal(tuple)
+
+
 C = Config()
 DK9 = DK9Parser(C.DK9_LOGIN_URL, C.DK9_SEARCH_URL, C.DK9_HEADERS, C.DK9_LOGIN_DATA)
 
@@ -19,14 +26,7 @@ DK9 = DK9Parser(C.DK9_LOGIN_URL, C.DK9_SEARCH_URL, C.DK9_HEADERS, C.DK9_LOGIN_DA
 class App(QMainWindow):
     def __init__(self):
         super().__init__()
-
-        # self.setFocus()
-        # self.setWindowIcon(QtGui.QIcon(f'content/start_test.ico'))
         qApp.focusChanged.connect(self.on_focusChanged)
-
-        # self.PRICE_DB = xlrd.open_workbook(sys.path[0] + '\\' + PRICE_PATH + PRICE_NAME, formatting_info=True)
-        # self.PRICE_DB = xlrd.open_workbook(PRICE_PATH + price_name, formatting_info=True)
-        # self.prepare_columns()
         self.models = {}
         self.model_buttons = {}
         self.current_model_button_index = 0
@@ -35,9 +35,6 @@ class App(QMainWindow):
         self.init_ui_statics()
         self.init_ui_dynamics()
 
-
-        # self.SESSION = None
-        # self.validation_data = None
         self.next_model = ''
         self.curr_model = ''
         self.old_search = ''
@@ -46,12 +43,9 @@ class App(QMainWindow):
         print('Loading Price')
         self.Price = Price(C.PATH, C.PRICE_PATH, C.PRICE_PARTIAL_NAME, C.PRICE_TRASH_IN_CELLS)
         print('Login to DK9')
-        print(f'{C.DK9_LOGIN=} {C.DK9_PASSWORD=} {C.DK9_LOGIN_DATA=} ')
         self.web_status = 0
         self.login_dk9()
         self.update_price_status()
-        # self.thread.start(self.worker)
-        # self.update_dk9_data('mi8 lite')
 
     def init_ui_statics(self):
         self.ui.input_search.textChanged[str].connect(self.search_and_upd_model_buttons)
@@ -75,6 +69,7 @@ class App(QMainWindow):
         self.ui.help.clicked.connect(self.open_help)
 
     def init_ui_dynamics(self):
+        # column_widths_percents = (15, 7.2, 10, 40, 7.2, 3.6, 10, 7)
         font = QtGui.QFont()
         # font.setBold(True)
         font.setPixelSize(C.TABLE_FONT_SIZE)
@@ -87,21 +82,27 @@ class App(QMainWindow):
         self.ui.table_left.setFont(font)
         self.ui.table_parts.setFont(font)
         self.ui.table_accesory.setFont(font)
-        self.ui.table_left.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
-        self.ui.table_parts.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
-        self.ui.table_accesory.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
-        self.ui.table_left.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
-        self.ui.table_parts.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
-        self.ui.table_accesory.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
 
-        if not C.WIDE_MONITOR:
-            self.ui.table_left.horizontalHeader().setMaximumSectionSize(int(C.TABLE_COLUMN_SIZE_MAX * 1.4))
-            self.ui.table_parts.horizontalHeader().setMaximumSectionSize(C.TABLE_COLUMN_SIZE_MAX)
-            self.ui.table_accesory.horizontalHeader().setMaximumSectionSize(C.TABLE_COLUMN_SIZE_MAX)
-        else:
-            self.ui.table_left.horizontalHeader().setMaximumSectionSize(2000)
-            self.ui.table_parts.horizontalHeader().setMaximumSectionSize(2000)
-            self.ui.table_accesory.horizontalHeader().setMaximumSectionSize(2000)
+        # if not C.WIDE_MONITOR:
+        self.ui.table_parts.horizontalHeader().setStretchLastSection(False)
+        for i in range(self.ui.table_parts.columnCount()):
+            if i == 3:
+                self.ui.table_parts.horizontalHeader().setSectionResizeMode(i, QHeaderView.Stretch)
+                self.ui.table_accesory.horizontalHeader().setSectionResizeMode(i, QHeaderView.Stretch)
+                self.ui.table_left.horizontalHeader().setSectionResizeMode(i, QHeaderView.Stretch)
+            else:
+                self.ui.table_parts.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
+                self.ui.table_accesory.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
+                if i < 6:
+                    self.ui.table_left.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
+
+            # self.ui.table_left.horizontalHeader().setMaximumSectionSize(int(C.TABLE_COLUMN_SIZE_MAX * 1.4))
+            # self.ui.table_parts.horizontalHeader().setMaximumSectionSize(C.TABLE_COLUMN_SIZE_MAX)
+            # self.ui.table_accesory.horizontalHeader().setMaximumSectionSize(C.TABLE_COLUMN_SIZE_MAX)
+        # else:
+        #     self.ui.table_left.horizontalHeader().setMaximumSectionSize(2000)
+        #     self.ui.table_parts.horizontalHeader().setMaximumSectionSize(2000)
+        #     self.ui.table_accesory.horizontalHeader().setMaximumSectionSize(2000)
 
     def search_on_strict_change(self, state):
         C.STRICT_SEARCH = state
@@ -497,8 +498,8 @@ class ConfigWindow(QDialog):
         self.ui.tables_font_size.setValue(C.TABLE_FONT_SIZE)
         self.ui.colored_web_table.setCheckState(2 if C.DK9_COLORED else 0)
         self.ui.colored_price_table.setCheckState(2 if C.PRICE_COLORED else 0)
-        self.ui.wide_monitor.setCheckState(2 if C.WIDE_MONITOR else 0)
-        self.ui.column_width_max.setValue(C.TABLE_COLUMN_SIZE_MAX)
+        # self.ui.wide_monitor.setCheckState(2 if C.WIDE_MONITOR else 0)
+        # self.ui.column_width_max.setValue(C.TABLE_COLUMN_SIZE_MAX)
         # self.ui.buttonBox.button()..accept.connect(self.apply_settings())
         self.ui.buttonBox.accepted.connect(self.apply_settings)
 
@@ -511,11 +512,14 @@ class ConfigWindow(QDialog):
         C.TABLE_FONT_SIZE = self.ui.tables_font_size.value()
         C.DK9_COLORED = True if self.ui.colored_web_table.checkState() == 2 else False
         C.PRICE_COLORED = True if self.ui.colored_price_table.checkState() == 2 else False
-        C.WIDE_MONITOR = True if self.ui.wide_monitor.checkState() == 2 else False
-        C.TABLE_COLUMN_SIZE_MAX = self.ui.column_width_max.value()
+        # C.WIDE_MONITOR = True if self.ui.wide_monitor.checkState() == 2 else False
+        # C.TABLE_COLUMN_SIZE_MAX = self.ui.column_width_max.value()
         window.init_ui_dynamics()
         C.precalculate_color_diffs()
-        C.save_user_config()
+        try:
+            C.save_user_config()
+        except Exception as err:
+            App.error((f'Error while saving config file:\n{C.HELP}', err))
 
 
 class Worker(QtCore.QThread):
