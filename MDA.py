@@ -49,7 +49,7 @@ class App(QMainWindow):
         self.update_price_status()
 
     def init_ui_statics(self):
-        self.ui.input_search.textChanged[str].connect(self.search_and_upd_model_buttons)
+        self.ui.input_search.editTextChanged[str].connect(self.search_and_upd_model_buttons)
         self.ui.chb_search_strict.stateChanged[int].connect(self.search_on_strict_change)
         self.ui.chb_search_strict.setToolTip('Запрещает поиск по одному символу.')
         self.ui.smart_search.stateChanged[int].connect(self.search_smart_change)
@@ -140,7 +140,7 @@ class App(QMainWindow):
             res_req = search_req
         if C.STRICT_SEARCH and len(res_req) < C.STRICT_SEARCH_LEN or len(res_req) <= 0:
             if C.LATIN_SEARCH:
-                self.ui.input_search.setText(res_req)
+                self.ui.input_search.setEditText(res_req)
             return
         # print(f'{len(res_req)=} {self.models=}')
 
@@ -153,7 +153,7 @@ class App(QMainWindow):
         else:
             self.model_buttons = {}
         if C.LATIN_SEARCH:
-            self.ui.input_search.setText(res_req)
+            self.ui.input_search.setEditText(res_req)
         # self.latin_process = False
 
     def upd_model_buttons(self, lay):
@@ -166,6 +166,10 @@ class App(QMainWindow):
             models_list = reversed((self.models.keys()))
         else:
             models_list = (self.models.keys())
+
+        self.ui.input_search.clear()
+        self.ui.input_search.addItems(models_list)
+
         for num, model in enumerate(models_list):
             self.model_buttons[num] = QPushButton(model)
             self.model_buttons[num].clicked.connect(self.scheduler)
@@ -193,8 +197,8 @@ class App(QMainWindow):
         # print('Start sheduler')
         model = self.sender().text()
         self.update_price_table(model)
-        if self.ui.input_search.text() and self.ui.input_search.text() != self.old_search:
-            self.old_search = self.ui.input_search.text()
+        if self.ui.input_search.currentText() and self.ui.input_search.currentText() != self.old_search:
+            self.old_search = self.ui.input_search.currentText()
             model = (self.old_search.split())[0].lower()
             if model in C.NOT_FULL_MODEL_NAMES:  # For models with divided name like iPhone | 11
                 self.curr_model = model
@@ -408,7 +412,7 @@ class App(QMainWindow):
             # self.setWindowState(QtCore.Qt.WindowMinimized)
         else:
             self.ui.input_search.setFocus()
-            self.ui.input_search.selectAll()
+            # self.ui.input_search.text.selectAll()
             # self.update_status()
             # print(f"window is the active window: {self.isActiveWindow()}")
 

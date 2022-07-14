@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1240</width>
-    <height>800</height>
+    <width>1024</width>
+    <height>605</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -45,22 +45,22 @@
       <property name="sizePolicy">
        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
         <horstretch>0</horstretch>
-        <verstretch>120</verstretch>
+        <verstretch>0</verstretch>
        </sizepolicy>
       </property>
       <property name="minimumSize">
        <size>
         <width>0</width>
-        <height>120</height>
+        <height>130</height>
        </size>
       </property>
       <property name="maximumSize">
        <size>
         <width>16777215</width>
-        <height>120</height>
+        <height>130</height>
        </size>
       </property>
-      <layout class="QHBoxLayout" name="horizontalLayout">
+      <layout class="QVBoxLayout" name="verticalLayout_8">
        <property name="spacing">
         <number>2</number>
        </property>
@@ -236,113 +236,19 @@
               <number>0</number>
              </property>
              <property name="leftMargin">
-              <number>2</number>
+              <number>9</number>
              </property>
              <property name="topMargin">
-              <number>0</number>
-             </property>
-             <property name="rightMargin">
               <number>2</number>
              </property>
+             <property name="rightMargin">
+              <number>9</number>
+             </property>
              <property name="bottomMargin">
-              <number>0</number>
+              <number>2</number>
              </property>
              <item>
-              <widget class="QFrame" name="frame">
-               <property name="frameShape">
-                <enum>QFrame::NoFrame</enum>
-               </property>
-               <property name="frameShadow">
-                <enum>QFrame::Plain</enum>
-               </property>
-               <property name="lineWidth">
-                <number>1</number>
-               </property>
-               <layout class="QHBoxLayout" name="horizontalLayout_4">
-                <property name="leftMargin">
-                 <number>9</number>
-                </property>
-                <property name="topMargin">
-                 <number>9</number>
-                </property>
-                <property name="rightMargin">
-                 <number>9</number>
-                </property>
-                <property name="bottomMargin">
-                 <number>9</number>
-                </property>
-                <item>
-                 <widget class="QPushButton" name="pushButton">
-                  <property name="enabled">
-                   <bool>false</bool>
-                  </property>
-                  <property name="maximumSize">
-                   <size>
-                    <width>120</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
-                  <property name="sizeIncrement">
-                   <size>
-                    <width>120</width>
-                    <height>0</height>
-                   </size>
-                  </property>
-                  <property name="text">
-                   <string>Показать лист</string>
-                  </property>
-                  <property name="autoDefault">
-                   <bool>false</bool>
-                  </property>
-                  <property name="default">
-                   <bool>false</bool>
-                  </property>
-                  <property name="flat">
-                   <bool>false</bool>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QCheckBox" name="chb_search_strict">
-                  <property name="text">
-                   <string>Минимум 2</string>
-                  </property>
-                  <property name="checked">
-                   <bool>true</bool>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QCheckBox" name="smart_search">
-                  <property name="enabled">
-                   <bool>true</bool>
-                  </property>
-                  <property name="text">
-                   <string>Фильтры</string>
-                  </property>
-                  <property name="checked">
-                   <bool>true</bool>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QCheckBox" name="chb_search_eng">
-                  <property name="enabled">
-                   <bool>true</bool>
-                  </property>
-                  <property name="text">
-                   <string>Латиница</string>
-                  </property>
-                  <property name="checked">
-                   <bool>true</bool>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLineEdit" name="input_search">
+              <widget class="QScrollArea" name="scroll_models">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                  <horstretch>0</horstretch>
@@ -361,28 +267,234 @@
                  <height>26</height>
                 </size>
                </property>
-               <property name="font">
-                <font>
-                 <pointsize>16</pointsize>
-                 <weight>75</weight>
-                 <bold>true</bold>
-                </font>
+               <property name="baseSize">
+                <size>
+                 <width>0</width>
+                 <height>26</height>
+                </size>
                </property>
-               <property name="layoutDirection">
-                <enum>Qt::LeftToRight</enum>
+               <property name="frameShape">
+                <enum>QFrame::NoFrame</enum>
                </property>
-               <property name="autoFillBackground">
-                <bool>false</bool>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-               <property name="maxLength">
-                <number>255</number>
+               <property name="widgetResizable">
+                <bool>true</bool>
                </property>
                <property name="alignment">
-                <set>Qt::AlignBottom|Qt::AlignHCenter</set>
+                <set>Qt::AlignBottom|Qt::AlignLeading|Qt::AlignLeft</set>
                </property>
+               <widget class="QWidget" name="scroll_models_layout">
+                <property name="geometry">
+                 <rect>
+                  <x>0</x>
+                  <y>0</y>
+                  <width>1000</width>
+                  <height>26</height>
+                 </rect>
+                </property>
+                <property name="font">
+                 <font>
+                  <pointsize>9</pointsize>
+                  <weight>50</weight>
+                  <bold>false</bold>
+                 </font>
+                </property>
+                <layout class="QVBoxLayout" name="verticalLayout_2">
+                 <property name="spacing">
+                  <number>0</number>
+                 </property>
+                 <property name="leftMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>0</number>
+                 </property>
+                </layout>
+               </widget>
+              </widget>
+             </item>
+             <item>
+              <widget class="QFrame" name="frame_3">
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>28</height>
+                </size>
+               </property>
+               <property name="frameShape">
+                <enum>QFrame::StyledPanel</enum>
+               </property>
+               <property name="frameShadow">
+                <enum>QFrame::Raised</enum>
+               </property>
+               <property name="lineWidth">
+                <number>0</number>
+               </property>
+               <layout class="QHBoxLayout">
+                <property name="spacing">
+                 <number>0</number>
+                </property>
+                <property name="leftMargin">
+                 <number>0</number>
+                </property>
+                <property name="topMargin">
+                 <number>0</number>
+                </property>
+                <property name="rightMargin">
+                 <number>0</number>
+                </property>
+                <property name="bottomMargin">
+                 <number>0</number>
+                </property>
+                <item>
+                 <widget class="QFrame" name="frame_4">
+                  <property name="frameShape">
+                   <enum>QFrame::StyledPanel</enum>
+                  </property>
+                  <property name="frameShadow">
+                   <enum>QFrame::Raised</enum>
+                  </property>
+                  <layout class="QHBoxLayout" name="horizontalLayout">
+                   <property name="leftMargin">
+                    <number>9</number>
+                   </property>
+                   <property name="topMargin">
+                    <number>0</number>
+                   </property>
+                   <property name="rightMargin">
+                    <number>9</number>
+                   </property>
+                   <property name="bottomMargin">
+                    <number>0</number>
+                   </property>
+                   <item>
+                    <widget class="QCheckBox" name="smart_search">
+                     <property name="enabled">
+                      <bool>true</bool>
+                     </property>
+                     <property name="text">
+                      <string>Фильтры</string>
+                     </property>
+                     <property name="checked">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QCheckBox" name="chb_search_strict">
+                     <property name="text">
+                      <string>Минимум 2</string>
+                     </property>
+                     <property name="checked">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QCheckBox" name="chb_search_eng">
+                     <property name="enabled">
+                      <bool>true</bool>
+                     </property>
+                     <property name="text">
+                      <string>Латиница</string>
+                     </property>
+                     <property name="checked">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QComboBox" name="input_search">
+                  <property name="sizePolicy">
+                   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                    <horstretch>0</horstretch>
+                    <verstretch>0</verstretch>
+                   </sizepolicy>
+                  </property>
+                  <property name="minimumSize">
+                   <size>
+                    <width>200</width>
+                    <height>26</height>
+                   </size>
+                  </property>
+                  <property name="baseSize">
+                   <size>
+                    <width>200</width>
+                    <height>26</height>
+                   </size>
+                  </property>
+                  <property name="editable">
+                   <bool>true</bool>
+                  </property>
+                  <property name="maxVisibleItems">
+                   <number>20</number>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QFrame" name="frame_5">
+                  <property name="frameShape">
+                   <enum>QFrame::StyledPanel</enum>
+                  </property>
+                  <property name="frameShadow">
+                   <enum>QFrame::Raised</enum>
+                  </property>
+                  <layout class="QHBoxLayout" name="horizontalLayout_6">
+                   <property name="leftMargin">
+                    <number>9</number>
+                   </property>
+                   <property name="topMargin">
+                    <number>0</number>
+                   </property>
+                   <property name="rightMargin">
+                    <number>9</number>
+                   </property>
+                   <property name="bottomMargin">
+                    <number>0</number>
+                   </property>
+                   <item>
+                    <widget class="QPushButton" name="pushButton">
+                     <property name="enabled">
+                      <bool>false</bool>
+                     </property>
+                     <property name="maximumSize">
+                      <size>
+                       <width>120</width>
+                       <height>16777215</height>
+                      </size>
+                     </property>
+                     <property name="sizeIncrement">
+                      <size>
+                       <width>120</width>
+                       <height>0</height>
+                      </size>
+                     </property>
+                     <property name="text">
+                      <string>Показать лист</string>
+                     </property>
+                     <property name="autoDefault">
+                      <bool>false</bool>
+                     </property>
+                     <property name="default">
+                      <bool>false</bool>
+                     </property>
+                     <property name="flat">
+                      <bool>false</bool>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+               </layout>
               </widget>
              </item>
              <item>
@@ -414,50 +526,6 @@
          <zorder>frame</zorder>
          <zorder>verticalSpacer_2</zorder>
          <zorder>frame_2</zorder>
-        </widget>
-       </item>
-       <item>
-        <widget class="QScrollArea" name="scroll_models">
-         <property name="widgetResizable">
-          <bool>true</bool>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignBottom|Qt::AlignLeading|Qt::AlignLeft</set>
-         </property>
-         <widget class="QWidget" name="scroll_models_layout">
-          <property name="geometry">
-           <rect>
-            <x>0</x>
-            <y>0</y>
-            <width>615</width>
-            <height>118</height>
-           </rect>
-          </property>
-          <property name="font">
-           <font>
-            <pointsize>9</pointsize>
-            <weight>50</weight>
-            <bold>false</bold>
-           </font>
-          </property>
-          <layout class="QVBoxLayout" name="verticalLayout_2">
-           <property name="spacing">
-            <number>0</number>
-           </property>
-           <property name="leftMargin">
-            <number>0</number>
-           </property>
-           <property name="topMargin">
-            <number>0</number>
-           </property>
-           <property name="rightMargin">
-            <number>0</number>
-           </property>
-           <property name="bottomMargin">
-            <number>0</number>
-           </property>
-          </layout>
-         </widget>
         </widget>
        </item>
       </layout>
