@@ -46,7 +46,7 @@ class Price:
     def search_price_models(self, search_req: str, MODEL_LIST_SIZE: int, SMART_SEARCH: int):
         search_req_len = len(search_req)
         models = {}
-        # print(self.PRICE_DB.sheets())
+        # print(self.DB.sheets())
         if not self.DB:
             return
         try:
