@@ -1,7 +1,7 @@
 import sys
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, \
-    QHeaderView, qApp, QDialog, QMessageBox, QListWidget
+    QHeaderView, qApp, QDialog, QMessageBox, QListWidget, QSizePolicy
 from PyQt5 import QtCore, QtGui
 from PyQt5.Qt import Qt
 
@@ -54,7 +54,7 @@ class App(QMainWindow):
 
         self.resized.connect(self.fix_models_list_position)
         self.ui.input_search.textChanged[str].connect(self.prepare_and_search)
-        # self.ui.input_search.activated.connect(self.apply_rules_and_search)
+        self.ui.input_search.cursorPositionChanged.connect(self.upd_models_list)
         self.ui.chb_search_narrow.stateChanged.connect(self.start_search_on_rule_change)
         self.ui.chb_search_narrow.setToolTip('Запрещает поиск по одному символу.')
         self.ui.chb_search_smart.stateChanged.connect(self.start_search_on_rule_change)
@@ -76,6 +76,11 @@ class App(QMainWindow):
         self.ui.help.clicked.connect(self.open_help)
         # models list appearing on search
         self.model_list_widget.setParent(self)
+        self.model_list_widget.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.model_list_widget.setFixedWidth(self.ui.input_search.width())
+        # self.model_list_widget.itemSelectionChanged.connect(self.scheduler)
+        self.model_list_widget.itemClicked.connect(self.scheduler)
+        self.model_list_widget.hide()
 
         # self.model_list_widget.setBaseSize(self.ui.input_search.width(), 26 * 10)
 
@@ -97,7 +102,7 @@ class App(QMainWindow):
 
         self.fix_models_list_position()
         self.model_list_widget.setFont(font)
-        self.model_list_widget.setMaximumSize(self.ui.input_search.width(), int(C.TABLE_FONT_SIZE * 1.5) * 6)
+        # self.model_list_widget.setMaximumSize(self.ui.input_search.width(), int(C.TABLE_FONT_SIZE * 1.5) * 6)
 
         # self.ui.table_parts.setMouseTracking(True)
         # self.ui.table_accesory.setMouseTracking(True)
@@ -179,9 +184,15 @@ class App(QMainWindow):
         return in_req
 
     def upd_models_list(self, clear=False):
-        if clear:
+        if clear or not self.models:
             self.model_list_widget.clear()
+            self.model_list_widget.hide()
             return
+
+        size = C.MODEL_LIST_MAX_SIZE if len(self.models) > C.MODEL_LIST_MAX_SIZE else len(self.models)
+        # print(f'{size=}')
+        self.model_list_widget.setFixedHeight(int(C.TABLE_FONT_SIZE * 1.6) * size)
+        self.model_list_widget.show()
         if C.MODEL_LIST_REVERSED:
             models_list = reversed((self.models.keys()))
         else:
@@ -189,6 +200,7 @@ class App(QMainWindow):
 
         self.model_list_widget.clear()
         self.model_list_widget.addItems(models_list)
+        self.model_list_widget.setCurrentRow(0)
         # print(f'{models_list=}')
 
     # def search_and_upd_model_buttons(self, search_req):
@@ -262,9 +274,11 @@ class App(QMainWindow):
         self.ui.price_status.setText(f'{self.Price.message if self.Price else "Прайс не найден"}')
 
     # @QtCore.pyqtSlot
-    def scheduler(self):
-        # print('Start sheduler')
-        model = self.sender().text()
+    def scheduler(self, item):
+        model = item.text()
+        self.upd_models_list(True)
+        # model = self.model_list_widget.itemClicked.text()
+        print(f'Start sheduler: {model=}')
         self.update_price_table(model)
         if self.ui.input_search.text() and self.ui.input_search.text() != self.old_search:
             self.old_search = self.ui.input_search.text()
@@ -501,29 +515,53 @@ class App(QMainWindow):
 
     def keyPressEvent(self, event) -> None:
         # print(f'KEYPRESS: {event.key()}')
-        if self.models and 0 <= self.current_model_button_index < len(self.model_buttons) \
-                or len(self.model_buttons) == 1:
+        if self.models \
+                and (0 <= self.model_list_widget.currentRow() < len(self.models) or self.model_list_widget.isHidden()):
             # print(f'{self.current_model_button_index=} {self.model_buttons=} ')
             if event.key() in (Qt.Key_Return, Qt.Key_Enter):
-                self.model_buttons[self.current_model_button_index].click()
+                if self.model_list_widget.isHidden():
+                    self.upd_models_list()
+                    return
+                self.scheduler(self.model_list_widget.currentItem())
             elif event.key() == Qt.Key_Up:
-                self.model_buttons[self.current_model_button_index].setDefault(False)
-                self.current_model_button_index -= 1
-                if self.current_model_button_index < 0:
-                    self.current_model_button_index = len(self.model_buttons) - 1
-                self.model_buttons[self.current_model_button_index].setDefault(True)
-                self.model_buttons[self.current_model_button_index].setFocus()
+                idx = self.model_list_widget.currentRow() - 1
+                if idx < 0:
+                    idx = len(self.models) - 1
+                self.model_list_widget.setCurrentRow(idx)
                 # print('Wow, Up')
             elif event.key() == Qt.Key_Down:
-                self.model_buttons[self.current_model_button_index].setDefault(False)
-                self.current_model_button_index += 1
-                if self.current_model_button_index > len(self.model_buttons) - 1:
-                    self.current_model_button_index = 0
-                self.model_buttons[self.current_model_button_index].setDefault(True)
-                self.model_buttons[self.current_model_button_index].setFocus()
-                # print('Wow, Down')
-                # self.ui.input_search.setFocus()
-                # self.ui.input_search.selectAll()
+                if self.model_list_widget.isHidden():
+                    self.upd_models_list()
+                    return
+                idx = self.model_list_widget.currentRow() + 1
+                if idx > len(self.models) - 1:
+                    idx = 0
+                self.model_list_widget.setCurrentRow(idx)
+        # elif self.model_list_widget.isHidden() \
+        #         and (event.key() == Qt.Key_Down
+        #              or event.key() == Qt.Key_Return
+        #              or event.key() == Qt.Key_Enter):
+        #     self.model_list_widget.show()
+            # if event.key() in (Qt.Key_Return, Qt.Key_Enter):
+            #     self.model_buttons[self.current_model_button_index].click()
+            # elif event.key() == Qt.Key_Up:
+            #     self.model_buttons[self.current_model_button_index].setDefault(False)
+            #     self.current_model_button_index -= 1
+            #     if self.current_model_button_index < 0:
+            #         self.current_model_button_index = len(self.model_buttons) - 1
+            #     self.model_buttons[self.current_model_button_index].setDefault(True)
+            #     self.model_buttons[self.current_model_button_index].setFocus()
+            #     # print('Wow, Up')
+            # elif event.key() == Qt.Key_Down:
+            #     self.model_buttons[self.current_model_button_index].setDefault(False)
+            #     self.current_model_button_index += 1
+            #     if self.current_model_button_index > len(self.model_buttons) - 1:
+            #         self.current_model_button_index = 0
+            #     self.model_buttons[self.current_model_button_index].setDefault(True)
+            #     self.model_buttons[self.current_model_button_index].setFocus()
+            # print('Wow, Down')
+            # self.ui.input_search.setFocus()
+            # self.ui.input_search.selectAll()
         if event.key() == Qt.Key_Alt:
             # print(f'TAB {self.ui.tab_widget.currentIndex()=}')
             if self.ui.tab_widget.currentIndex() == 0:
