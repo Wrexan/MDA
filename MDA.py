@@ -5,12 +5,12 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, \
 from PyQt5 import QtCore, QtGui
 from PyQt5.Qt import Qt
 
-from MDA_content.config import Config
-from MDA_content.dk9 import DK9Parser
-from MDA_content.price import Price
-from MDA_content.window_main import Ui_MainWindow
-from MDA_content.window_settings import Ui_settings_window
-from MDA_content.window_simple import Ui_Dialog
+from MDA_classes.config import Config
+from MDA_classes.dk9 import DK9Parser
+from MDA_classes.price import Price
+from MDA_classes.window_main import Ui_MainWindow
+from MDA_classes.window_settings import Ui_settings_window
+from MDA_classes.window_simple import Ui_Dialog
 
 # class Conf(Config):
 #     def __init__(self):
@@ -23,6 +23,8 @@ DK9 = DK9Parser(C.DK9_LOGIN_URL, C.DK9_SEARCH_URL, C.DK9_HEADERS, C.data())
 
 
 class App(QMainWindow):
+    resized = QtCore.pyqtSignal()
+
     def __init__(self):
         super().__init__()
         qApp.focusChanged.connect(self.on_focusChanged)
@@ -49,6 +51,8 @@ class App(QMainWindow):
         self.update_price_status()
 
     def init_ui_statics(self):
+
+        self.resized.connect(self.redraw_on_resize)
         self.ui.input_search.textChanged[str].connect(self.prepare_and_search)
         # self.ui.input_search.activated.connect(self.apply_rules_and_search)
         self.ui.chb_search_narrow.stateChanged.connect(self.start_search_on_rule_change)
@@ -83,6 +87,10 @@ class App(QMainWindow):
         # font.setBold(True)
         font.setPixelSize(C.TABLE_FONT_SIZE)
 
+        if C.FULLSCREEN:
+            self.showMaximized()
+        else:
+            self.showNormal()
         self.ui.table_left.verticalHeader().setDefaultSectionSize(C.TABLE_FONT_SIZE + 4)
         # self.ui.table_left.verticalHeader().setMaximumWidth(self.ui.table_left.width())
         # [self.ui.table_left.verticalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents) for i in range(5)]
@@ -129,6 +137,8 @@ class App(QMainWindow):
     # def search_latin_change(self, state):
     #     C.LATIN_SEARCH = state
     #     self.search_and_upd_model_buttons(self.ui.input_search.text())
+    def redraw_on_resize(self):
+        print('redraw')
 
     def start_search_on_rule_change(self):
         C.NARROW_SEARCH = self.ui.chb_search_narrow.checkState()
@@ -148,7 +158,7 @@ class App(QMainWindow):
 
             if result_req:
                 # print(f'{search_req=} {result_req=}')
-                self.models = self.Price.search_price_models(search_req, C.MODEL_LIST_SIZE, C.SMART_SEARCH)
+                self.models = self.Price.search_price_models(search_req, C.MODEL_LIST_MAX_SIZE, C.SMART_SEARCH)
                 if self.models:
                     self.upd_models_list()
             else:
@@ -389,8 +399,8 @@ class App(QMainWindow):
                             # print(row[col[0]-1, col[1]-1, col[2]-1])
                         else:
                             return
-        except Exception as err:
-            self.error((f'Error updating price table for:\n{model}', err))
+        except Exception as _err:
+            self.error((f'Error updating price table for:\n{model}', _err))
 
     def load_progress(self, progress):
         # if self.web_status not in (1, 2):
@@ -445,8 +455,8 @@ class App(QMainWindow):
                                 table.item(r, c).setBackground(QtGui.QColor(dbgc[0], dbgc[1], dbgc[2]))
                         c += 1
                 r += 1
-        except Exception as err:
-            self.error((f'Error updating table:\n{table}', err))
+        except Exception as _err:
+            self.error((f'Error updating table:\n{table}', _err))
 
     def copy_table_item(self):
         font = QtGui.QFont()
@@ -562,27 +572,6 @@ class App(QMainWindow):
         msg_box.show()
 
 
-# class MessageBox(QMessageBox):
-#     def __init__(self):
-#         super().__init__()
-
-
-# class ModelListWindow(QDialog):
-#     def __init__(self):
-#         super().__init__()
-#         print(f'Reading {C.HELP}')
-#         try:
-#             file = open(C.HELP, 'r', encoding='utf-8')
-#             with file:
-#                 text = file.read()
-#
-#             self.ui = Ui_Dialog()
-#             self.ui.setupUi(self)
-#             self.ui.text.setPlainText(text)
-#         except Exception as err:
-#             App.error((f'Error while reading help file:\n{C.HELP}', err))
-
-
 class HelpWindow(QDialog):
     def __init__(self):
         super().__init__()
@@ -595,8 +584,8 @@ class HelpWindow(QDialog):
             self.ui = Ui_Dialog()
             self.ui.setupUi(self)
             self.ui.text.setPlainText(text)
-        except Exception as err:
-            App.error((f'Error while reading help file:\n{C.HELP}', err))
+        except Exception as _err:
+            App.error((f'Error while reading help file:\n{C.HELP}', _err))
 
 
 class ConfigWindow(QDialog):
@@ -611,7 +600,7 @@ class ConfigWindow(QDialog):
         self.ui.setupUi(self)
         self.ui.web_login.setText(C.DK9_LOGIN)
         self.ui.web_password.setText(C.DK9_PASSWORD)
-        self.ui.ui_models_num.setValue(C.MODEL_LIST_SIZE)
+        self.ui.chk_fullscreen.setCheckState(2 if C.FULLSCREEN else 0)
         self.ui.zebra_contrast.setValue(C.DK9_COL_DIFF)
         self.ui.tables_font_size.setValue(C.TABLE_FONT_SIZE)
         self.ui.colored_web_table.setCheckState(2 if C.DK9_COLORED else 0)
@@ -628,7 +617,7 @@ class ConfigWindow(QDialog):
             login = True
         C.DK9_LOGIN = self.ui.web_login.text()
         C.DK9_PASSWORD = self.ui.web_password.text()
-        C.MODEL_LIST_SIZE = self.ui.ui_models_num.value()
+        C.FULLSCREEN = True if self.ui.chk_fullscreen.checkState() == 2 else False
         C.DK9_COL_DIFF = self.ui.zebra_contrast.value()
         C.TABLE_FONT_SIZE = self.ui.tables_font_size.value()
         C.DK9_COLORED = True if self.ui.colored_web_table.checkState() == 2 else False
@@ -639,8 +628,8 @@ class ConfigWindow(QDialog):
         C.precalculate_color_diffs()
         try:
             C.save_user_config()
-        except Exception as err:
-            App.error((f'Error while saving config file:\n{C.HELP}', err))
+        except Exception as _err:
+            App.error((f'Error while saving config file:\n{C.HELP}', _err))
         if login:
             DK9.change_data(C.data())
             print(f'{DK9.DATA=}')
@@ -664,11 +653,11 @@ class Worker(QtCore.QThread):
     def run(self):
         try:
             result = self.func(*self.args, **self.kwargs)
-        except Exception as err:
+        except Exception as _err:
             # traceback.print_exc()
             # App.error(f'Error while executing thread using:\n{self.args}\n{self.kwargs}', err)
-            exctype, value = sys.exc_info()[:2]
-            self.signals.error.emit((exctype, value, err))  # traceback.format_exc()))
+            exc_type, value = sys.exc_info()[:2]
+            self.signals.error.emit((exc_type, value, _err))  # traceback.format_exc()))
         else:
             self.signals.result.emit(result)  # Return the result of the processing
         finally:

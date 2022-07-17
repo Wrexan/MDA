@@ -20,8 +20,8 @@ class Config:
 
         self.DK9_LOGIN = ''
         self.DK9_PASSWORD = ''
+        self.DK9_LOGIN_DATA = {}
 
-        self.MODEL_LIST_SIZE = 5
         self.APPROVED = False
 
         # tables
@@ -34,7 +34,9 @@ class Config:
 
         # ============================================
         # =============APP SETTINGS====================
-        # ====================MENU====================
+        # ====================UI====================
+        self.FULLSCREEN = False
+        self.MODEL_LIST_MAX_SIZE = 15
         self.NARROW_SEARCH = True
         self.SMART_SEARCH = True
         self.LATIN_SEARCH = True
@@ -139,22 +141,27 @@ class Config:
              color[2] - self.DK9_COL_DIFF if color[2] >= self.DK9_COL_DIFF else 0)
 
     def load_or_generate_config(self):
-        config = configparser.ConfigParser()
-        config.read(self.USER_CONFIG)
-        if 'SETTINGS' in config:
-            print(f'Reading {self.USER_CONFIG}')
-            self.DK9_LOGIN = config['WEB DATABASE']['DK9_LOGIN']
-            self.DK9_PASSWORD = config['WEB DATABASE']['DK9_PASSWORD']
-            self.MODEL_LIST_SIZE = int(config['SETTINGS']['MODEL_LIST_SIZE'])
-            self.PRICE_COLORED = True if config['SETTINGS']['PRICE_COLORED'] == 'True' else False
-            self.DK9_COLORED = True if config['SETTINGS']['DK9_COLORED'] == 'True' else False
-            self.DK9_COL_DIFF = int(config['SETTINGS']['DK9_COL_DIFF'])
-            self.TABLE_FONT_SIZE = int(config['SETTINGS']['TABLE_FONT_SIZE'])
-            # self.WIDE_MONITOR = True if config['SETTINGS']['WIDE_MONITOR'] == 'True' else False
-            # self.TABLE_COLUMN_SIZE_MAX = int(config['SETTINGS']['TABLE_COLUMN_SIZE_MAX'])
-            # self.DK9_LOGIN_DATA = self.data()
-        else:
-            self.save_user_config()
+            config = configparser.ConfigParser()
+            config.read(self.USER_CONFIG)
+            if 'SETTINGS' in config:
+                print(f'Reading {self.USER_CONFIG}')
+                try:
+                    self.DK9_LOGIN = config['WEB DATABASE']['DK9_LOGIN']
+                    self.DK9_PASSWORD = config['WEB DATABASE']['DK9_PASSWORD']
+                    self.FULLSCREEN = True if config['SETTINGS']['FULLSCREEN'] == 'True' else False
+                    self.PRICE_COLORED = True if config['SETTINGS']['PRICE_COLORED'] == 'True' else False
+                    self.DK9_COLORED = True if config['SETTINGS']['DK9_COLORED'] == 'True' else False
+                    self.DK9_COL_DIFF = int(config['SETTINGS']['DK9_COL_DIFF'])
+                    self.TABLE_FONT_SIZE = int(config['SETTINGS']['TABLE_FONT_SIZE'])
+                    # self.WIDE_MONITOR = True if config['SETTINGS']['WIDE_MONITOR'] == 'True' else False
+                    # self.TABLE_COLUMN_SIZE_MAX = int(config['SETTINGS']['TABLE_COLUMN_SIZE_MAX'])
+                    # self.DK9_LOGIN_DATA = self.data()
+                except Exception as _err:
+                    print(f'Error while trying to read/create config at:\n{self.USER_CONFIG}', _err)
+                    os.remove(self.USER_CONFIG)
+                    self.save_user_config()
+            else:
+                self.save_user_config()
 
     def data(self):
         return {
@@ -183,13 +190,12 @@ class Config:
         config['WEB DATABASE']['DK9_LOGIN'] = str(self.DK9_LOGIN)
         config['WEB DATABASE']['DK9_PASSWORD'] = str(self.DK9_PASSWORD)
         config['SETTINGS'] = {}
-        config['SETTINGS']['MODEL_LIST_SIZE'] = str(self.MODEL_LIST_SIZE)
+        config['SETTINGS']['FULLSCREEN'] = str(self.FULLSCREEN)
         config['SETTINGS']['PRICE_COLORED'] = str(self.PRICE_COLORED)
         config['SETTINGS']['DK9_COLORED'] = str(self.DK9_COLORED)
         config['SETTINGS']['DK9_COL_DIFF'] = str(self.DK9_COL_DIFF)
         config['SETTINGS']['TABLE_FONT_SIZE'] = str(self.TABLE_FONT_SIZE)
-        # config['SETTINGS']['WIDE_MONITOR'] = str(self.WIDE_MONITOR)
-        # config['SETTINGS']['TABLE_COLUMN_SIZE_MAX'] = str(self.TABLE_COLUMN_SIZE_MAX)
+
         self.DK9_LOGIN_DATA = self.data()
         try:
             with open(self.USER_CONFIG, 'w') as conf:
