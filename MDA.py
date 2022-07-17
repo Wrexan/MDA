@@ -52,7 +52,7 @@ class App(QMainWindow):
 
     def init_ui_statics(self):
 
-        self.resized.connect(self.redraw_on_resize)
+        self.resized.connect(self.fix_models_list_position)
         self.ui.input_search.textChanged[str].connect(self.prepare_and_search)
         # self.ui.input_search.activated.connect(self.apply_rules_and_search)
         self.ui.chb_search_narrow.stateChanged.connect(self.start_search_on_rule_change)
@@ -77,12 +77,9 @@ class App(QMainWindow):
         # models list appearing on search
         self.model_list_widget.setParent(self)
 
-        self.model_list_widget.move(int(self.width() / 2 - self.ui.input_search.width() / 2),
-                                    int(self.ui.HEAD.height() - 6))
         # self.model_list_widget.setBaseSize(self.ui.input_search.width(), 26 * 10)
 
     def init_ui_dynamics(self):
-        # column_widths_percents = (15, 7.2, 10, 40, 7.2, 3.6, 10, 7)
         font = QtGui.QFont()
         # font.setBold(True)
         font.setPixelSize(C.TABLE_FONT_SIZE)
@@ -92,14 +89,13 @@ class App(QMainWindow):
         else:
             self.showNormal()
         self.ui.table_left.verticalHeader().setDefaultSectionSize(C.TABLE_FONT_SIZE + 4)
-        # self.ui.table_left.verticalHeader().setMaximumWidth(self.ui.table_left.width())
-        # [self.ui.table_left.verticalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents) for i in range(5)]
         self.ui.table_parts.verticalHeader().setDefaultSectionSize(C.TABLE_FONT_SIZE + 4)
         self.ui.table_accesory.verticalHeader().setDefaultSectionSize(C.TABLE_FONT_SIZE + 4)
         self.ui.table_left.setFont(font)
         self.ui.table_parts.setFont(font)
         self.ui.table_accesory.setFont(font)
 
+        self.fix_models_list_position()
         self.model_list_widget.setFont(font)
         self.model_list_widget.setMaximumSize(self.ui.input_search.width(), int(C.TABLE_FONT_SIZE * 1.5) * 6)
 
@@ -118,14 +114,6 @@ class App(QMainWindow):
                 if i < 6:
                     self.ui.table_left.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
 
-            # self.ui.table_left.horizontalHeader().setMaximumSectionSize(int(C.TABLE_COLUMN_SIZE_MAX * 1.4))
-            # self.ui.table_parts.horizontalHeader().setMaximumSectionSize(C.TABLE_COLUMN_SIZE_MAX)
-            # self.ui.table_accesory.horizontalHeader().setMaximumSectionSize(C.TABLE_COLUMN_SIZE_MAX)
-        # else:
-        #     self.ui.table_left.horizontalHeader().setMaximumSectionSize(2000)
-        #     self.ui.table_parts.horizontalHeader().setMaximumSectionSize(2000)
-        #     self.ui.table_accesory.horizontalHeader().setMaximumSectionSize(2000)
-
     # def search_on_narrow_change(self, state):
     #     C.NARROW_SEARCH = state
     #     self.search_and_upd_model_buttons(self.ui.input_search.text())
@@ -137,8 +125,11 @@ class App(QMainWindow):
     # def search_latin_change(self, state):
     #     C.LATIN_SEARCH = state
     #     self.search_and_upd_model_buttons(self.ui.input_search.text())
-    def redraw_on_resize(self):
-        print('redraw')
+    def fix_models_list_position(self):
+        self.model_list_widget.move(int(self.ui.input_search.x() + 12),
+                                    int(self.ui.HEAD.height() - 6))
+        # self.model_list_widget.move(int(self.width() / 2 - self.ui.input_search.width() / 2),
+        #                             int(self.ui.HEAD.height() - 6))
 
     def start_search_on_rule_change(self):
         C.NARROW_SEARCH = self.ui.chb_search_narrow.checkState()
@@ -503,6 +494,10 @@ class App(QMainWindow):
     # def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
     #     index = event.pos()
     #     print(f'{index=}')
+
+    def resizeEvent(self, event):
+        self.resized.emit()
+        return super(QMainWindow, self).resizeEvent(event)
 
     def keyPressEvent(self, event) -> None:
         # print(f'KEYPRESS: {event.key()}')
