@@ -35,12 +35,12 @@ class Config:
         # ============================================
         # =============APP SETTINGS====================
         # ====================MENU====================
-        self.STRICT_SEARCH = True
+        self.NARROW_SEARCH = True
         self.SMART_SEARCH = True
         self.LATIN_SEARCH = True
         self.MODEL_LIST_REVERSED = False
         # ====================PRICE====================
-        self.STRICT_SEARCH_LEN = 2  # start search after 2 symbols
+        self.NARROW_SEARCH_LEN = 2  # start search after 2 symbols
         self.PRICE_SEARCH_COLUMN_SYMBOLS = {'+': 'BCFGH',
                                             'Alcatel': 'BCDE',
                                             'Asus-тел': 'XBFG',

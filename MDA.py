@@ -12,7 +12,6 @@ from MDA_content.window_main import Ui_MainWindow
 from MDA_content.window_settings import Ui_settings_window
 from MDA_content.window_simple import Ui_Dialog
 
-
 # class Conf(Config):
 #     def __init__(self):
 #         super(Conf, self).__init__()
@@ -50,10 +49,10 @@ class App(QMainWindow):
         self.update_price_status()
 
     def init_ui_statics(self):
-        self.ui.input_search.textChanged[str].connect(self.apply_rules_and_search)
+        self.ui.input_search.textChanged[str].connect(self.prepare_and_search)
         # self.ui.input_search.activated.connect(self.apply_rules_and_search)
-        self.ui.chb_search_strict.stateChanged.connect(self.start_search_on_rule_change)
-        self.ui.chb_search_strict.setToolTip('Запрещает поиск по одному символу.')
+        self.ui.chb_search_narrow.stateChanged.connect(self.start_search_on_rule_change)
+        self.ui.chb_search_narrow.setToolTip('Запрещает поиск по одному символу.')
         self.ui.chb_search_smart.stateChanged.connect(self.start_search_on_rule_change)
         self.ui.chb_search_smart.setToolTip(
             'Применяет к запросу фильтр и выдает более релевантный результат.\n'
@@ -119,8 +118,8 @@ class App(QMainWindow):
         #     self.ui.table_parts.horizontalHeader().setMaximumSectionSize(2000)
         #     self.ui.table_accesory.horizontalHeader().setMaximumSectionSize(2000)
 
-    # def search_on_strict_change(self, state):
-    #     C.STRICT_SEARCH = state
+    # def search_on_narrow_change(self, state):
+    #     C.NARROW_SEARCH = state
     #     self.search_and_upd_model_buttons(self.ui.input_search.text())
     #
     # def search_smart_change(self, state):
@@ -132,21 +131,56 @@ class App(QMainWindow):
     #     self.search_and_upd_model_buttons(self.ui.input_search.text())
 
     def start_search_on_rule_change(self):
-        C.STRICT_SEARCH = self.ui.chb_search_strict.checkState()
+        C.NARROW_SEARCH = self.ui.chb_search_narrow.checkState()
         C.SMART_SEARCH = self.ui.chb_search_smart.checkState()
         C.LATIN_SEARCH = self.ui.chb_search_eng.checkState()
-        self.apply_rules_and_search(self.ui.input_search.text())
+        self.prepare_and_search(self.ui.input_search.text(), True)
 
-    def apply_rules_and_search(self, search_req):
-        print(self.ui.input_search.text())
-        self.search_and_upd_checkbox(search_req)
+    def prepare_and_search(self, search_req, force_search=False):
+        # print(f'{search_req=} {self.ui.input_search.isModified()=}')
+        if self.ui.input_search.isModified() or force_search:
+            if search_req == '':
+                self.upd_models_list(True)
+                return
 
-    def search_and_upd_checkbox(self, search_req):
-        self.models = self.Price.search_price_models(search_req, C.MODEL_LIST_SIZE, C.SMART_SEARCH)
-        if self.models:
-            self.get_models_list()
+            result_req = self.apply_rule_latin(search_req)
+            result_req = self.apply_rule_narrow(result_req)
 
-    def get_models_list(self):
+            if result_req:
+                # print(f'{search_req=} {result_req=}')
+                self.models = self.Price.search_price_models(search_req, C.MODEL_LIST_SIZE, C.SMART_SEARCH)
+                if self.models:
+                    self.upd_models_list()
+            else:
+                self.upd_models_list(True)
+
+    def apply_rule_latin(self, search_req):
+        # LATIN RULE: Turn all input text into ascii
+        result_req = ''
+        if C.LATIN_SEARCH:
+            # print(f'Applying LATIN to: {search_req}')
+            lower_req = search_req.lower()
+            for symbol in lower_req:
+                if symbol in C.SYMBOL_TO_LATIN:
+                    result_req = f'{result_req}{C.SYMBOL_TO_LATIN[symbol]}'
+                else:
+                    result_req = f'{result_req}{symbol}'
+            self.ui.input_search.setText(result_req)
+        else:
+            result_req = search_req
+        return result_req
+
+    @staticmethod
+    def apply_rule_narrow(in_req):
+        # NARROW RULE: search only if search request longer then C.NARROW_SEARCH_LEN
+        if C.NARROW_SEARCH and len(in_req) < C.NARROW_SEARCH_LEN:
+            return
+        return in_req
+
+    def upd_models_list(self, clear=False):
+        if clear:
+            self.model_list_widget.clear()
+            return
         if C.MODEL_LIST_REVERSED:
             models_list = reversed((self.models.keys()))
         else:
@@ -154,7 +188,7 @@ class App(QMainWindow):
 
         self.model_list_widget.clear()
         self.model_list_widget.addItems(models_list)
-        print(f'{models_list=}')
+        # print(f'{models_list=}')
 
     # def search_and_upd_model_buttons(self, search_req):
     #     self.model_buttons = {}
@@ -175,7 +209,7 @@ class App(QMainWindow):
     #         # self.ui.input_search.setText(res_req)
     #     else:
     #         res_req = search_req
-    #     if C.STRICT_SEARCH and len(res_req) < C.STRICT_SEARCH_LEN or len(res_req) <= 0:
+    #     if C.NARROW_SEARCH and len(res_req) < C.NARROW_SEARCH_LEN or len(res_req) <= 0:
     #         if C.LATIN_SEARCH:
     #             self.ui.input_search.setEditText(res_req)
     #         return
@@ -194,23 +228,23 @@ class App(QMainWindow):
     #     # self.latin_process = False
 
     # def upd_model_buttons(self, lay):
-        # if C.MODEL_LIST_REVERSED:
-        #     models_list = reversed((self.models.keys()))
-        # else:
-        #     models_list = (self.models.keys())
+    # if C.MODEL_LIST_REVERSED:
+    #     models_list = reversed((self.models.keys()))
+    # else:
+    #     models_list = (self.models.keys())
 
-        # sp = QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Expanding)
-        # lay.addItem(sp)
-        # le = len(self.models)
-        # self.model_buttons = {}
-        # self.current_model_button_index = 0
-        # for num, model in enumerate(models_list):
-        #     self.model_buttons[num] = QPushButton(model)
-        #     self.model_buttons[num].clicked.connect(self.scheduler)
-        #     if num == 0:
-        #         self.model_buttons[num].setDefault(True)
-        #     lay.addWidget(self.model_buttons[num], 0)
-        #     le -= 1
+    # sp = QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Expanding)
+    # lay.addItem(sp)
+    # le = len(self.models)
+    # self.model_buttons = {}
+    # self.current_model_button_index = 0
+    # for num, model in enumerate(models_list):
+    #     self.model_buttons[num] = QPushButton(model)
+    #     self.model_buttons[num].clicked.connect(self.scheduler)
+    #     if num == 0:
+    #         self.model_buttons[num].setDefault(True)
+    #     lay.addWidget(self.model_buttons[num], 0)
+    #     le -= 1
 
     # def add_search_button(self, lay, search_req: str):
     #     sp = QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -462,7 +496,7 @@ class App(QMainWindow):
 
     def keyPressEvent(self, event) -> None:
         # print(f'KEYPRESS: {event.key()}')
-        if self.models and 0 <= self.current_model_button_index < len(self.model_buttons)\
+        if self.models and 0 <= self.current_model_button_index < len(self.model_buttons) \
                 or len(self.model_buttons) == 1:
             # print(f'{self.current_model_button_index=} {self.model_buttons=} ')
             if event.key() in (Qt.Key_Return, Qt.Key_Enter):
