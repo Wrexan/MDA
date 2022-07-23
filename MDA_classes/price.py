@@ -15,29 +15,32 @@ class Price:
 
     def _load_price(self, PATH: str, PRICE_PATH: str, PRICE_PARTIAL_NAME: tuple):
         price_path_name, name = '', ''
-        for name in os.listdir(PRICE_PATH):
-            if name[-4:] == PRICE_PARTIAL_NAME[1] and PRICE_PARTIAL_NAME[0] in name:
-                price_path_name = f'{PRICE_PATH}{name}'
-                break
-        if not price_path_name:
-            for name in os.listdir(PATH):
+        try:
+            for name in os.listdir(PRICE_PATH):
                 if name[-4:] == PRICE_PARTIAL_NAME[1] and PRICE_PARTIAL_NAME[0] in name:
-                    price_path_name = f'{PATH}{name}'
+                    price_path_name = f'{PRICE_PATH}{name}'
                     break
-        if price_path_name:
-            self.message = name
-            return xlrd.open_workbook(price_path_name, formatting_info=True)
-        else:
-            self.message = f'*{PRICE_PARTIAL_NAME[0]}*{PRICE_PARTIAL_NAME[1]} file not found'
-            # self.ui.model_lable.setText('ОШИБКА! Файл "Прайс..xls" не найден')
-            # self.ui.price_name.setText('Расположите файл "Прайс..xls" на рабочем столе')
-            print(f'File not found:\n{PRICE_PARTIAL_NAME[0]}',
-                  f'it must be on desktop or next to this app and have format:\n'
-                  f'*{PRICE_PARTIAL_NAME[0]}*{PRICE_PARTIAL_NAME[1]}')
-            # M.warning(f'File not found:\n{PRICE_PARTIAL_NAME[0]}',
-            #           f'it must be on desktop or next to this app and have format:\n'
-            #           f'*{PRICE_PARTIAL_NAME[0]}*{PRICE_PARTIAL_NAME[1]}')
-            return None
+            if not price_path_name:
+                for name in os.listdir(PATH):
+                    if name[-4:] == PRICE_PARTIAL_NAME[1] and PRICE_PARTIAL_NAME[0] in name:
+                        price_path_name = f'{PATH}{name}'
+                        break
+            if price_path_name:
+                self.message = name
+                return xlrd.open_workbook(price_path_name, formatting_info=True)
+            else:
+                self.message = f'*{PRICE_PARTIAL_NAME[0]}*{PRICE_PARTIAL_NAME[1]} file not found'
+                # self.ui.model_lable.setText('ОШИБКА! Файл "Прайс..xls" не найден')
+                # self.ui.price_name.setText('Расположите файл "Прайс..xls" на рабочем столе')
+                print(f'File not found:\n{PRICE_PARTIAL_NAME[0]}',
+                      f'it must be on desktop or next to this app and have format:\n'
+                      f'*{PRICE_PARTIAL_NAME[0]}*{PRICE_PARTIAL_NAME[1]}')
+                # M.warning(f'File not found:\n{PRICE_PARTIAL_NAME[0]}',
+                #           f'it must be on desktop or next to this app and have format:\n'
+                #           f'*{PRICE_PARTIAL_NAME[0]}*{PRICE_PARTIAL_NAME[1]}')
+                return None
+        except Exception as _err:
+            print(f'Error while trying to load price: {_err}')
 
     def approve(self):
         if self.DB:

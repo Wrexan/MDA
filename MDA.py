@@ -38,8 +38,12 @@ class App(QMainWindow):
         self.init_ui_statics()
         self.init_ui_dynamics()
 
-        self.next_model = ''
+        self.curr_type = ''
+        self.curr_firm = ''
         self.curr_model = ''
+        self.curr_description = ''
+
+        self.search_again = False
         self.old_search = ''
         self.thread = QtCore.QThread
         self.worker = None  # Worker(self.update_dk9_data, 'mi8 lite')
@@ -65,7 +69,7 @@ class App(QMainWindow):
         self.ui.chb_search_eng.setToolTip('Переводит символы алфавита в латиницу нижнего регистра.')
         self.ui.settings_button.clicked.connect(self.open_settings)
 
-        self.ui.table_left.setHorizontalHeaderLabels(('', 'Виды работ', 'Цена', 'Прим', '', ''))
+        self.ui.table_price.setHorizontalHeaderLabels(('Виды работ', 'Цена', 'Прим'))
         self.ui.table_parts.setHorizontalHeaderLabels(('Тип', 'Фирма', 'Модель', 'Примечание',
                                                        'Цена', 'Шт', 'Дата', 'Где'))
         self.ui.table_accesory.setHorizontalHeaderLabels(('Тип', 'Фирма', 'Модель', 'Примечание',
@@ -73,6 +77,7 @@ class App(QMainWindow):
 
         self.ui.table_parts.doubleClicked.connect(self.copy_table_item)
         self.ui.table_accesory.doubleClicked.connect(self.copy_table_item)
+        self.ui.table_price.clicked.connect(self.cash_table_element)
         self.ui.help.clicked.connect(self.open_help)
         # models list appearing on search
         self.model_list_widget.setParent(self)
@@ -93,12 +98,15 @@ class App(QMainWindow):
             self.showMaximized()
         else:
             self.showNormal()
-        self.ui.table_left.verticalHeader().setDefaultSectionSize(C.TABLE_FONT_SIZE + 4)
+        self.ui.table_price.verticalHeader().setDefaultSectionSize(C.TABLE_FONT_SIZE + 4)
         self.ui.table_parts.verticalHeader().setDefaultSectionSize(C.TABLE_FONT_SIZE + 4)
         self.ui.table_accesory.verticalHeader().setDefaultSectionSize(C.TABLE_FONT_SIZE + 4)
-        self.ui.table_left.setFont(font)
+        self.ui.table_price.setFont(font)
         self.ui.table_parts.setFont(font)
         self.ui.table_accesory.setFont(font)
+        self.ui.tf_work_name.setFont(font)
+        self.ui.tf_work_descr.setFont(font)
+        self.ui.tf_work_price.setFont(font)
 
         self.fix_models_list_position()
         self.model_list_widget.setFont(font)
@@ -112,12 +120,15 @@ class App(QMainWindow):
             if i == 3:
                 self.ui.table_parts.horizontalHeader().setSectionResizeMode(i, QHeaderView.Stretch)
                 self.ui.table_accesory.horizontalHeader().setSectionResizeMode(i, QHeaderView.Stretch)
-                self.ui.table_left.horizontalHeader().setSectionResizeMode(i, QHeaderView.Stretch)
             else:
                 self.ui.table_parts.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
                 self.ui.table_accesory.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
-                if i < 6:
-                    self.ui.table_left.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
+
+        for i in range(self.ui.table_price.columnCount()):
+            if i == 2:
+                self.ui.table_price.horizontalHeader().setSectionResizeMode(i, QHeaderView.Stretch)
+            else:
+                self.ui.table_price.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
 
     # def search_on_narrow_change(self, state):
     #     C.NARROW_SEARCH = state
@@ -299,12 +310,12 @@ class App(QMainWindow):
             print(f'Error: status code {status} not present {C.WEB_STATUSES=}')
 
     def search_dk9(self):
-        if self.next_model:
-            print(f'SEARCH AGAIN: {self.next_model=} {self.curr_model}')
-            self.worker = Worker(DK9.search, self.next_model)
-            self.next_model = ''
+        if self.search_again:
+            print(f'SEARCH AGAIN: {self.curr_model}')
+            self.worker = Worker(DK9.adv_search, self.curr_type, self.curr_firm, self.curr_model, self.curr_description)
+            self.search_again = False
         else:
-            self.worker = Worker(DK9.search, self.curr_model)
+            self.worker = Worker(DK9.adv_search, self.curr_type, self.curr_firm, self.curr_model, self.curr_description)
         self.worker.signals.result.connect(self.update_dk9_data)
         self.worker.signals.progress.connect(self.load_progress)
         self.worker.signals.finished.connect(self.finished)
@@ -319,8 +330,7 @@ class App(QMainWindow):
         self.worker.signals.status.connect(self.update_web_status)
         self.worker.signals.error.connect(self.error)
         if self.curr_model:
-            self.next_model = self.curr_model
-            # print(f'GO TO SEARCH AGAIN: {self.next_model=} {self.curr_model}')
+            self.search_again = True
             self.worker.signals.finished.connect(self.search_dk9)
         else:
             self.worker.signals.finished.connect(self.finished)
@@ -357,16 +367,16 @@ class App(QMainWindow):
                 # print(f'{row=}')
 
                 new_row_num = 0
-                self.ui.table_left.setRowCount(0)
-                self.ui.model_lable.setText(self.list_to_string(row))
+                self.ui.table_price.setRowCount(0)
+                # self.ui.model_lable.setText(self.list_to_string(row))
                 for i in range(position[1], position[0].nrows - 1):
                     # print(row[col[0] - 1, col[1] - 1, col[2] - 1])
                     if row_len < columns[-1]:  # If row shorter, than we expect, then place all row in 0 column
                         # print('SHORT row:' + str(row))
                         cell_text = self.list_to_string(row)
-                        self.ui.table_left.insertRow(new_row_num)
-                        self.ui.table_left.setItem(new_row_num, 0, QTableWidgetItem(cell_text))
-                        self.ui.table_left.item(new_row_num, 0).setToolTip(cell_text)
+                        self.ui.table_price.insertRow(new_row_num)
+                        self.ui.table_price.setItem(new_row_num, 0, QTableWidgetItem(cell_text))
+                        self.ui.table_price.item(new_row_num, 0).setToolTip(cell_text)
                         return
                     else:
 
@@ -381,17 +391,17 @@ class App(QMainWindow):
                         # cells_text = [str(row[columns[0]]), str(row[columns[1]])]
                         if cells_texts[0] or len(cells_texts[1]) > 3:
 
-                            self.ui.table_left.insertRow(new_row_num)
+                            self.ui.table_price.insertRow(new_row_num)
                             for j, txt in enumerate(cells_texts):
-                                self.ui.table_left.setItem(new_row_num, j, QTableWidgetItem(txt))
-                                self.ui.table_left.item(new_row_num, j).setToolTip(txt)
+                                self.ui.table_price.setItem(new_row_num, j, QTableWidgetItem(txt))
+                                self.ui.table_price.item(new_row_num, j).setToolTip(txt)
 
                                 if C.PRICE_COLORED and txt:
                                     bgd = self.Price.DB.colour_map. \
                                         get(self.Price.DB.xf_list[position[0].
                                             cell(i, columns[j]).xf_index].background.pattern_colour_index)
                                     if bgd:
-                                        self.ui.table_left.item(new_row_num, j). \
+                                        self.ui.table_price.item(new_row_num, j). \
                                             setBackground(QtGui.QColor(bgd[0], bgd[1], bgd[2]))
 
                             new_row_num += 1
@@ -474,6 +484,19 @@ class App(QMainWindow):
             # selected_row[i].setSelected(False)
             selected_row[i].setFont(font)
         clipboard.setText(text)
+
+    def cash_table_element(self):
+        font = QtGui.QFont()
+        # font.setBold(True)
+        # font.setUnderline(True)
+        selected_row = self.sender().selectedItems()
+        print(f'{selected_row=}')
+        # text = ''
+        # for i in range(3):
+        self.ui.tf_work_name.setPlainText(selected_row[0].text())
+        self.ui.tf_work_descr.setPlainText(selected_row[2].text())
+        self.ui.tf_work_price.setPlainText(selected_row[1].text())
+        # clipboard.setText(text)
 
     @staticmethod
     def clear_layout(layout):

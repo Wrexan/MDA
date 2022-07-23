@@ -15,23 +15,6 @@ class Config:
         self.USER_CONFIG = f'{self.CONTENT_PATH}user_config.ini'
         self.HELP = f'{self.CONTENT_PATH}Инструкция.txt'
 
-        self.PRICE_PATH = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop\\')
-        self.PRICE_CONFIG = f'{self.CONTENT_PATH}price_config.ini'
-
-        self.DK9_LOGIN = ''
-        self.DK9_PASSWORD = ''
-        self.DK9_LOGIN_DATA = {}
-
-        self.APPROVED = False
-
-        # tables
-        # self.WIDE_MONITOR = False
-        # self.TABLE_COLUMN_SIZE_MAX = 160  # best for 1240 font 10
-        self.PRICE_COLORED = True  # work slower if True
-        self.DK9_COLORED = True  # work slower if True
-        self.DK9_COL_DIFF = 14  # difference of odd/even bg
-        self.TABLE_FONT_SIZE = 12
-
         # ============================================
         # =============APP SETTINGS====================
         # ====================UI====================
@@ -41,46 +24,60 @@ class Config:
         self.SMART_SEARCH = True
         self.LATIN_SEARCH = True
         self.MODEL_LIST_REVERSED = False
+
+        # tables
+        self.PRICE_COLORED = True  # work slower if True
+        self.DK9_COLORED = True  # work slower if True
+        self.DK9_COL_DIFF = 14  # difference of odd/even bg
+        self.TABLE_FONT_SIZE = 12
+
         # ====================PRICE====================
-        self.NARROW_SEARCH_LEN = 2  # start search after 2 symbols
-        self.PRICE_SEARCH_COLUMN_SYMBOLS = {'+': 'BCFGH',
-                                            'Alcatel': 'BCDE',
-                                            'Asus-тел': 'XBFG',
-                                            'Asus-планш': 'XBDGH',
-                                            'BlackBerry': 'ABCFG',
-                                            'Blackview': 'XBEF',
-                                            'Fly': 'XBCHI',
-                                            'doogee': 'XBCDE',
-                                            'HTC': 'BCEFH',
-                                            'Huawei': 'XBGHIJ',
-                                            'iPad': 'XAFGI',
-                                            'iPhone': 'XBHI',
-                                            'Lenovo': 'XBFGH',
-                                            'LG': 'BCDI',
-                                            'Meizu': 'XBEFG',
-                                            'Motorola': 'XBJKQ',
-                                            'Nokia': 'BCGHJ',
-                                            'Nomi': 'XBCEF',
-                                            'OPPO': 'BCFGH',
-                                            'OnePlus': 'BCFGH',
-                                            'Oukitel': 'BCFGL',
-                                            'PIXEL': 'BCFGH',
-                                            'Realme': 'BCFGH',
-                                            'Samsung': 'BCGH',
-                                            'Sony': 'XBFGH',
-                                            'Tecno': 'BCFG',
-                                            'vivo': 'BCDEF',
-                                            'TP-Link': 'BCDE',
-                                            'XIAOMI': 'XBFG',
-                                            'ZTE': 'BCFGH',
+        self.PRICE_PATH = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop\\')
+        self.PRICE_GD_PATH = ''
+        self.PRICE_CONFIG = f'{self.CONTENT_PATH}price_config.ini'
+        self.NARROW_SEARCH_LEN = 2  # start search from 2 symbols
+        self.APPROVED = False
+        self.PRICE_SEARCH_COLUMN_SYMBOLS = {'+': 'BFG',
+                                            # 'Alcatel': 'BCDE',
+                                            # 'Asus-тел': 'XBFG',
+                                            # 'Asus-планш': 'XBDGH',
+                                            # 'BlackBerry': 'ABCFG',
+                                            # 'Blackview': 'XBEF',
+                                            # 'Fly': 'XBCHI',
+                                            # 'doogee': 'XBCDE',
+                                            # 'HTC': 'BCEFH',
+                                            # 'Huawei': 'XBGHIJ',
+                                            # 'iPad': 'XAFGI',
+                                            # 'iPhone': 'XBHI',
+                                            # 'Lenovo': 'XBFGH',
+                                            # 'LG': 'BCDI',
+                                            # 'Meizu': 'XBEFG',
+                                            # 'Motorola': 'XBJKQ',
+                                            # 'Nokia': 'BCGHJ',
+                                            # 'Nomi': 'XBCEF',
+                                            # 'OPPO': 'BCFGH',
+                                            # 'OnePlus': 'BCFGH',
+                                            # 'Oukitel': 'BCFGL',
+                                            # 'PIXEL': 'BCFGH',
+                                            # 'Realme': 'BCFGH',
+                                            # 'Samsung': 'BCGH',
+                                            # 'Sony': 'XBFGH',
+                                            # 'Tecno': 'BCFG',
+                                            # 'vivo': 'BCDEF',
+                                            # 'TP-Link': 'BCDE',
+                                            # 'XIAOMI': 'XBFG',
+                                            # 'ZTE': 'BCFGH',
                                             }
         self.PRICE_SEARCH_COLUMN_NUMBERS = {}
         self.convert_columns_to_nums()
-        self.PRICE_TRASH_IN_CELLS = ('/', '\\', 'MI2/Mi2s', 'MI2a', 'mi3', 'Mi 9t', 'Mi Max 3',
-                                     'Red rice', 'Redmi 3', 'Redmi 4x', 'Redmi 6', 'Redmi 7', 'Redmi 7a',
-                                     'Redmi 8', 'Redmi 8a', 'Redmi Note 4', 'Redmi Note 5', 'Redmi Note 6',
-                                     'Redmi Note 6 Pro', 'Redmi Note 7', 'Redmi Note 8', 'Redmi note 9', 'Redmi Note 6')
-        self.NOT_FULL_MODEL_NAMES = ('ipad', 'iphone')
+        self.PRICE_TRASH_IN_CELLS = ()
+        # self.PRICE_TRASH_IN_CELLS = ('/', '\\', 'MI2/Mi2s', 'MI2a', 'mi3', 'Mi 9t', 'Mi Max 3',
+        #                              'Red rice', 'Redmi 3', 'Redmi 4x', 'Redmi 6', 'Redmi 7', 'Redmi 7a',
+        #                              'Redmi 8', 'Redmi 8a', 'Redmi Note 4', 'Redmi Note 5', 'Redmi Note 6',
+        #                              'Redmi Note 6 Pro', 'Redmi Note 7', 'Redmi Note 8', 'Redmi note 9', 'Redmi Note 6')
+        self.NOT_FULL_MODEL_NAMES = ('ipad', 'iphone')  # ------------------------------------
+        self.MODEL_NAME_BLACKLIST = ('телефон', 'планшет')
+        self.MANUFACTURER_BLACKLIST = ('Alcatel', 'BlackBerry', 'Fly', 'HTC')
         self.PRICE_PARTIAL_NAME = ('Прайс', '.xls')
 
         # ====================DK9====================
@@ -96,6 +93,11 @@ class Config:
                               'Goldenrod': (218, 165, 32),
                               'Red': (255, 80, 80),
                               }
+
+        self.DK9_LOGIN = ''
+        self.DK9_PASSWORD = ''
+        self.DK9_LOGIN_DATA = {}
+
         self.DK9_LOGIN_URL = "http://dimkak9-001-site1.htempurl.com/Login.aspx"
         self.DK9_SEARCH_URL = "http://dimkak9-001-site1.htempurl.com/AllInOne.aspx"
         self.DK9_HEADERS = {
