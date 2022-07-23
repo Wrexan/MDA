@@ -59,14 +59,25 @@ class App(QMainWindow):
         self.resized.connect(self.fix_models_list_position)
         self.ui.input_search.textChanged[str].connect(self.prepare_and_search)
         self.ui.input_search.cursorPositionChanged.connect(self.upd_models_list)
+
         self.ui.chb_search_narrow.stateChanged.connect(self.start_search_on_rule_change)
-        self.ui.chb_search_narrow.setToolTip('Запрещает поиск по одному символу.')
+        self.ui.chb_search_narrow.setToolTip('Вкл - поиск начинается с 2х символов\n'
+                                             'Откл - позволяет найти отдельный символ (например украинскую С или Е)')
+
         self.ui.chb_search_smart.stateChanged.connect(self.start_search_on_rule_change)
         self.ui.chb_search_smart.setToolTip(
-            'Применяет к запросу фильтр и выдает более релевантный результат.\n'
-            'Отключение позволит найти всё, но может приводить к неожиданным последствиям.')
+            'Вкл - запрос считается началом слова\n'
+            'Откл - запрос ищется везде (позволяет найти A526 по запросу 52)')
+
         self.ui.chb_search_eng.stateChanged.connect(self.start_search_on_rule_change)
-        self.ui.chb_search_eng.setToolTip('Переводит символы алфавита в латиницу нижнего регистра.')
+        self.ui.chb_search_eng.setToolTip('Вкл - Переводит символы алфавита в латиницу нижнего регистра.')
+
+        self.ui.chb_price_name_only.stateChanged.connect(self.start_search_on_rule_change)
+        self.ui.chb_price_name_only.setToolTip(
+            'Вкл - запросом в интернет базу являются производитель и модель из прайса\n'
+            'Откл - запросом в интернет базу является текст в строке ввода '
+            '(позволяет по запросу 5 найти все модели всех фирм, содержащие 5)')
+
         self.ui.settings_button.clicked.connect(self.open_settings)
 
         self.ui.table_price.setHorizontalHeaderLabels(('Виды работ', 'Цена', 'Прим'))
@@ -565,26 +576,26 @@ class App(QMainWindow):
         #              or event.key() == Qt.Key_Return
         #              or event.key() == Qt.Key_Enter):
         #     self.model_list_widget.show()
-            # if event.key() in (Qt.Key_Return, Qt.Key_Enter):
-            #     self.model_buttons[self.current_model_button_index].click()
-            # elif event.key() == Qt.Key_Up:
-            #     self.model_buttons[self.current_model_button_index].setDefault(False)
-            #     self.current_model_button_index -= 1
-            #     if self.current_model_button_index < 0:
-            #         self.current_model_button_index = len(self.model_buttons) - 1
-            #     self.model_buttons[self.current_model_button_index].setDefault(True)
-            #     self.model_buttons[self.current_model_button_index].setFocus()
-            #     # print('Wow, Up')
-            # elif event.key() == Qt.Key_Down:
-            #     self.model_buttons[self.current_model_button_index].setDefault(False)
-            #     self.current_model_button_index += 1
-            #     if self.current_model_button_index > len(self.model_buttons) - 1:
-            #         self.current_model_button_index = 0
-            #     self.model_buttons[self.current_model_button_index].setDefault(True)
-            #     self.model_buttons[self.current_model_button_index].setFocus()
-            # print('Wow, Down')
-            # self.ui.input_search.setFocus()
-            # self.ui.input_search.selectAll()
+        # if event.key() in (Qt.Key_Return, Qt.Key_Enter):
+        #     self.model_buttons[self.current_model_button_index].click()
+        # elif event.key() == Qt.Key_Up:
+        #     self.model_buttons[self.current_model_button_index].setDefault(False)
+        #     self.current_model_button_index -= 1
+        #     if self.current_model_button_index < 0:
+        #         self.current_model_button_index = len(self.model_buttons) - 1
+        #     self.model_buttons[self.current_model_button_index].setDefault(True)
+        #     self.model_buttons[self.current_model_button_index].setFocus()
+        #     # print('Wow, Up')
+        # elif event.key() == Qt.Key_Down:
+        #     self.model_buttons[self.current_model_button_index].setDefault(False)
+        #     self.current_model_button_index += 1
+        #     if self.current_model_button_index > len(self.model_buttons) - 1:
+        #         self.current_model_button_index = 0
+        #     self.model_buttons[self.current_model_button_index].setDefault(True)
+        #     self.model_buttons[self.current_model_button_index].setFocus()
+        # print('Wow, Down')
+        # self.ui.input_search.setFocus()
+        # self.ui.input_search.selectAll()
         if event.key() == Qt.Key_Alt:
             # print(f'TAB {self.ui.tab_widget.currentIndex()=}')
             if self.ui.tab_widget.currentIndex() == 0:
