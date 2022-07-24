@@ -20,6 +20,7 @@ class Worker(QThread):
         try:
             result = self.func(*self.args, **self.kwargs)
         except Exception as _err:
+            print(_err)
             # traceback.print_exc()
             # App.error(f'Error while executing thread using:\n{self.args}\n{self.kwargs}', err)
             exc_type, value = sys.exc_info()[:2]

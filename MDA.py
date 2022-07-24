@@ -49,13 +49,15 @@ class App(QMainWindow):
         self.old_search = ''
         self.thread = QtCore.QThread
         self.worker = None  # Worker(self.update_dk9_data, 'mi8 lite')
-        print('Loading Price')
-        self.Price = None
-        # self.Price = Price(C)
-        print('Login to DK9')
+        # print('Loading Price')
+        self.Price = Price(C)
+        # self.read_price()
+        # print('Login to DK9')
         self.web_status = 0
-        self.login_dk9()
-        self.update_price_status()
+        self.price_status = 0
+        # self.login_dk9()
+        # self.update_price_status()
+        self.show()
 
     def init_ui_statics(self):
 
@@ -167,6 +169,13 @@ class App(QMainWindow):
         C.LATIN_SEARCH = self.ui.chb_search_eng.checkState()
         self.prepare_and_search(self.ui.input_search.text(), True)
 
+    def on_ui_loaded(self):
+        print('Loading Price')
+        self.read_price()
+        print('Login to DK9')
+        # self.login_dk9()
+        # self.update_price_status()
+
     def prepare_and_search(self, search_req, force_search=False):
         # print(f'{search_req=} {self.ui.input_search.isModified()=}')
         if self.ui.input_search.isModified() or force_search:
@@ -179,10 +188,11 @@ class App(QMainWindow):
 
             if result_req:
                 # print(f'{search_req=} {result_req=}')
-                if self.Price is not None:
-                    self.models = self.Price.search_price_models(search_req, C.MODEL_LIST_MAX_SIZE, C.SMART_SEARCH)
-                else:
-                    self.update_price_status()
+                if self.price_status >= len(C.PRICE_STATUSES):
+                    self.models = self.Price.search_price_models(search_req, C.MODEL_LIST_MAX_SIZE,
+                                                                 C.SMART_SEARCH, C.STRICT_SEARCH)
+                # else:
+                #     self.update_price_status()
                 if self.models:
                     self.upd_models_list()
             else:
@@ -298,11 +308,13 @@ class App(QMainWindow):
     #         self.model_buttons[0].setDefault(True)
     #         lay.addWidget(self.model_buttons[0], 0)
 
-    def update_price_status(self):
-        if self.Price is None:
-            self.ui.price_status.setText("Прайс не загружен")
+    def update_price_status(self, status: int):
+        self.price_status = status
+        if status in C.PRICE_STATUSES.keys():
+            self.ui.price_status.setText(C.PRICE_STATUSES[status])
         else:
-            self.ui.price_status.setText(f'{self.Price.message if self.Price else "Прайс не найден"}')
+            self.ui.price_status.setText(self.Price.NAME)
+        print(f'{self.price_status=}')
 
     # @QtCore.pyqtSlot
     def scheduler(self, item):
@@ -313,11 +325,11 @@ class App(QMainWindow):
         self.update_price_table(model)
         if self.ui.input_search.text() and self.ui.input_search.text() != self.old_search:
             self.old_search = self.ui.input_search.text()
-            model = (self.old_search.split())[0].lower()
-            if model in C.NOT_FULL_MODEL_NAMES:  # For models with divided name like iPhone | 11
-                self.curr_model = model
-            else:
-                self.curr_model = self.old_search
+            self.curr_model = (self.old_search.split())[0].lower()
+            # if model in C.NOT_FULL_MODEL_NAMES:  # For models with divided name like iPhone | 11
+            #     self.curr_model = model
+            # else:
+            #     self.curr_model = self.old_search
             self.search_dk9()
 
     def update_web_status(self, status: int):
@@ -328,6 +340,16 @@ class App(QMainWindow):
                 self.curr_model = ''
         else:
             print(f'Error: status code {status} not present {C.WEB_STATUSES=}')
+
+    def read_price(self):
+        self.worker = Worker(self.Price.load_price)
+        # self.worker.signals.result.connect(self.update_dk9_data)
+        # self.worker.signals.progress.connect(self.load_progress)
+        self.worker.signals.finished.connect(self.update_dk9_data)
+        # self.worker.signals.error.connect(self.error)
+        self.worker.signals.status.connect(self.update_price_status)
+        print('Starting thread to read price')
+        self.thread.start(self.worker, priority=QtCore.QThread.Priority.HighestPriority)
 
     def search_dk9(self):
         if self.search_again:
@@ -358,7 +380,7 @@ class App(QMainWindow):
 
         self.thread.start(self.worker)
 
-    def update_dk9_data(self, table_soups):
+    def update_dk9_data(self, table_soups=None):
         if not table_soups or not table_soups[0]:
             self.update_web_status(0)
 
@@ -506,7 +528,7 @@ class App(QMainWindow):
         clipboard.setText(text)
 
     def cash_table_element(self):
-        font = QtGui.QFont()
+        # font = QtGui.QFont()
         # font.setBold(True)
         # font.setUnderline(True)
         selected_row = self.sender().selectedItems()
@@ -633,7 +655,7 @@ class App(QMainWindow):
         msg_box = QMessageBox()
         text, info = '', ''
         for i, e in enumerate(errors):
-            if i == 1:
+            if i == 0:
                 text = str(e)
             else:
                 info = f'{info}\n{str(e)}'
@@ -719,7 +741,7 @@ if __name__ == "__main__":
         clipboard = app.clipboard()
         window = App()
         window.setWindowIcon(QtGui.QIcon(C.LOGO))
-        window.show()
+        QtCore.QTimer.singleShot(1, window.on_ui_loaded)
         window.ui.input_search.setFocus()
         sys.exit(app.exec_())
     except Exception as err:

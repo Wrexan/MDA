@@ -20,9 +20,10 @@ class Config:
         # ====================UI====================
         self.FULLSCREEN = False
         self.MODEL_LIST_MAX_SIZE = 15
-        self.NARROW_SEARCH = True
-        self.SMART_SEARCH = True
+        self.NARROW_SEARCH = True  # from n symbols
+        self.SMART_SEARCH = True  # filter, from start
         self.LATIN_SEARCH = True
+        self.STRICT_SEARCH = True
         self.MODEL_LIST_REVERSED = False
 
         # tables
@@ -35,7 +36,7 @@ class Config:
         self.PRICE_PATH = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop\\')
         self.PRICE_GD_PATH = ''
         self.PRICE_CONFIG = f'{self.CONTENT_PATH}price_config.ini'
-        self.NARROW_SEARCH_LEN = 2  # start search from 2 symbols
+        self.NARROW_SEARCH_LEN = 3  # start search from 2 symbols
         self.APPROVED = False
         self.PRICE_SEARCH_COLUMN_SYMBOLS = {'+': 'BFG',
                                             # 'Alcatel': 'BCDE',
@@ -74,11 +75,15 @@ class Config:
         # self.PRICE_TRASH_IN_CELLS = ('/', '\\', 'MI2/Mi2s', 'MI2a', 'mi3', 'Mi 9t', 'Mi Max 3',
         #                              'Red rice', 'Redmi 3', 'Redmi 4x', 'Redmi 6', 'Redmi 7', 'Redmi 7a',
         #                              'Redmi 8', 'Redmi 8a', 'Redmi Note 4', 'Redmi Note 5', 'Redmi Note 6',
-        #                              'Redmi Note 6 Pro', 'Redmi Note 7', 'Redmi Note 8', 'Redmi note 9', 'Redmi Note 6')
+        #                              'Redmi Note 6 Pro', 'Redmi Note 7', 'Redmi Note 8',
+        #                              'Redmi note 9', 'Redmi Note 6')
         self.NOT_FULL_MODEL_NAMES = ('ipad', 'iphone')  # ------------------------------------
         self.MODEL_NAME_BLACKLIST = ('телефон', 'планшет')
         self.MANUFACTURER_BLACKLIST = ('Alcatel', 'BlackBerry', 'Fly', 'HTC')
         self.PRICE_PARTIAL_NAME = ('Прайс', '.xls')
+
+        self.PRICE_STATUSES = {0: 'Не загружен', 1: 'Не найден', 2: 'Загрузка',
+                               3: 'Ошибка загрузки', 4: 'Чтение', 5: 'Ошибка чтения'}
 
         # ====================DK9====================
         # Preparing background colors for DK9
