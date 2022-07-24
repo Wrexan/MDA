@@ -8,9 +8,11 @@ from PyQt5.Qt import Qt
 from MDA_classes.config import Config
 from MDA_classes.dk9 import DK9Parser
 from MDA_classes.price import Price
-from MDA_classes.window_main import Ui_MainWindow
-from MDA_classes.window_settings import Ui_settings_window
-from MDA_classes.window_simple import Ui_Dialog
+from MDA_classes.thread_worker import Worker, WorkerSignals
+from MDA_UI.window_main import Ui_MainWindow
+from MDA_UI.window_settings import Ui_settings_window
+from MDA_UI.window_simple import Ui_Dialog
+
 
 # class Conf(Config):
 #     def __init__(self):
@@ -48,7 +50,8 @@ class App(QMainWindow):
         self.thread = QtCore.QThread
         self.worker = None  # Worker(self.update_dk9_data, 'mi8 lite')
         print('Loading Price')
-        self.Price = Price(C)
+        self.Price = None
+        # self.Price = Price(C)
         print('Login to DK9')
         self.web_status = 0
         self.login_dk9()
@@ -176,7 +179,10 @@ class App(QMainWindow):
 
             if result_req:
                 # print(f'{search_req=} {result_req=}')
-                self.models = self.Price.search_price_models(search_req, C.MODEL_LIST_MAX_SIZE, C.SMART_SEARCH)
+                if self.Price is not None:
+                    self.models = self.Price.search_price_models(search_req, C.MODEL_LIST_MAX_SIZE, C.SMART_SEARCH)
+                else:
+                    self.update_price_status()
                 if self.models:
                     self.upd_models_list()
             else:
@@ -293,7 +299,10 @@ class App(QMainWindow):
     #         lay.addWidget(self.model_buttons[0], 0)
 
     def update_price_status(self):
-        self.ui.price_status.setText(f'{self.Price.message if self.Price else "Прайс не найден"}')
+        if self.Price is None:
+            self.ui.price_status.setText("Прайс не загружен")
+        else:
+            self.ui.price_status.setText(f'{self.Price.message if self.Price else "Прайс не найден"}')
 
     # @QtCore.pyqtSlot
     def scheduler(self, item):
@@ -701,42 +710,6 @@ class ConfigWindow(QDialog):
             DK9.change_data(C.data())
             print(f'{DK9.DATA=}')
             self.login_func()
-
-
-class Worker(QtCore.QThread):
-    def __init__(self, func, *args, **kwargs):
-        super(Worker, self).__init__()
-        self.func = func
-        self.args = args
-        self.kwargs = kwargs
-        self.signals = WorkerSignals()
-
-        # Add the callback to our kwargs
-        self.kwargs['progress'] = self.signals.progress
-        self.kwargs['error'] = self.signals.error
-        self.kwargs['status'] = self.signals.status
-
-    @QtCore.pyqtSlot()
-    def run(self):
-        try:
-            result = self.func(*self.args, **self.kwargs)
-        except Exception as _err:
-            # traceback.print_exc()
-            # App.error(f'Error while executing thread using:\n{self.args}\n{self.kwargs}', err)
-            exc_type, value = sys.exc_info()[:2]
-            self.signals.error.emit((exc_type, value, _err))  # traceback.format_exc()))
-        else:
-            self.signals.result.emit(result)  # Return the result of the processing
-        finally:
-            self.signals.finished.emit()  # Done
-
-
-class WorkerSignals(QtCore.QObject):
-    finished = QtCore.pyqtSignal()
-    error = QtCore.pyqtSignal(tuple)
-    status = QtCore.pyqtSignal(int)
-    result = QtCore.pyqtSignal(object)
-    progress = QtCore.pyqtSignal(int)
 
 
 if __name__ == "__main__":
