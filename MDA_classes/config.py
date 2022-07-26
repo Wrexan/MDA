@@ -21,9 +21,9 @@ class Config:
         self.FULLSCREEN = False
         self.MODEL_LIST_MAX_SIZE = 15
         self.NARROW_SEARCH = True  # from n symbols
-        self.SMART_SEARCH = True  # filter, from start
+        self.SMART_SEARCH = False  # filter, from start
         self.LATIN_SEARCH = True
-        self.STRICT_SEARCH = True
+        self.SEARCH_BY_PRICE_MODEL = True
         self.MODEL_LIST_REVERSED = False
 
         # tables
@@ -36,12 +36,12 @@ class Config:
         self.PRICE_PATH = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop\\')
         self.PRICE_GD_PATH = ''
         self.PRICE_CONFIG = f'{self.CONTENT_PATH}price_config.ini'
-        self.NARROW_SEARCH_LEN = 3  # start search from 2 symbols
+        self.NARROW_SEARCH_LEN = 2  # start search from 2 symbols
         self.APPROVED = False
         self.PRICE_SEARCH_COLUMN_SYMBOLS = {'+': 'BFG',
                                             # 'Alcatel': 'BCDE',
                                             # 'Asus-тел': 'XBFG',
-                                            # 'Asus-планш': 'XBDGH',
+                                            'Asus-планш': 'BDG',
                                             # 'BlackBerry': 'ABCFG',
                                             # 'Blackview': 'XBEF',
                                             # 'Fly': 'XBCHI',
@@ -111,7 +111,7 @@ class Config:
 
         # self.DK9_LOGIN_DATA = self.data()
 
-        self.WEB_STATUSES = {0: 'Нет соединения', 1: 'Ожидание', 2: 'Подключен',
+        self.WEB_STATUSES = {0: 'Нет соединения', 1: 'Подключение...', 2: 'Подключен',
                              3: 'Перенаправление', 4: 'Запрос отклонен', 5: 'Ошибка сервера', 6: 'Ошибка авторизации'}
 
         self.SYMBOL_TO_LATIN = {

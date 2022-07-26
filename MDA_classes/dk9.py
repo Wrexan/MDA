@@ -18,7 +18,8 @@ class DK9Parser:
         # self.WEB_STATUSES = {0: 'Нет соединения', 1: 'Не залогинен', 2: 'Подключен',
         #                      3: 'Перенаправление', 4: 'Запрос отклонен', 5: 'Ошибка сервера'}
 
-    def get_validation_data(self, soup: type(BeautifulSoup)):
+    @staticmethod
+    def get_validation_data(soup: type(BeautifulSoup)):
         return {
             '__VIEWSTATE': soup.find('input', attrs={'id': '__VIEWSTATE'})['value'],
             '__VIEWSTATEGENERATOR': soup.find('input', attrs={'id': '__VIEWSTATEGENERATOR'})['value'],
@@ -47,7 +48,7 @@ class DK9Parser:
                 # ===============================================================================================
                 r = self.get_response(self.SEARCH_URL, status)
                 if r:
-                    progress.emit(70)
+                    progress.emit(80)
                     if self.addiction():
                         print('LOGIN OK')
                         self.validation_data = self.get_validation_data(BeautifulSoup(r.content, 'html.parser'))
@@ -71,53 +72,10 @@ class DK9Parser:
             print(f'Error: on LOGIN' 'Message:\n{str(err)}')
             error.emit((f'Error {type(err)=} while trying to login:', err))
 
-    # def switch_to_adv_search(self, status, error) -> bool:
-    #     print(f'Switching to advanced search')
-    #     try:
-    #         # ===============================================================================================
-    #         data_to_send = {
-    #             'ctl00$ContentPlaceHolder1$CheckBox1': 'Submit'
-    #         }
-    #         print(f'Sending: POST')
-    #         r = self.SESSION.post(
-    #             self.SEARCH_URL,
-    #             data={**data_to_send, **self.validation_data},
-    #             headers=self.HEADERS,
-    #             timeout=self.TIMEOUT)
-    #         # progress.emit(20)
-    #         # print(f'Answer: {r}')
-    #         soup = BeautifulSoup(r.content, 'html.parser', from_encoding='utf-8')
-    #         panel_3 = soup.find("div", attrs={"id": "ctl00_ContentPlaceHolder1_Panel3"})
-    #         # print(panel_3)
-    #         # check if we got page with adv search fields
-    #         if panel_3:
-    #                 # and 'ctl00$ContentPlaceHolder1$TextBoxType_new' in panel_3.contents \
-    #                 # and 'ctl00$ContentPlaceHolder1$TextBoxManufacture_new' in panel_3.contents \
-    #                 # and 'ctl00$ContentPlaceHolder1$TextBoxModel_new' in panel_3.contents \
-    #                 # and 'ctl00$ContentPlaceHolder1$TextBoxDescription_new' in panel_3.contents:
-    #             # print('ADV OK')
-    #             return True
-    #         else:
-    #             error.emit((f'Error while trying to turn on advanced search:', 'Page not found'))
-    #             return False
-    #         # ctl00$ContentPlaceHolder1$CheckBox1   advanced search checkbox
-    #     except requests.exceptions.Timeout as err:
-    #         status.emit(self.S_NO_CONN)
-    #         print(f'Error: on CONNECT (Timeout) Message:\n{str(err)}')
-    #         return False
-    #     except Exception as err:
-    #         if '[Errno 11001]' in err.__str__():
-    #             status.emit(self.S_NO_CONN)
-    #             print(f'Error: (No connection) on CONNECT Message:\n{str(err)}')
-    #             return False
-    #         print(f'Error while trying to switch to advanced search:\n{str(err)}\n{err.__str__()=}')
-    #         error.emit((f'Error while trying to switch to advanced search:', err))
-
     def adv_search(self, type_: str, firm_: str, model_: str, description_: str, progress, status, error) -> tuple:
         print(f'Searching: {type_=}  {firm_=}  {model_=}  {description_=}')
         progress.emit(10)
         try:
-            # print(f'{"*"*80}\nSOUP_2_DEF={soup.find("div", attrs={"id": "ctl00_ContentPlaceHolder1_UpdatePanel2"})}')
             # ===============================================================================================
             data_to_send = {
                 'ctl00$ContentPlaceHolder1$CheckBox1': 'Submit',
@@ -127,15 +85,6 @@ class DK9Parser:
                 'ctl00$ContentPlaceHolder1$TextBoxModel_new': model_,
                 'ctl00$ContentPlaceHolder1$TextBoxDescription_new': description_,
             }
-            # if type_:
-            #     data_to_send['ctl00$ContentPlaceHolder1$TextBoxType_new'] = type_
-            # if firm_:
-            #     data_to_send['ctl00$ContentPlaceHolder1$TextBoxManufacture_new'] = firm_
-            # if model_:
-            #     data_to_send['ctl00$ContentPlaceHolder1$TextBoxModel_new'] = model_
-            # if description_:
-            #     data_to_send['ctl00$ContentPlaceHolder1$TextBoxDescription_new'] = description_
-
             print(f'Sending: POST')
             r = self.SESSION.post(
                 self.SEARCH_URL,
@@ -146,12 +95,9 @@ class DK9Parser:
             # print(f'Answer: {r}')
             soup = BeautifulSoup(r.content, 'html.parser', from_encoding='utf-8')
             progress.emit(50)
-            # print(f'{"*" * 80}\nSOUP_3_DEF={soup.find("table", attrs={"id": "ctl00_ContentPlaceHolder1_GridView1"})}')
             part_table_soup = soup.find("table", attrs={"id": "ctl00_ContentPlaceHolder1_GridView1"})
             progress.emit(60)
-            # self.fill_table_from_soup(part_table_soup, self.ui.table_parts, DK9_BG_P_COLOR1, DK9_BG_P_COLOR2)
             accessory_table_soup = soup.find("table", attrs={"id": "ctl00_ContentPlaceHolder1_GridView2"})
-            # self.fill_table_from_soup(accessory_table_soup, self.ui.table_accesory, DK9_BG_A_COLOR1, DK9_BG_A_COLOR2)
 
             return part_table_soup, accessory_table_soup
             # ctl00$ContentPlaceHolder1$ButtonSearch   кнопка поиска submit

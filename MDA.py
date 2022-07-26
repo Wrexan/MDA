@@ -1,18 +1,18 @@
 import sys
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, \
-    QHeaderView, qApp, QDialog, QMessageBox, QListWidget, QSizePolicy
+    QHeaderView, qApp, QMessageBox, QListWidget, QSizePolicy
 from PyQt5 import QtCore, QtGui
 from PyQt5.Qt import Qt
 
 from MDA_classes.config import Config
 from MDA_classes.dk9 import DK9Parser
 from MDA_classes.price import Price
-from MDA_classes.thread_worker import Worker, WorkerSignals
+from MDA_classes.modal_windows import ConfigWindow, HelpWindow
+from MDA_classes.thread_worker import Worker
 from MDA_UI.window_main import Ui_MainWindow
-from MDA_UI.window_settings import Ui_settings_window
-from MDA_UI.window_simple import Ui_Dialog
-
+# from MDA_UI.window_settings import Ui_settings_window
+# from MDA_UI.window_simple import Ui_Dialog
 
 # class Conf(Config):
 #     def __init__(self):
@@ -33,6 +33,7 @@ class App(QMainWindow):
         self.latin_process = False
         self.models = {}
         self.model_buttons = {}
+        self.manufacturer_wheel = None
         self.current_model_button_index = 0
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -40,9 +41,11 @@ class App(QMainWindow):
         self.init_ui_statics()
         self.init_ui_dynamics()
 
+        self.curr_manufacturer_idx: int = 0
+        self.curr_manufacturer: str = ''
         self.curr_type = ''
-        self.curr_firm = ''
-        self.curr_model = ''
+        self.curr_model: str = ''  # --------------------------------------
+        self.curr_model_idx: int = 0
         self.curr_description = ''
 
         self.search_again = False
@@ -56,6 +59,7 @@ class App(QMainWindow):
         self.web_status = 0
         self.price_status = 0
         # self.login_dk9()
+        self.update_web_status(0)
         # self.update_price_status()
         self.show()
 
@@ -65,23 +69,25 @@ class App(QMainWindow):
         self.ui.input_search.textChanged[str].connect(self.prepare_and_search)
         self.ui.input_search.cursorPositionChanged.connect(self.upd_models_list)
 
-        self.ui.chb_search_narrow.stateChanged.connect(self.start_search_on_rule_change)
-        self.ui.chb_search_narrow.setToolTip('Вкл - поиск начинается с 2х символов\n'
-                                             'Откл - позволяет найти отдельный символ (например украинскую С или Е)')
-
-        self.ui.chb_search_smart.stateChanged.connect(self.start_search_on_rule_change)
-        self.ui.chb_search_smart.setToolTip(
-            'Вкл - запрос считается началом слова\n'
-            'Откл - запрос ищется везде (позволяет найти A526 по запросу 52)')
-
-        self.ui.chb_search_eng.stateChanged.connect(self.start_search_on_rule_change)
-        self.ui.chb_search_eng.setToolTip('Вкл - Переводит символы алфавита в латиницу нижнего регистра.')
+        self.ui.chb_show_exact.stateChanged.connect(self.start_search_on_rule_change)
+        self.ui.chb_show_exact.setToolTip(
+            'Вкл - отображает только выбранную модель\n'
+            'Откл - отображаются похожие модели (Mi8 lite по запросу Mi8)')
 
         self.ui.chb_price_name_only.stateChanged.connect(self.start_search_on_rule_change)
         self.ui.chb_price_name_only.setToolTip(
             'Вкл - запросом в интернет базу являются производитель и модель из прайса\n'
             'Откл - запросом в интернет базу является текст в строке ввода '
             '(позволяет по запросу 5 найти все модели всех фирм, содержащие 5)')
+
+        self.ui.chb_search_eng.stateChanged.connect(self.start_search_on_rule_change)
+        self.ui.chb_search_eng.setToolTip(
+            'Вкл - Переводит символы алфавита в латиницу нижнего регистра.')
+
+        self.ui.chb_search_narrow.stateChanged.connect(self.start_search_on_rule_change)
+        self.ui.chb_search_narrow.setToolTip(
+            'Вкл - поиск начинается с 2х символов\n'
+            'Откл - позволяет найти отдельный символ (например украинскую С или Е)')
 
         self.ui.settings_button.clicked.connect(self.open_settings)
 
@@ -95,6 +101,12 @@ class App(QMainWindow):
         self.ui.table_accesory.doubleClicked.connect(self.copy_table_item)
         self.ui.table_price.clicked.connect(self.cash_table_element)
         self.ui.help.clicked.connect(self.open_help)
+
+        self.manufacturer_wheel = (self.ui.manufacturer_1,
+                                   self.ui.manufacturer_2,
+                                   self.ui.manufacturer_3,
+                                   self.ui.manufacturer_4,
+                                   self.ui.manufacturer_5)
         # models list appearing on search
         self.model_list_widget.setParent(self)
         self.model_list_widget.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
@@ -165,7 +177,7 @@ class App(QMainWindow):
 
     def start_search_on_rule_change(self):
         C.NARROW_SEARCH = self.ui.chb_search_narrow.checkState()
-        C.SMART_SEARCH = self.ui.chb_search_smart.checkState()
+        C.SMART_SEARCH = self.ui.chb_show_exact.checkState()
         C.LATIN_SEARCH = self.ui.chb_search_eng.checkState()
         self.prepare_and_search(self.ui.input_search.text(), True)
 
@@ -190,11 +202,13 @@ class App(QMainWindow):
                 # print(f'{search_req=} {result_req=}')
                 if self.price_status >= len(C.PRICE_STATUSES):
                     self.models = self.Price.search_price_models(search_req, C.MODEL_LIST_MAX_SIZE,
-                                                                 C.SMART_SEARCH, C.STRICT_SEARCH)
+                                                                 C.SMART_SEARCH, C.SEARCH_BY_PRICE_MODEL)
                 # else:
                 #     self.update_price_status()
                 if self.models:
                     self.upd_models_list()
+                # else:
+                #     self.upd_models_list(True)
             else:
                 self.upd_models_list(True)
 
@@ -221,20 +235,49 @@ class App(QMainWindow):
             return
         return in_req
 
+    def upd_model_wheel(self, clear: bool = False):
+        for label in self.manufacturer_wheel:
+            label.setText('')
+        if clear:
+            return
+        start_label_man_idx = 2
+        # for man_label_idx, man_label in enumerate(self.manufacturer_wheel):
+        #     manufacturer =
+        #     if self.curr_manufacturer_idx + 2 >= man_label_idx >= self.curr_manufacturer_idx - 2:
+        #         man_label[2].setText(manufacturer)
+
+        for m, manufacturer in enumerate(self.models):
+            # if self.curr_manufacturer_idx + 2 >= m >= self.curr_manufacturer_idx - 2:
+            if self.curr_manufacturer_idx + 2 >= m >= self.curr_manufacturer_idx - 2:
+                self.manufacturer_wheel[m + 2].setText(manufacturer)
+                if m == self.curr_manufacturer_idx:
+                    self.curr_manufacturer = manufacturer
+
+                # self.ui.manufacturer_3.setText(manufacturer)
+                print(f'{manufacturer=}')
+
     def upd_models_list(self, clear=False):
         if clear or not self.models:
+            self.curr_manufacturer_idx = 0
+            # self.curr_manufacturer = ''
             self.model_list_widget.clear()
             self.model_list_widget.hide()
+            self.upd_model_wheel(True)
             return
-
-        size = C.MODEL_LIST_MAX_SIZE if len(self.models) > C.MODEL_LIST_MAX_SIZE else len(self.models)
+        self.upd_model_wheel()
+        curr_models = [f'{model} -> {params[2]}' if params[2] != '' else model
+                       for model, params in self.models[self.curr_manufacturer].items()]
+        # curr_models = list(self.models.values() + self.models.values())[self.curr_manufacturer_idx]
+        # curr_models = list(self.models.values())[self.curr_manufacturer_idx]
+        size = C.MODEL_LIST_MAX_SIZE if len(curr_models) > C.MODEL_LIST_MAX_SIZE else len(curr_models)
+        # size = C.MODEL_LIST_MAX_SIZE if len(curr_models) > C.MODEL_LIST_MAX_SIZE else len(curr_models)
         # print(f'{size=}')
         self.model_list_widget.setFixedHeight(int(C.TABLE_FONT_SIZE * 1.6) * size)
         self.model_list_widget.show()
-        if C.MODEL_LIST_REVERSED:
-            models_list = reversed((self.models.keys()))
-        else:
-            models_list = (self.models.keys())
+        # if C.MODEL_LIST_REVERSED:
+        #     models_list = reversed((curr_models.keys()))
+        # else:
+        models_list = curr_models
 
         self.model_list_widget.clear()
         self.model_list_widget.addItems(models_list)
@@ -318,14 +361,18 @@ class App(QMainWindow):
 
     # @QtCore.pyqtSlot
     def scheduler(self, item):
-        model = item.text()
+        text_lower = item.text().lower()
+        self.curr_model = text_lower.split(',', 3)[0].strip()
+        if self.curr_model.startswith(self.curr_manufacturer.lower()):
+            self.curr_model = self.curr_model[len(self.curr_manufacturer):].lstrip()
+        print(f'Start sheduler: {text_lower=} {self.curr_manufacturer=} {self.curr_model=}')
         self.upd_models_list(True)
         # model = self.model_list_widget.itemClicked.text()
-        print(f'Start sheduler: {model=}')
-        self.update_price_table(model)
+        self.update_price_table(text_lower)
         if self.ui.input_search.text() and self.ui.input_search.text() != self.old_search:
             self.old_search = self.ui.input_search.text()
-            self.curr_model = (self.old_search.split())[0].lower()
+            self.curr_model = self.old_search.lower()
+            # self.curr_model = (self.old_search.split())[0].lower()
             # if model in C.NOT_FULL_MODEL_NAMES:  # For models with divided name like iPhone | 11
             #     self.curr_model = model
             # else:
@@ -354,10 +401,18 @@ class App(QMainWindow):
     def search_dk9(self):
         if self.search_again:
             print(f'SEARCH AGAIN: {self.curr_model}')
-            self.worker = Worker(DK9.adv_search, self.curr_type, self.curr_firm, self.curr_model, self.curr_description)
+            self.worker = Worker(DK9.adv_search,
+                                 self.curr_type,
+                                 self.curr_manufacturer,
+                                 self.curr_model,
+                                 self.curr_description)
             self.search_again = False
         else:
-            self.worker = Worker(DK9.adv_search, self.curr_type, self.curr_firm, self.curr_model, self.curr_description)
+            self.worker = Worker(DK9.adv_search,
+                                 self.curr_type,
+                                 self.curr_manufacturer,
+                                 self.curr_model,
+                                 self.curr_description)
         self.worker.signals.result.connect(self.update_dk9_data)
         self.worker.signals.progress.connect(self.load_progress)
         self.worker.signals.finished.connect(self.finished)
@@ -395,8 +450,12 @@ class App(QMainWindow):
 
     def update_price_table(self, model):  # 'xiaomi mi a2 m1804d2sg'
         try:
-            if model in self.models:
-                position = self.models[model]  # [Sheet 27:<XIAOMI>, 813] - sheet, row
+            # if not self.models:
+            # print(f'{model=}\n{self.models=}\n{self.curr_model_idx=}\n'
+            #       f'{self.curr_manufacturer=}\n{self.curr_manufacturer_idx=}')
+            if model in self.models[self.curr_manufacturer]:
+                print(f'FOUND')
+                position = self.models[self.curr_manufacturer][model]  # [Sheet 27:<XIAOMI>, 813] - sheet, row
                 # print(f'{position=}')
                 # Take needed columns for exact model
                 if position[0].name in C.PRICE_SEARCH_COLUMN_NUMBERS:
@@ -449,7 +508,7 @@ class App(QMainWindow):
                             new_row_num += 1
                         if i < position[0].nrows:
                             # print(row[col[0] - 1, col[1] - 1, col[2] - 1])
-                            row = position[0].row_values(i + 1, 0, 9)
+                            row = position[0].row_values(i + 1, 0, 7)
                             if row[0] != '':
                                 if row[0] not in C.PRICE_TRASH_IN_CELLS:
                                     return
@@ -638,14 +697,13 @@ class App(QMainWindow):
         self.ui.input_search.selectAll()
 
     def open_settings(self):
-        settings_ui = ConfigWindow(self.login_dk9)
+        settings_ui = ConfigWindow(C, self, DK9)
         settings_ui.setWindowIcon(QtGui.QIcon(C.LOGO))
         settings_ui.exec_()
         settings_ui.show()
 
-    @staticmethod
-    def open_help():
-        help_ui = HelpWindow()
+    def open_help(self):
+        help_ui = HelpWindow(C, self)
         help_ui.setWindowIcon(QtGui.QIcon(C.LOGO))
         help_ui.exec_()
         help_ui.show()
@@ -668,70 +726,6 @@ class App(QMainWindow):
         # msg_box.show()
         msg_box.exec_()
         msg_box.show()
-
-
-class HelpWindow(QDialog):
-    def __init__(self):
-        super().__init__()
-        print(f'Reading {C.HELP}')
-        try:
-            file = open(C.HELP, 'r', encoding='utf-8')
-            with file:
-                text = file.read()
-
-            self.ui = Ui_Dialog()
-            self.ui.setupUi(self)
-            self.ui.text.setPlainText(text)
-        except Exception as _err:
-            App.error((f'Error while reading help file:\n{C.HELP}', _err))
-
-
-class ConfigWindow(QDialog):
-    def __init__(self, login_func):
-        super().__init__(None,
-                         # QtCore.Qt.WindowSystemMenuHint |
-                         # QtCore.Qt.WindowTitleHint |
-                         QtCore.Qt.WindowCloseButtonHint
-                         )
-        self.login_func = login_func
-        self.ui = Ui_settings_window()
-        self.ui.setupUi(self)
-        self.ui.web_login.setText(C.DK9_LOGIN)
-        self.ui.web_password.setText(C.DK9_PASSWORD)
-        self.ui.chk_fullscreen.setCheckState(2 if C.FULLSCREEN else 0)
-        self.ui.zebra_contrast.setValue(C.DK9_COL_DIFF)
-        self.ui.tables_font_size.setValue(C.TABLE_FONT_SIZE)
-        self.ui.colored_web_table.setCheckState(2 if C.DK9_COLORED else 0)
-        self.ui.colored_price_table.setCheckState(2 if C.PRICE_COLORED else 0)
-        # self.ui.wide_monitor.setCheckState(2 if C.WIDE_MONITOR else 0)
-        # self.ui.column_width_max.setValue(C.TABLE_COLUMN_SIZE_MAX)
-        # self.ui.buttonBox.button()..accept.connect(self.apply_settings())
-        self.ui.buttonBox.accepted.connect(self.apply_settings)
-
-    def apply_settings(self):
-        print('Applying settings')
-        login = False
-        if C.DK9_LOGIN != self.ui.web_login.text() or C.DK9_PASSWORD != self.ui.web_password.text():
-            login = True
-        C.DK9_LOGIN = self.ui.web_login.text()
-        C.DK9_PASSWORD = self.ui.web_password.text()
-        C.FULLSCREEN = True if self.ui.chk_fullscreen.checkState() == 2 else False
-        C.DK9_COL_DIFF = self.ui.zebra_contrast.value()
-        C.TABLE_FONT_SIZE = self.ui.tables_font_size.value()
-        C.DK9_COLORED = True if self.ui.colored_web_table.checkState() == 2 else False
-        C.PRICE_COLORED = True if self.ui.colored_price_table.checkState() == 2 else False
-        # C.WIDE_MONITOR = True if self.ui.wide_monitor.checkState() == 2 else False
-        # C.TABLE_COLUMN_SIZE_MAX = self.ui.column_width_max.value()
-        window.init_ui_dynamics()
-        C.precalculate_color_diffs()
-        try:
-            C.save_user_config()
-        except Exception as _err:
-            App.error((f'Error while saving config file:\n{C.HELP}', _err))
-        if login:
-            DK9.change_data(C.data())
-            print(f'{DK9.DATA=}')
-            self.login_func()
 
 
 if __name__ == "__main__":

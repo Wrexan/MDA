@@ -68,24 +68,31 @@ class Price:
 
     @staticmethod
     def get_row_in_pos(position: tuple):
-        return position[0].row_values(position[1], 0, 9)  # ['Xiaomi Mi A2 M1804D2SG ', '', '', 0.0, '', '', '', '', '']
+        return position[0].row_values(position[1], 0, 7)  # position[1], 0, 9
+        # ['Xiaomi Mi A2 M1804D2SG ', '', '', 0.0, '', '', '', '', '']
 
     def search_price_models(self, search_req: str, MODEL_LIST_SIZE: int, SMART_SEARCH: bool, STRICT_SEARCH: bool):
         search_req_len = len(search_req)
-        models = {}
+        models = {}  # {manufacturer: {model: [sheet, ruw_num],...}...}
         # print(self.DB.sheets())
         if not self.DB:
             return
         try:
-            for sheet in self.DB:
+            for sheet in self.DB:  # Lists cycle
                 # print(f'{sheet=}')
-                for row_num in range(sheet.nrows):
-                    cell_value = sheet.row_values(row_num, 0, 2)
-                    # print(f'{cell_value=} {len(cell_value)=}')
-                    if SMART_SEARCH and (not cell_value or not cell_value[0] or len(cell_value) < 2
-                                         or cell_value[0] in self.C.PRICE_TRASH_IN_CELLS):
+                manufacturer = sheet.name
+                if manufacturer in self.C.MANUFACTURER_BLACKLIST:
+                    continue
+
+                for row_num in range(sheet.nrows):  # Rows cycle
+                    cell_value = sheet.row_values(row_num, 0, 3)
+                    if not cell_value[0] or (cell_value[0] in self.C.PRICE_TRASH_IN_CELLS):
                         continue
+                    # if SMART_SEARCH and (not cell_value or not cell_value[0] or len(cell_value) < 2
+                    #                      or cell_value[0] in self.C.PRICE_TRASH_IN_CELLS):
+                    #     continue
                     # print(f'{cell_value[0]}')
+                    # print(f'{cell_value=}')
                     name_cell = str(cell_value[0]).strip().lower()
                     a, b, = 0, len(name_cell)
                     while a < b:
@@ -93,9 +100,11 @@ class Price:
                         # print(f'{a=} {b=} {found_pos=} {name_cell=}')
                         if found_pos == -1:
                             break
+                        if manufacturer not in models:
+                            models[manufacturer] = {}
                         # if search request > 3 symbols, cut everything from left
                         # for smaller, cut from both sides (more strict)
-                        # print(f'{len(self.models)=} {self.models=} {name_cell=} {sheet=} {row_num=}')  # ERROR LOG
+                        # print(f'{len(models)=} {models=} {name_cell=} {sheet=} {row_num=}')  # ERROR LOG
                         if SMART_SEARCH:
                             ok = False
                             if found_pos == 0 or name_cell[found_pos - 1] in "/\\ ":
@@ -113,18 +122,19 @@ class Price:
                             # le = len(models)
                             # print(f'{len(models)=} {models=} {name_cell=} {sheet=} {row_num=}')
                             if ok:
-                                if len(models) < MODEL_LIST_SIZE:
-                                    models[name_cell] = [sheet, row_num]
-                                if len(models) >= MODEL_LIST_SIZE:
+                                if len(models[manufacturer]) < MODEL_LIST_SIZE:
+                                    models[manufacturer][name_cell] = [sheet, row_num, cell_value[2]]
+                                if len(models[manufacturer]) >= MODEL_LIST_SIZE:
                                     return models
                                 # print(f'=========={name_cell}==========')
                                 break
                             else:
                                 a += found_pos + search_req_len
                         else:
-                            if len(models) < MODEL_LIST_SIZE:
-                                models[name_cell] = [sheet, row_num]
-                            if len(models) >= MODEL_LIST_SIZE:
+                            if len(models[manufacturer]) < MODEL_LIST_SIZE:
+                                models[manufacturer][name_cell] = [sheet, row_num, cell_value[2]]
+                            if len(models[manufacturer]) >= MODEL_LIST_SIZE:
+                                # print(f'{models=}')
                                 return models
                             break
             return models

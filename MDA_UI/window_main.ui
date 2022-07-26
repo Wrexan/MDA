@@ -253,9 +253,6 @@
                   <property name="frameShadow">
                    <enum>QFrame::Sunken</enum>
                   </property>
-                  <property name="text">
-                   <string>Подключен</string>
-                  </property>
                   <property name="alignment">
                    <set>Qt::AlignCenter</set>
                   </property>
@@ -291,9 +288,6 @@
                   </property>
                   <property name="frameShadow">
                    <enum>QFrame::Sunken</enum>
-                  </property>
-                  <property name="text">
-                   <string/>
                   </property>
                   <property name="alignment">
                    <set>Qt::AlignCenter</set>
@@ -487,14 +481,6 @@
                  <height>0</height>
                 </size>
                </property>
-               <property name="font">
-                <font>
-                 <pointsize>12</pointsize>
-                </font>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
                <property name="alignment">
                 <set>Qt::AlignCenter</set>
                </property>
@@ -525,14 +511,6 @@
                  <width>128</width>
                  <height>0</height>
                 </size>
-               </property>
-               <property name="font">
-                <font>
-                 <pointsize>12</pointsize>
-                </font>
-               </property>
-               <property name="text">
-                <string/>
                </property>
                <property name="alignment">
                 <set>Qt::AlignCenter</set>
@@ -567,13 +545,9 @@
                </property>
                <property name="font">
                 <font>
-                 <pointsize>12</pointsize>
                  <weight>75</weight>
                  <bold>true</bold>
                 </font>
-               </property>
-               <property name="text">
-                <string/>
                </property>
                <property name="alignment">
                 <set>Qt::AlignCenter</set>
@@ -606,14 +580,6 @@
                  <height>0</height>
                 </size>
                </property>
-               <property name="font">
-                <font>
-                 <pointsize>12</pointsize>
-                </font>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
                <property name="alignment">
                 <set>Qt::AlignCenter</set>
                </property>
@@ -644,14 +610,6 @@
                  <width>128</width>
                  <height>0</height>
                 </size>
-               </property>
-               <property name="font">
-                <font>
-                 <pointsize>12</pointsize>
-                </font>
-               </property>
-               <property name="text">
-                <string/>
                </property>
                <property name="alignment">
                 <set>Qt::AlignCenter</set>
@@ -765,12 +723,18 @@
                     <number>0</number>
                    </property>
                    <item>
-                    <widget class="QCheckBox" name="chb_search_smart">
+                    <widget class="QCheckBox" name="chb_show_exact">
                      <property name="enabled">
                       <bool>true</bool>
                      </property>
+                     <property name="maximumSize">
+                      <size>
+                       <width>120</width>
+                       <height>16777215</height>
+                      </size>
+                     </property>
                      <property name="text">
-                      <string>Фильтр</string>
+                      <string>Только искомое</string>
                      </property>
                      <property name="checked">
                       <bool>true</bool>
@@ -778,38 +742,27 @@
                     </widget>
                    </item>
                    <item>
-                    <widget class="QCheckBox" name="chb_search_narrow">
-                     <property name="text">
-                      <string>Минимум 2</string>
-                     </property>
-                     <property name="checked">
-                      <bool>true</bool>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QCheckBox" name="chb_search_eng">
+                    <widget class="QPushButton" name="pb_adv_search">
                      <property name="enabled">
-                      <bool>true</bool>
+                      <bool>false</bool>
+                     </property>
+                     <property name="maximumSize">
+                      <size>
+                       <width>120</width>
+                       <height>16777215</height>
+                      </size>
                      </property>
                      <property name="text">
-                      <string>Латиница</string>
+                      <string>Расширенный поиск</string>
                      </property>
-                     <property name="checked">
-                      <bool>true</bool>
+                     <property name="autoDefault">
+                      <bool>false</bool>
                      </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QCheckBox" name="chb_price_name_only">
-                     <property name="enabled">
-                      <bool>true</bool>
+                     <property name="default">
+                      <bool>false</bool>
                      </property>
-                     <property name="text">
-                      <string>Строго</string>
-                     </property>
-                     <property name="checked">
-                      <bool>true</bool>
+                     <property name="flat">
+                      <bool>false</bool>
                      </property>
                     </widget>
                    </item>
@@ -881,64 +834,38 @@
                     <number>0</number>
                    </property>
                    <item>
-                    <widget class="QPushButton" name="pb_adv_search">
+                    <widget class="QCheckBox" name="chb_price_name_only">
                      <property name="enabled">
-                      <bool>false</bool>
-                     </property>
-                     <property name="maximumSize">
-                      <size>
-                       <width>120</width>
-                       <height>16777215</height>
-                      </size>
-                     </property>
-                     <property name="sizeIncrement">
-                      <size>
-                       <width>120</width>
-                       <height>0</height>
-                      </size>
+                      <bool>true</bool>
                      </property>
                      <property name="text">
-                      <string>Расшир. поиск</string>
+                      <string>По прайсу</string>
                      </property>
-                     <property name="autoDefault">
-                      <bool>false</bool>
-                     </property>
-                     <property name="default">
-                      <bool>false</bool>
-                     </property>
-                     <property name="flat">
-                      <bool>false</bool>
+                     <property name="checked">
+                      <bool>true</bool>
                      </property>
                     </widget>
                    </item>
                    <item>
-                    <widget class="QPushButton" name="pb_show_list">
+                    <widget class="QCheckBox" name="chb_search_eng">
                      <property name="enabled">
-                      <bool>false</bool>
-                     </property>
-                     <property name="maximumSize">
-                      <size>
-                       <width>120</width>
-                       <height>16777215</height>
-                      </size>
-                     </property>
-                     <property name="sizeIncrement">
-                      <size>
-                       <width>120</width>
-                       <height>0</height>
-                      </size>
+                      <bool>true</bool>
                      </property>
                      <property name="text">
-                      <string>Показать лист</string>
+                      <string>Латиница</string>
                      </property>
-                     <property name="autoDefault">
-                      <bool>false</bool>
+                     <property name="checked">
+                      <bool>true</bool>
                      </property>
-                     <property name="default">
-                      <bool>false</bool>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QCheckBox" name="chb_search_narrow">
+                     <property name="text">
+                      <string>Минимум 2</string>
                      </property>
-                     <property name="flat">
-                      <bool>false</bool>
+                     <property name="checked">
+                      <bool>true</bool>
                      </property>
                     </widget>
                    </item>
