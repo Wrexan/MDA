@@ -15,71 +15,75 @@ class Config:
         self.USER_CONFIG = f'{self.CONTENT_PATH}user_config.ini'
         self.HELP = f'{self.CONTENT_PATH}Инструкция.txt'
 
-        self.PRICE_PATH = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop\\')
-        self.PRICE_CONFIG = f'{self.CONTENT_PATH}price_config.ini'
-
-        self.DK9_LOGIN = ''
-        self.DK9_PASSWORD = ''
-
-        self.MODEL_LIST_SIZE = 5
-        self.APPROVED = False
+        # ============================================
+        # =============APP SETTINGS====================
+        # ====================UI====================
+        self.FULLSCREEN = False
+        self.MODEL_LIST_MAX_SIZE = 15
+        self.NARROW_SEARCH = True  # from n symbols
+        self.SMART_SEARCH = False  # filter, from start
+        self.LATIN_SEARCH = True
+        self.SEARCH_BY_PRICE_MODEL = True
+        self.MODEL_LIST_REVERSED = False
 
         # tables
-        # self.WIDE_MONITOR = False
-        # self.TABLE_COLUMN_SIZE_MAX = 160  # best for 1240 font 10
         self.PRICE_COLORED = True  # work slower if True
         self.DK9_COLORED = True  # work slower if True
         self.DK9_COL_DIFF = 14  # difference of odd/even bg
         self.TABLE_FONT_SIZE = 12
 
-        # ============================================
-        # =============APP SETTINGS====================
-        # ====================MENU====================
-        self.STRICT_SEARCH = True
-        self.SMART_SEARCH = True
-        self.LATIN_SEARCH = True
-        self.MODEL_LIST_REVERSED = False
         # ====================PRICE====================
-        self.STRICT_SEARCH_LEN = 2  # start search after 2 symbols
-        self.PRICE_SEARCH_COLUMN_SYMBOLS = {'+': 'BCFGH',
-                                            'Alcatel': 'BCDE',
-                                            'Asus-тел': 'XBFG',
-                                            'Asus-планш': 'XBDGH',
-                                            'BlackBerry': 'ABCFG',
-                                            'Blackview': 'XBEF',
-                                            'Fly': 'XBCHI',
-                                            'doogee': 'XBCDE',
-                                            'HTC': 'BCEFH',
-                                            'Huawei': 'XBGHIJ',
-                                            'iPad': 'XAFGI',
-                                            'iPhone': 'XBHI',
-                                            'Lenovo': 'XBFGH',
-                                            'LG': 'BCDI',
-                                            'Meizu': 'XBEFG',
-                                            'Motorola': 'XBJKQ',
-                                            'Nokia': 'BCGHJ',
-                                            'Nomi': 'XBCEF',
-                                            'OPPO': 'BCFGH',
-                                            'OnePlus': 'BCFGH',
-                                            'Oukitel': 'BCFGL',
-                                            'PIXEL': 'BCFGH',
-                                            'Realme': 'BCFGH',
-                                            'Samsung': 'BCGH',
-                                            'Sony': 'XBFGH',
-                                            'Tecno': 'BCFG',
-                                            'vivo': 'BCDEF',
-                                            'TP-Link': 'BCDE',
-                                            'XIAOMI': 'XBFG',
-                                            'ZTE': 'BCFGH',
+        self.PRICE_PATH = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop\\')
+        self.PRICE_GD_PATH = ''
+        self.PRICE_CONFIG = f'{self.CONTENT_PATH}price_config.ini'
+        self.NARROW_SEARCH_LEN = 2  # start search from 2 symbols
+        self.APPROVED = False
+        self.PRICE_SEARCH_COLUMN_SYMBOLS = {'+': 'BFG',
+                                            # 'Alcatel': 'BCDE',
+                                            # 'Asus-тел': 'XBFG',
+                                            'Asus-планш': 'BDG',
+                                            # 'BlackBerry': 'ABCFG',
+                                            # 'Blackview': 'XBEF',
+                                            # 'Fly': 'XBCHI',
+                                            # 'doogee': 'XBCDE',
+                                            # 'HTC': 'BCEFH',
+                                            # 'Huawei': 'XBGHIJ',
+                                            # 'iPad': 'XAFGI',
+                                            # 'iPhone': 'XBHI',
+                                            # 'Lenovo': 'XBFGH',
+                                            # 'LG': 'BCDI',
+                                            # 'Meizu': 'XBEFG',
+                                            # 'Motorola': 'XBJKQ',
+                                            # 'Nokia': 'BCGHJ',
+                                            # 'Nomi': 'XBCEF',
+                                            # 'OPPO': 'BCFGH',
+                                            # 'OnePlus': 'BCFGH',
+                                            # 'Oukitel': 'BCFGL',
+                                            # 'PIXEL': 'BCFGH',
+                                            # 'Realme': 'BCFGH',
+                                            # 'Samsung': 'BCGH',
+                                            # 'Sony': 'XBFGH',
+                                            # 'Tecno': 'BCFG',
+                                            # 'vivo': 'BCDEF',
+                                            # 'TP-Link': 'BCDE',
+                                            # 'XIAOMI': 'XBFG',
+                                            # 'ZTE': 'BCFGH',
                                             }
         self.PRICE_SEARCH_COLUMN_NUMBERS = {}
         self.convert_columns_to_nums()
-        self.PRICE_TRASH_IN_CELLS = ('/', '\\', 'MI2/Mi2s', 'MI2a', 'mi3', 'Mi 9t', 'Mi Max 3',
-                                     'Red rice', 'Redmi 3', 'Redmi 4x', 'Redmi 6', 'Redmi 7', 'Redmi 7a',
-                                     'Redmi 8', 'Redmi 8a', 'Redmi Note 4', 'Redmi Note 5', 'Redmi Note 6',
-                                     'Redmi Note 6 Pro', 'Redmi Note 7', 'Redmi Note 8', 'Redmi note 9', 'Redmi Note 6')
-        self.NOT_FULL_MODEL_NAMES = ('ipad', 'iphone')
+        self.PRICE_TRASH_IN_CELLS = ()
+        # self.PRICE_TRASH_IN_CELLS = ('/', '\\', 'MI2/Mi2s', 'MI2a', 'mi3', 'Mi 9t', 'Mi Max 3',
+        #                              'Red rice', 'Redmi 3', 'Redmi 4x', 'Redmi 6', 'Redmi 7', 'Redmi 7a',
+        #                              'Redmi 8', 'Redmi 8a', 'Redmi Note 4', 'Redmi Note 5', 'Redmi Note 6',
+        #                              'Redmi Note 6 Pro', 'Redmi Note 7', 'Redmi Note 8',
+        #                              'Redmi note 9', 'Redmi Note 6')
+        self.NOT_FULL_MODEL_NAMES = ('ipad', 'iphone')  # ------------------------------------
+        self.MODEL_NAME_BLACKLIST = ('телефон', 'планшет')
+        self.MANUFACTURER_BLACKLIST = ('Alcatel', 'BlackBerry', 'Fly', 'HTC')
         self.PRICE_PARTIAL_NAME = ('Прайс', '.xls')
+
+        self.PRICE_STATUSES = {0: 'Не загружен', 1: 'Не найден', 2: 'Загрузка',
+                               3: 'Ошибка загрузки', 4: 'Чтение', 5: 'Ошибка чтения'}
 
         # ====================DK9====================
         # Preparing background colors for DK9
@@ -94,6 +98,11 @@ class Config:
                               'Goldenrod': (218, 165, 32),
                               'Red': (255, 80, 80),
                               }
+
+        self.DK9_LOGIN = ''
+        self.DK9_PASSWORD = ''
+        self.DK9_LOGIN_DATA = {}
+
         self.DK9_LOGIN_URL = "http://dimkak9-001-site1.htempurl.com/Login.aspx"
         self.DK9_SEARCH_URL = "http://dimkak9-001-site1.htempurl.com/AllInOne.aspx"
         self.DK9_HEADERS = {
@@ -102,7 +111,7 @@ class Config:
 
         # self.DK9_LOGIN_DATA = self.data()
 
-        self.WEB_STATUSES = {0: 'Нет соединения', 1: 'Ожидание', 2: 'Подключен',
+        self.WEB_STATUSES = {0: 'Нет соединения', 1: 'Подключение...', 2: 'Подключен',
                              3: 'Перенаправление', 4: 'Запрос отклонен', 5: 'Ошибка сервера', 6: 'Ошибка авторизации'}
 
         self.SYMBOL_TO_LATIN = {
@@ -139,22 +148,27 @@ class Config:
              color[2] - self.DK9_COL_DIFF if color[2] >= self.DK9_COL_DIFF else 0)
 
     def load_or_generate_config(self):
-        config = configparser.ConfigParser()
-        config.read(self.USER_CONFIG)
-        if 'SETTINGS' in config:
-            print(f'Reading {self.USER_CONFIG}')
-            self.DK9_LOGIN = config['WEB DATABASE']['DK9_LOGIN']
-            self.DK9_PASSWORD = config['WEB DATABASE']['DK9_PASSWORD']
-            self.MODEL_LIST_SIZE = int(config['SETTINGS']['MODEL_LIST_SIZE'])
-            self.PRICE_COLORED = True if config['SETTINGS']['PRICE_COLORED'] == 'True' else False
-            self.DK9_COLORED = True if config['SETTINGS']['DK9_COLORED'] == 'True' else False
-            self.DK9_COL_DIFF = int(config['SETTINGS']['DK9_COL_DIFF'])
-            self.TABLE_FONT_SIZE = int(config['SETTINGS']['TABLE_FONT_SIZE'])
-            # self.WIDE_MONITOR = True if config['SETTINGS']['WIDE_MONITOR'] == 'True' else False
-            # self.TABLE_COLUMN_SIZE_MAX = int(config['SETTINGS']['TABLE_COLUMN_SIZE_MAX'])
-            # self.DK9_LOGIN_DATA = self.data()
-        else:
-            self.save_user_config()
+            config = configparser.ConfigParser()
+            config.read(self.USER_CONFIG)
+            if 'SETTINGS' in config:
+                print(f'Reading {self.USER_CONFIG}')
+                try:
+                    self.DK9_LOGIN = config['WEB DATABASE']['DK9_LOGIN']
+                    self.DK9_PASSWORD = config['WEB DATABASE']['DK9_PASSWORD']
+                    self.FULLSCREEN = True if config['SETTINGS']['FULLSCREEN'] == 'True' else False
+                    self.PRICE_COLORED = True if config['SETTINGS']['PRICE_COLORED'] == 'True' else False
+                    self.DK9_COLORED = True if config['SETTINGS']['DK9_COLORED'] == 'True' else False
+                    self.DK9_COL_DIFF = int(config['SETTINGS']['DK9_COL_DIFF'])
+                    self.TABLE_FONT_SIZE = int(config['SETTINGS']['TABLE_FONT_SIZE'])
+                    # self.WIDE_MONITOR = True if config['SETTINGS']['WIDE_MONITOR'] == 'True' else False
+                    # self.TABLE_COLUMN_SIZE_MAX = int(config['SETTINGS']['TABLE_COLUMN_SIZE_MAX'])
+                    # self.DK9_LOGIN_DATA = self.data()
+                except Exception as _err:
+                    print(f'Error while trying to read/create config at:\n{self.USER_CONFIG}', _err)
+                    os.remove(self.USER_CONFIG)
+                    self.save_user_config()
+            else:
+                self.save_user_config()
 
     def data(self):
         return {
@@ -183,13 +197,12 @@ class Config:
         config['WEB DATABASE']['DK9_LOGIN'] = str(self.DK9_LOGIN)
         config['WEB DATABASE']['DK9_PASSWORD'] = str(self.DK9_PASSWORD)
         config['SETTINGS'] = {}
-        config['SETTINGS']['MODEL_LIST_SIZE'] = str(self.MODEL_LIST_SIZE)
+        config['SETTINGS']['FULLSCREEN'] = str(self.FULLSCREEN)
         config['SETTINGS']['PRICE_COLORED'] = str(self.PRICE_COLORED)
         config['SETTINGS']['DK9_COLORED'] = str(self.DK9_COLORED)
         config['SETTINGS']['DK9_COL_DIFF'] = str(self.DK9_COL_DIFF)
         config['SETTINGS']['TABLE_FONT_SIZE'] = str(self.TABLE_FONT_SIZE)
-        # config['SETTINGS']['WIDE_MONITOR'] = str(self.WIDE_MONITOR)
-        # config['SETTINGS']['TABLE_COLUMN_SIZE_MAX'] = str(self.TABLE_COLUMN_SIZE_MAX)
+
         self.DK9_LOGIN_DATA = self.data()
         try:
             with open(self.USER_CONFIG, 'w') as conf:
