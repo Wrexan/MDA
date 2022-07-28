@@ -101,9 +101,10 @@ class App(QMainWindow):
         self.ui.table_accesory.setHorizontalHeaderLabels(('Тип', 'Фирма', 'Модель', 'Примечание',
                                                           'Цена', 'Шт', 'Дата', 'Где'))
 
-        self.ui.table_parts.doubleClicked.connect(self.copy_table_item)
-        self.ui.table_accesory.doubleClicked.connect(self.copy_table_item)
+        self.ui.table_parts.doubleClicked.connect(self.copy_web_table_items)
+        self.ui.table_accesory.doubleClicked.connect(self.copy_web_table_items)
         self.ui.table_price.clicked.connect(self.cash_table_element)
+        self.ui.table_price.doubleClicked.connect(self.copy_price_table_item)
         self.ui.help.clicked.connect(self.open_help)
 
         self.manufacturer_wheel = (self.ui.manufacturer_1,
@@ -134,9 +135,9 @@ class App(QMainWindow):
         self.ui.table_price.setFont(font)
         self.ui.table_parts.setFont(font)
         self.ui.table_accesory.setFont(font)
-        self.ui.tf_work_name.setFont(font)
-        self.ui.tf_work_descr.setFont(font)
-        self.ui.tf_work_price.setFont(font)
+        self.ui.pt_cash_name.setFont(font)
+        self.ui.pt_cash_descr.setFont(font)
+        self.ui.pt_cash_price.setFont(font)
 
         self.model_list_widget.setFont(font)
         self.fix_models_list_position()
@@ -438,7 +439,6 @@ class App(QMainWindow):
 
     def update_price_table(self, model):  # 'xiaomi mi a2 m1804d2sg'
         try:
-            # if not self.models:
             # print(f'{model=}\n{self.models=}\n{self.curr_model_idx=}\n'
             #       f'{self.curr_manufacturer=}\n{self.curr_manufacturer_idx=}')
             if model in self.models[self.curr_manufacturer]:
@@ -450,14 +450,12 @@ class App(QMainWindow):
                     columns = C.PRICE_SEARCH_COLUMN_NUMBERS[position[0].name]  # [2, 4, 5]
                 else:
                     columns = C.PRICE_SEARCH_COLUMN_NUMBERS['+']
-                # print(f'{columns=}')
                 row = Price.get_row_in_pos(position)
                 row_len = len(row)
                 # print(f'{row=}')
 
                 new_row_num = 0
                 self.ui.table_price.setRowCount(0)
-                # self.ui.model_lable.setText(self.list_to_string(row))
                 for i in range(position[1], position[0].nrows - 1):
                     # print(row[col[0] - 1, col[1] - 1, col[2] - 1])
                     if row_len < columns[-1]:  # If row shorter, than we expect, then place all row in 0 column
@@ -468,7 +466,6 @@ class App(QMainWindow):
                         self.ui.table_price.item(new_row_num, 0).setToolTip(cell_text)
                         return
                     else:
-
                         # if cell is out of row, text will be empty
                         cells_texts = []
                         for c in range(len(columns)):
@@ -477,7 +474,6 @@ class App(QMainWindow):
                             else:
                                 cells_texts.append('')
 
-                        # cells_text = [str(row[columns[0]]), str(row[columns[1]])]
                         if cells_texts[0] or len(cells_texts[1]) > 3:
 
                             self.ui.table_price.insertRow(new_row_num)
@@ -507,9 +503,6 @@ class App(QMainWindow):
             self.error((f'Error updating price table for:\n{model}', _err))
 
     def load_progress(self, progress):
-        # if self.web_status not in (1, 2):
-        #     self.ui.web_load_progress_bar.setValue(90)
-        # else:
         self.ui.web_load_progress_bar.setValue(progress)
 
     def finished(self):
@@ -517,14 +510,12 @@ class App(QMainWindow):
             self.ui.web_load_progress_bar.setValue(100)
         else:
             self.ui.web_load_progress_bar.setValue(0)
-        # self.update_status()
 
     def fill_table_from_soup(self, soup, table, def_bg_color1, def_bg_color2):
         try:
             r = 0
             table.setRowCount(0)
             if not soup:
-                # M.warning(f'Got zero soup:\n{table.objectName()}', 'still hungry :(')
                 return
             for dk9_row in soup.tr.next_siblings:
                 row_palette = None
@@ -562,9 +553,8 @@ class App(QMainWindow):
         except Exception as _err:
             self.error((f'Error updating table:\n{table}', _err))
 
-    def copy_table_item(self):
+    def copy_web_table_items(self):
         font = QtGui.QFont()
-        # font.setBold(True)
         font.setUnderline(True)
         selected_row = self.sender().selectedItems()
         text = ''
@@ -574,17 +564,18 @@ class App(QMainWindow):
             selected_row[i].setFont(font)
         clipboard.setText(text)
 
-    def cash_table_element(self):
-        # font = QtGui.QFont()
-        # font.setBold(True)
-        # font.setUnderline(True)
+    def copy_price_table_item(self):
+        font = QtGui.QFont()
+        font.setUnderline(True)
         selected_row = self.sender().selectedItems()
-        # print(f'{selected_row=}')
-        # text = ''
-        # for i in range(3):
-        self.ui.tf_work_name.setPlainText(selected_row[0].text())
-        self.ui.tf_work_descr.setPlainText(selected_row[2].text())
-        self.ui.tf_work_price.setPlainText(selected_row[1].text())
+        selected_row[0].setFont(font)
+        clipboard.setText(selected_row[0].text())
+
+    def cash_table_element(self):
+        selected_row = self.sender().selectedItems()
+        self.ui.pt_cash_name.setPlainText(selected_row[0].text())
+        self.ui.pt_cash_descr.setPlainText(selected_row[2].text())
+        self.ui.pt_cash_price.setPlainText(selected_row[1].text())
         # clipboard.setText(text)
 
     @staticmethod
@@ -608,91 +599,13 @@ class App(QMainWindow):
         else:
             self.model_list_widget.hide()
             self.search_input.setFocus()
-        # else:
-        #     self.ui.input_search.setFocus()
-        #     # self.ui.input_search.text.selectAll()
-        #     # self.update_status()
-        #     # print(f"window is the active window: {self.isActiveWindow()}")
-
-    # def event(self, event):
-    #     # print(f'Event type: {event.type()}')
-    #     if event.type() == QEvent.KeyPress:# and event.key() == Qt.Key_Tab:
-    #         print(f'TAB {self.ui.tab_widget.currentIndex()=} {event.key()=}')
-    #     return QMainWindow.event(self, event)
-
-    # def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
-    #     index = event.pos()
-    #     print(f'{index=}')
+            self.search_input.selectAll()
 
     def resizeEvent(self, event):
         self.resized.emit()
         return super(QMainWindow, self).resizeEvent(event)
 
     def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
-        # super(self.ui, self).keyPressEvent(event)
-        # print(f'KEYPRESS: {event.key()}')
-        # print(f'{self.models=}')
-        # if self.models \
-        #         and (0 <= self.model_list_widget.currentRow() < len(self.models[self.curr_manufacturer])
-        #              or self.model_list_widget.isHidden()):
-        #     # print(f'{self.current_model_button_index=} {self.model_buttons=} ')
-        #     if event.key() in (Qt.Key_Return, Qt.Key_Enter):
-        #         if self.model_list_widget.isHidden():
-        #             self.upd_models_list()
-        #             return
-        #         self.scheduler(self.model_list_widget.currentItem())
-        #     elif event.key() == Qt.Key_Up:
-        #         # print('Wow, Up')
-        #         idx = self.model_list_widget.currentRow() - 1
-        #         if idx < 0:
-        #             idx = len(self.models[self.curr_manufacturer]) - 1
-        #         self.model_list_widget.setCurrentRow(idx)
-        #     elif event.key() == Qt.Key_Down:
-        #         # print('Wow, Down')
-        #         if self.model_list_widget.isHidden():
-        #             self.upd_models_list()
-        #             return
-        #         idx = self.model_list_widget.currentRow() + 1
-        #         print(f'{idx=} {len(self.models[self.curr_manufacturer])=}')
-        #         if idx > len(self.models[self.curr_manufacturer]) - 1:
-        #             idx = 0
-        #         self.model_list_widget.setCurrentRow(idx)
-        #
-        #     elif event.key() == Qt.Key_Right:
-        #         print('Wow, Right')
-        #         self.curr_manufacturer_idx += 1 if self.curr_manufacturer_idx > len(self.models) - 1 else 0
-        #         self.upd_models_list()
-        #
-        #     elif event.key() == Qt.Key_Tab:
-        #         print('Wow, TAB')
-        #         self.curr_manufacturer_idx += 1 if self.curr_manufacturer_idx > len(self.models) - 1 else 0
-        #         self.upd_models_list()
-
-        # elif self.model_list_widget.isHidden() \
-        #         and (event.key() == Qt.Key_Down
-        #              or event.key() == Qt.Key_Return
-        #              or event.key() == Qt.Key_Enter):
-        #     self.model_list_widget.show()
-        # if event.key() in (Qt.Key_Return, Qt.Key_Enter):
-        #     self.model_buttons[self.current_model_button_index].click()
-        # elif event.key() == Qt.Key_Up:
-        #     self.model_buttons[self.current_model_button_index].setDefault(False)
-        #     self.current_model_button_index -= 1
-        #     if self.current_model_button_index < 0:
-        #         self.current_model_button_index = len(self.model_buttons) - 1
-        #     self.model_buttons[self.current_model_button_index].setDefault(True)
-        #     self.model_buttons[self.current_model_button_index].setFocus()
-        #     # print('Wow, Up')
-        # elif event.key() == Qt.Key_Down:
-        #     self.model_buttons[self.current_model_button_index].setDefault(False)
-        #     self.current_model_button_index += 1
-        #     if self.current_model_button_index > len(self.model_buttons) - 1:
-        #         self.current_model_button_index = 0
-        #     self.model_buttons[self.current_model_button_index].setDefault(True)
-        #     self.model_buttons[self.current_model_button_index].setFocus()
-        # print('Wow, Down')
-        # self.ui.input_search.setFocus()
-        # self.ui.input_search.selectAll()
         if event.key() == Qt.Key_Alt:
             # print(f'TAB {self.ui.tab_widget.currentIndex()=}')
             if self.ui.tab_widget.currentIndex() == 0:
@@ -702,9 +615,6 @@ class App(QMainWindow):
         if event.key() == Qt.Key_Escape:
             # print(f'TAB {self.ui.tab_widget.currentIndex()=}')
             self.model_list_widget.hide()
-
-        # self.ui.input_search.setFocus()
-        # self.ui.input_search.selectAll()
 
         self.search_input.setFocus()
         self.search_input.selectAll()
@@ -736,7 +646,6 @@ class App(QMainWindow):
         msg_box.setInformativeText(str(info))
         msg_box.setWindowTitle("Warning")
         msg_box.setStandardButtons(QMessageBox.Ok)
-        # msg_box.show()
         msg_box.exec_()
         msg_box.show()
 
@@ -767,39 +676,32 @@ class SearchInput(QLineEdit):
         if self.app.models \
                 and (0 <= self.app.model_list_widget.currentRow() < len(self.app.models[self.app.curr_manufacturer])
                      or self.app.model_list_widget.isHidden()):
-            # print(f'{self.current_model_button_index=} {self.model_buttons=} ')
 
             if event.key() in (Qt.Key_Return, Qt.Key_Enter):
-                # print('Wow, Enter')
                 if self.app.model_list_widget.isHidden():
                     self.app.upd_models_list()
                     return
                 self.app.scheduler(self.app.model_list_widget.currentItem())
 
             elif event.key() == Qt.Key_Up:
-                # print('Wow, Up')
                 idx = self.app.model_list_widget.currentRow() - 1
                 if idx < 0:
                     idx = len(self.app.models[self.app.curr_manufacturer]) - 1
                 self.app.model_list_widget.setCurrentRow(idx)
 
             elif event.key() == Qt.Key_Down:
-                print('Wow, Down')
                 if self.app.model_list_widget.isHidden():
                     self.app.upd_models_list()
                     return
                 idx = self.app.model_list_widget.currentRow() + 1
-                # print(f'{idx=} {len(self.app.models[self.app.curr_manufacturer])=}')
                 if idx > len(self.app.models[self.app.curr_manufacturer]) - 1:
                     idx = 0
                 self.app.model_list_widget.setCurrentRow(idx)
 
             elif event.key() == Qt.Key_Right:
-                # print('Wow, Right')
                 self.app.upd_manufacturer_wheel(1)
 
             elif event.key() == Qt.Key_Left:
-                # print('Wow, Left')
                 self.app.upd_manufacturer_wheel(-1)
 
 
