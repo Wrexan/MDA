@@ -1183,6 +1183,13 @@
               <height>20</height>
              </size>
             </property>
+            <property name="font">
+             <font>
+              <pointsize>10</pointsize>
+              <weight>75</weight>
+              <bold>true</bold>
+             </font>
+            </property>
             <layout class="QHBoxLayout" name="horizontalLayout_2">
              <property name="leftMargin">
               <number>0</number>
@@ -1196,6 +1203,9 @@
              <property name="bottomMargin">
               <number>0</number>
              </property>
+             <item>
+              <layout class="QHBoxLayout" name="lay_model_buttons"/>
+             </item>
             </layout>
            </widget>
           </item>
