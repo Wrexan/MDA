@@ -29,7 +29,6 @@ class App(QMainWindow):
     def __init__(self):
         super().__init__()
         qApp.focusChanged.connect(self.on_focusChanged)
-        self.latin_process = False
         self.models = {}
         self.model_buttons = {}
         self.manufacturer_wheel = None
@@ -49,13 +48,14 @@ class App(QMainWindow):
         self.curr_manufacturer_idx: int = 0
         self.curr_manufacturer: str = ''
         # self.curr_manufacturers: tuple = ()
-        self.curr_type = ''
+        self.curr_type: str = ''
         self.curr_model: str = ''  # --------------------------------------
         self.curr_model_idx: int = 0
-        self.curr_description = ''
+        self.curr_description: str = ''
 
+        self.search_req_ruled: str = ''
         self.search_again = False
-        self.old_search = ''
+        # self.old_search = ''
         self.thread = QtCore.QThread
         self.worker = None  # Worker(self.update_dk9_data, 'mi8 lite')
         self.Price = Price(C)
@@ -193,6 +193,7 @@ class App(QMainWindow):
             result_req = self.apply_rule_latin(search_req)
             result_req = self.apply_rule_narrow(result_req)
 
+            self.search_req_ruled = result_req
             if result_req:
                 # print(f'{search_req=} {result_req=}')
                 if self.price_status >= len(C.PRICE_STATUSES):
@@ -308,23 +309,12 @@ class App(QMainWindow):
             self.model_buttons[num].clicked.connect(self.search_dk9_by_button)
             if num == 0:
                 self.model_buttons[num].setDefault(True)
-                self.curr_model = model
+                # self.curr_model = model
                 self.search_dk9()
             lay.addWidget(self.model_buttons[num], 0)
             le -= 1
         sp = QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Expanding)
         lay.addItem(sp)
-
-    # def add_search_button(self, lay, search_req: str):
-    #     sp = QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Expanding)
-    #     lay.addItem(sp)
-    #     self.current_model_button_index = 0
-    #     # print(f'{search_req=}')
-    #     if search_req:
-    #         self.model_buttons[0] = QPushButton(search_req)
-    #         self.model_buttons[0].clicked.connect(self.scheduler)
-    #         self.model_buttons[0].setDefault(True)
-    #         lay.addWidget(self.model_buttons[0], 0)
 
     def update_price_status(self, status: int):
         self.price_status = status
@@ -337,34 +327,17 @@ class App(QMainWindow):
     # @QtCore.pyqtSlot
     def scheduler(self, item):
         text_lower: str = item.text().lower()
-        # manuf_in_text_idx = text_lower.find(self.curr_manufacturer.lower())
-        # if manuf_in_text_idx >= 0:
-        #     models_for_buttons = [m.strip() for m in text_lower[manuf_in_text_idx:].split(',', 4)]
-        # else:
-        #     models_for_buttons = [m.strip() for m in text_lower.split(',', 4)]
 
         models_str = text_lower.replace(self.curr_manufacturer.lower(), '')
         models_for_buttons = [m.strip() for m in models_str.split(',', 4)]
-        self.curr_model = models_for_buttons[0]
-        # print(f'CURRENT: {self.curr_model}')
-
-        # if self.curr_model.startswith(self.curr_manufacturer.lower()):
-        #     self.curr_model = self.curr_model[len(self.curr_manufacturer):].lstrip()
-
-        # print(f'Start sheduler: {text_lower=} {self.curr_manufacturer=} {self.curr_model=}')
+        print(f'{C.SEARCH_BY_PRICE_MODEL=} {models_for_buttons[0]=} {self.search_req_ruled=} ')
+        if C.SEARCH_BY_PRICE_MODEL:
+            self.curr_model = models_for_buttons[0]
+        else:
+            self.curr_model = self.search_req_ruled
         self.upd_models_list(True)
         self.upd_model_buttons(models_for_buttons)
-        # model = self.model_list_widget.itemClicked.text()
         self.update_price_table(text_lower)
-        # if self.search_input.text() and self.search_input.text() != self.old_search:
-        #     self.old_search = self.search_input.text()
-        #     self.curr_model = self.old_search.lower()
-            # self.curr_model = (self.old_search.split())[0].lower()
-            # if model in C.NOT_FULL_MODEL_NAMES:  # For models with divided name like iPhone | 11
-            #     self.curr_model = model
-            # else:
-            #     self.curr_model = self.old_search
-            # self.search_dk9()
 
     def update_web_status(self, status: int):
         if status in C.WEB_STATUSES:
@@ -379,7 +352,7 @@ class App(QMainWindow):
         self.worker = Worker(self.Price.load_price)
         # self.worker.signals.result.connect(self.update_dk9_data)
         # self.worker.signals.progress.connect(self.load_progress)
-        self.worker.signals.finished.connect(self.update_dk9_data)
+        self.worker.signals.finished.connect(self.login_dk9)
         self.worker.signals.error.connect(self.error)
         self.worker.signals.status.connect(self.update_price_status)
         print('Starting thread to read price')
@@ -443,6 +416,9 @@ class App(QMainWindow):
         else:
             self.login_dk9()
         self.load_progress(0) if use_old_soup else self.load_progress(100)
+
+    def dummy(self):
+        pass
 
     def update_price_table(self, model):  # 'xiaomi mi a2 m1804d2sg'
         try:
