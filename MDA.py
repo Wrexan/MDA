@@ -299,9 +299,11 @@ class App(QMainWindow):
         self.current_model_button_index = 0
         for num, model in enumerate(model_names):
             self.model_buttons[num] = QPushButton(model)
-            self.model_buttons[num].clicked.connect(self.search_dk9)
+            self.model_buttons[num].clicked.connect(self.search_dk9_by_button)
             if num == 0:
                 self.model_buttons[num].setDefault(True)
+                self.curr_model = model
+                self.search_dk9()
             lay.addWidget(self.model_buttons[num], 0)
             le -= 1
         sp = QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -328,25 +330,35 @@ class App(QMainWindow):
 
     # @QtCore.pyqtSlot
     def scheduler(self, item):
-        text_lower = item.text().lower()
-        models_for_buttons = [m.strip() for m in text_lower.split(',', 4)]
+        text_lower: str = item.text().lower()
+        # manuf_in_text_idx = text_lower.find(self.curr_manufacturer.lower())
+        # if manuf_in_text_idx >= 0:
+        #     models_for_buttons = [m.strip() for m in text_lower[manuf_in_text_idx:].split(',', 4)]
+        # else:
+        #     models_for_buttons = [m.strip() for m in text_lower.split(',', 4)]
+
+        models_str = text_lower.replace(self.curr_manufacturer.lower(), '')
+        models_for_buttons = [m.strip() for m in models_str.split(',', 4)]
         self.curr_model = models_for_buttons[0]
-        if self.curr_model.startswith(self.curr_manufacturer.lower()):
-            self.curr_model = self.curr_model[len(self.curr_manufacturer):].lstrip()
-        print(f'Start sheduler: {text_lower=} {self.curr_manufacturer=} {self.curr_model=}')
+        # print(f'CURRENT: {self.curr_model}')
+
+        # if self.curr_model.startswith(self.curr_manufacturer.lower()):
+        #     self.curr_model = self.curr_model[len(self.curr_manufacturer):].lstrip()
+
+        # print(f'Start sheduler: {text_lower=} {self.curr_manufacturer=} {self.curr_model=}')
         self.upd_models_list(True)
         self.upd_model_buttons(models_for_buttons)
         # model = self.model_list_widget.itemClicked.text()
         self.update_price_table(text_lower)
-        if self.search_input.text() and self.search_input.text() != self.old_search:
-            self.old_search = self.search_input.text()
-            self.curr_model = self.old_search.lower()
+        # if self.search_input.text() and self.search_input.text() != self.old_search:
+        #     self.old_search = self.search_input.text()
+        #     self.curr_model = self.old_search.lower()
             # self.curr_model = (self.old_search.split())[0].lower()
             # if model in C.NOT_FULL_MODEL_NAMES:  # For models with divided name like iPhone | 11
             #     self.curr_model = model
             # else:
             #     self.curr_model = self.old_search
-            self.search_dk9()
+            # self.search_dk9()
 
     def update_web_status(self, status: int):
         if status in C.WEB_STATUSES:
@@ -366,6 +378,11 @@ class App(QMainWindow):
         self.worker.signals.status.connect(self.update_price_status)
         print('Starting thread to read price')
         self.thread.start(self.worker, priority=QtCore.QThread.Priority.HighestPriority)
+
+    def search_dk9_by_button(self):
+        self.curr_model = self.sender().text()
+        # print(f'SEARCH BY BUTTON: {self.curr_model}')
+        self.search_dk9()
 
     def search_dk9(self):
         if self.search_again:
@@ -405,8 +422,10 @@ class App(QMainWindow):
         self.thread.start(self.worker)
 
     def update_dk9_data(self, table_soups=None):
-        if not table_soups or not table_soups[0]:
+        if not table_soups:
             self.update_web_status(0)
+        elif not table_soups[0]:
+            self.update_web_status(2)
 
         if self.web_status == 2:
             self.load_progress(70)
@@ -560,7 +579,7 @@ class App(QMainWindow):
         # font.setBold(True)
         # font.setUnderline(True)
         selected_row = self.sender().selectedItems()
-        print(f'{selected_row=}')
+        # print(f'{selected_row=}')
         # text = ''
         # for i in range(3):
         self.ui.tf_work_name.setPlainText(selected_row[0].text())
@@ -587,6 +606,7 @@ class App(QMainWindow):
             # print(f"\nwindow is the active window: {self.isActiveWindow()}")
             # self.setWindowState(QtCore.Qt.WindowMinimized)
         else:
+            self.model_list_widget.hide()
             self.search_input.setFocus()
         # else:
         #     self.ui.input_search.setFocus()
@@ -679,6 +699,9 @@ class App(QMainWindow):
                 self.ui.tab_widget.setCurrentIndex(1)
             else:
                 self.ui.tab_widget.setCurrentIndex(0)
+        if event.key() == Qt.Key_Escape:
+            # print(f'TAB {self.ui.tab_widget.currentIndex()=}')
+            self.model_list_widget.hide()
 
         # self.ui.input_search.setFocus()
         # self.ui.input_search.selectAll()
