@@ -124,8 +124,8 @@ class Price:
                             if ok:
                                 if len(models[manufacturer]) < MODEL_LIST_SIZE:
                                     models[manufacturer][name_cell] = [sheet, row_num, cell_value[2]]
-                                if len(models[manufacturer]) >= MODEL_LIST_SIZE:
-                                    return models
+                                # if len(models[manufacturer]) >= MODEL_LIST_SIZE:
+                                #     return models
                                 # print(f'=========={name_cell}==========')
                                 break
                             else:
@@ -133,9 +133,9 @@ class Price:
                         else:
                             if len(models[manufacturer]) < MODEL_LIST_SIZE:
                                 models[manufacturer][name_cell] = [sheet, row_num, cell_value[2]]
-                            if len(models[manufacturer]) >= MODEL_LIST_SIZE:
-                                # print(f'{models=}')
-                                return models
+                            # if len(models[manufacturer]) >= MODEL_LIST_SIZE:
+                            #     # print(f'{models=}')
+                            #     return models
                             break
             return models
         except Exception as err:

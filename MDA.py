@@ -244,7 +244,7 @@ class App(QMainWindow):
         if self.curr_manufacturer_idx < 0:
             self.curr_manufacturer_idx = 0
 
-        print(f'{self.curr_manufacturer_idx=}')
+        # print(f'{self.curr_manufacturer_idx=}')
         for m, manufacturer in enumerate(self.models):
             # if self.curr_manufacturer_idx + 2 >= m >= self.curr_manufacturer_idx - 2:
             if self.curr_manufacturer_idx + 2 >= m >= self.curr_manufacturer_idx - 2:
@@ -254,7 +254,6 @@ class App(QMainWindow):
                     self.curr_manufacturer = manufacturer
                     self.upd_models_list()
                 # self.ui.manufacturer_3.setText(manufacturer)
-                print(f'CHANGED: {m=} {manufacturer=}')
 
     def upd_models_list(self, clear=False):
         if clear or not self.models:
