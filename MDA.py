@@ -187,7 +187,6 @@ class App(QMainWindow):
         if self.search_input.isModified() or force_search:
             if search_req == '':
                 self.upd_manufacturer_wheel(clear=True)
-                # self.upd_models_list(True)
                 return
 
             result_req = self.apply_rule_latin(search_req)
@@ -195,19 +194,15 @@ class App(QMainWindow):
 
             self.search_req_ruled = result_req
             if result_req:
+                if force_search:
+                    self.search_input.selectAll()
                 # print(f'{search_req=} {result_req=}')
                 if self.price_status >= len(C.PRICE_STATUSES):
                     self.models = self.Price.search_price_models(search_req, C.MODEL_LIST_MAX_SIZE)
-                # else:
-                #     self.update_price_status()
                 if self.models:
-                    self.upd_manufacturer_wheel()
-                    # self.upd_models_list()
-                # else:
-                #     self.upd_models_list(True)
+                    self.upd_manufacturer_wheel(hide_list=force_search)
             else:
                 self.upd_manufacturer_wheel(clear=True)
-                # self.upd_models_list(True)
 
     def apply_rule_latin(self, search_req):
         # LATIN RULE: Turn all input text into ascii
@@ -232,17 +227,12 @@ class App(QMainWindow):
             return
         return in_req
 
-    def upd_manufacturer_wheel(self, increment: int = 0, clear: bool = False):
+    def upd_manufacturer_wheel(self, increment: int = 0, clear: bool = False, hide_list: bool = False):
         for label in self.manufacturer_wheel:
             label.setText('')
         if clear:
-            self.upd_models_list(True)
+            self.upd_models_list(clear=True)
             return
-        start_idx = 2
-        # for man_label_idx, man_label in enumerate(self.manufacturer_wheel):
-        #     manufacturer =
-        #     if self.curr_manufacturer_idx + 2 >= man_label_idx >= self.curr_manufacturer_idx - 2:
-        #         man_label[2].setText(manufacturer)
 
         _len = len(self.models) - 1
         self.curr_manufacturer_idx += increment
@@ -253,49 +243,33 @@ class App(QMainWindow):
 
         # print(f'{self.curr_manufacturer_idx=}')
         for m, manufacturer in enumerate(self.models):
-            # if self.curr_manufacturer_idx + 2 >= m >= self.curr_manufacturer_idx - 2:
             if self.curr_manufacturer_idx + 2 >= m >= self.curr_manufacturer_idx - 2:
-                # for man_label_idx, man_label in enumerate(self.manufacturer_wheel)
                 self.manufacturer_wheel[m - self.curr_manufacturer_idx + 2].setText(manufacturer)
                 if m == self.curr_manufacturer_idx:
                     self.curr_manufacturer = manufacturer
-                    self.upd_models_list()
-                # self.ui.manufacturer_3.setText(manufacturer)
+                    self.upd_models_list(hide_list=hide_list)
 
-    def upd_models_list(self, clear=False):
+    def upd_models_list(self, clear: bool = False, hide_list: bool = False):
         if clear or not self.models:
             self.curr_manufacturer_idx = 0
-            # self.curr_manufacturer = ''
             self.model_list_widget.clear()
             self.model_list_widget.hide()
-            # self.upd_manufacturer_wheel(True)
             return
-        # self.upd_manufacturer_wheel()
+
         curr_models = [f'{model} -> {params[2]}' if isinstance(params[2], str) and 'см' in params[2] else model
                        for model, params in self.models[self.curr_manufacturer].items()]
-        # print(f'{curr_models=}')
-        # curr_models = list(self.models.values() + self.models.values())[self.curr_manufacturer_idx]
-        # curr_models = list(self.models.values())[self.curr_manufacturer_idx]
         size = C.MODEL_LIST_MAX_SIZE if len(curr_models) > C.MODEL_LIST_MAX_SIZE else len(curr_models)
-        # size = C.MODEL_LIST_MAX_SIZE if len(curr_models) > C.MODEL_LIST_MAX_SIZE else len(curr_models)
-        # print(f'{size=}')
-        # item_size = self.model_list_widget.item(0).sizeHint().height()
-        # self.model_list_widget.setFixedHeight(item_size * size)
-        # self.model_list_widget.setFixedHeight(int(C.TABLE_FONT_SIZE * 1.6) * size)
         self.model_list_widget.show()
-        # if C.MODEL_LIST_REVERSED:
-        #     models_list = reversed((curr_models.keys()))
-        # else:
         models_list = curr_models
 
-        self.model_list_widget.clear()
-        self.model_list_widget.addItems(models_list)
-        self.model_list_widget.setCurrentRow(0)
-        self.model_list_widget.setFixedHeight(self.model_list_widget.sizeHintForRow(0) * (size + 1))
-        # item_size = self.model_list_widget.sizeHint().height()
-        # print(f'{item_size=}')
-        # self.model_list_widget.setFixedHeight(item_size * size)
-        # print(f'{models_list=}')
+        if hide_list:
+            self.model_list_widget.clear()
+            self.model_list_widget.hide()
+        else:
+            self.model_list_widget.clear()
+            self.model_list_widget.addItems(models_list)
+            self.model_list_widget.setCurrentRow(0)
+            self.model_list_widget.setFixedHeight(self.model_list_widget.sizeHintForRow(0) * (size + 1))
 
     def upd_model_buttons(self, model_names):
         lay = self.ui.lay_model_buttons
@@ -527,10 +501,6 @@ class App(QMainWindow):
                                 td_palette = C.DK9_BG_COLORS[style[style.find(':') + 1: style.find(';')]]
                                 table.item(r, c). \
                                     setBackground(QtGui.QColor(td_palette[0], td_palette[1], td_palette[2]))
-                            # if 'align' in dk9_td.attrs:
-                            #     align = str(dk9_td['align'])
-                            #     if align == 'center':
-                            #         self.ui.table_parts.item(r, c).setTextAlignment(1)
                             else:
                                 dbgc = def_bg_color1 if r % 2 else def_bg_color2
                                 table.item(r, c).setBackground(QtGui.QColor(dbgc[0], dbgc[1], dbgc[2]))
