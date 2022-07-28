@@ -115,6 +115,7 @@ class App(QMainWindow):
         self.model_list_widget.setParent(self)
         self.model_list_widget.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.model_list_widget.setFixedWidth(self.search_input.width())
+        self.model_list_widget.setMinimumSize(20, 20)
         self.model_list_widget.itemClicked.connect(self.scheduler)
         self.model_list_widget.hide()
 
@@ -137,8 +138,8 @@ class App(QMainWindow):
         self.ui.tf_work_descr.setFont(font)
         self.ui.tf_work_price.setFont(font)
 
-        self.fix_models_list_position()
         self.model_list_widget.setFont(font)
+        self.fix_models_list_position()
 
         for i in range(self.ui.table_parts.columnCount()):
             if i == 3:
@@ -271,7 +272,9 @@ class App(QMainWindow):
         size = C.MODEL_LIST_MAX_SIZE if len(curr_models) > C.MODEL_LIST_MAX_SIZE else len(curr_models)
         # size = C.MODEL_LIST_MAX_SIZE if len(curr_models) > C.MODEL_LIST_MAX_SIZE else len(curr_models)
         # print(f'{size=}')
-        self.model_list_widget.setFixedHeight(int(C.TABLE_FONT_SIZE * 1.6) * size)
+        # item_size = self.model_list_widget.item(0).sizeHint().height()
+        # self.model_list_widget.setFixedHeight(item_size * size)
+        # self.model_list_widget.setFixedHeight(int(C.TABLE_FONT_SIZE * 1.6) * size)
         self.model_list_widget.show()
         # if C.MODEL_LIST_REVERSED:
         #     models_list = reversed((curr_models.keys()))
@@ -281,6 +284,10 @@ class App(QMainWindow):
         self.model_list_widget.clear()
         self.model_list_widget.addItems(models_list)
         self.model_list_widget.setCurrentRow(0)
+        self.model_list_widget.setFixedHeight(self.model_list_widget.sizeHintForRow(0) * (size + 1))
+        # item_size = self.model_list_widget.sizeHint().height()
+        # print(f'{item_size=}')
+        # self.model_list_widget.setFixedHeight(item_size * size)
         # print(f'{models_list=}')
 
     # def search_and_upd_model_buttons(self, search_req):
