@@ -272,6 +272,7 @@ class App(QMainWindow):
         # self.upd_manufacturer_wheel()
         curr_models = [f'{model} -> {params[2]}' if isinstance(params[2], str) and 'см' in params[2] else model
                        for model, params in self.models[self.curr_manufacturer].items()]
+        # print(f'{curr_models=}')
         # curr_models = list(self.models.values() + self.models.values())[self.curr_manufacturer_idx]
         # curr_models = list(self.models.values())[self.curr_manufacturer_idx]
         size = C.MODEL_LIST_MAX_SIZE if len(curr_models) > C.MODEL_LIST_MAX_SIZE else len(curr_models)
@@ -707,11 +708,11 @@ class SearchInput(QLineEdit):
                     idx = 0
                 self.app.model_list_widget.setCurrentRow(idx)
 
-            elif event.key() == Qt.Key_Right:
-                self.app.upd_manufacturer_wheel(1)
+        if event.key() == Qt.Key_Right:
+            self.app.upd_manufacturer_wheel(1)
 
-            elif event.key() == Qt.Key_Left:
-                self.app.upd_manufacturer_wheel(-1)
+        if event.key() == Qt.Key_Left:
+            self.app.upd_manufacturer_wheel(-1)
 
 
 if __name__ == "__main__":
