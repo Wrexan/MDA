@@ -1,7 +1,7 @@
 import sys
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, \
-    QHeaderView, qApp, QMessageBox, QListWidget, QSizePolicy
+    QHeaderView, qApp, QMessageBox, QListWidget, QSizePolicy, QLineEdit
 from PyQt5 import QtCore, QtGui
 from PyQt5.Qt import Qt
 
@@ -11,17 +11,15 @@ from MDA_classes.price import Price
 from MDA_classes.modal_windows import ConfigWindow, HelpWindow
 from MDA_classes.thread_worker import Worker
 from MDA_UI.window_main import Ui_MainWindow
-# from MDA_UI.window_settings import Ui_settings_window
-# from MDA_UI.window_simple import Ui_Dialog
-
-# class Conf(Config):
-#     def __init__(self):
-#         super(Conf, self).__init__()
-#         self.error = QtCore.pyqtSignal(tuple)
-
 
 C = Config()
 DK9 = DK9Parser(C.DK9_LOGIN_URL, C.DK9_SEARCH_URL, C.DK9_HEADERS, C.data())
+
+#
+# class MainUI(Ui_MainWindow):
+#     def setupUi_1(self):
+#         self.search_input = SearchInput(self)
+#         self.search_layout.addWidget(self.search_input)
 
 
 class App(QMainWindow):
@@ -36,13 +34,20 @@ class App(QMainWindow):
         self.manufacturer_wheel = None
         self.current_model_button_index = 0
         self.ui = Ui_MainWindow()
+        # self.ui = MainUI()
         self.ui.setupUi(self)
         self.model_list_widget = QListWidget()
+
+        self.search_input = SearchInput(self)
+        self.search_input.setParent(self.ui.frame_3)
+        self.ui.search_layout.addWidget(self.search_input)
+
         self.init_ui_statics()
         self.init_ui_dynamics()
 
         self.curr_manufacturer_idx: int = 0
         self.curr_manufacturer: str = ''
+        # self.curr_manufacturers: tuple = ()
         self.curr_type = ''
         self.curr_model: str = ''  # --------------------------------------
         self.curr_model_idx: int = 0
@@ -52,10 +57,7 @@ class App(QMainWindow):
         self.old_search = ''
         self.thread = QtCore.QThread
         self.worker = None  # Worker(self.update_dk9_data, 'mi8 lite')
-        # print('Loading Price')
         self.Price = Price(C)
-        # self.read_price()
-        # print('Login to DK9')
         self.web_status = 0
         self.price_status = 0
         # self.login_dk9()
@@ -66,8 +68,10 @@ class App(QMainWindow):
     def init_ui_statics(self):
 
         self.resized.connect(self.fix_models_list_position)
-        self.ui.input_search.textChanged[str].connect(self.prepare_and_search)
-        self.ui.input_search.cursorPositionChanged.connect(self.upd_models_list)
+        # self.ui.input_search.textChanged[str].connect(self.prepare_and_search)
+        # self.ui.input_search.cursorPositionChanged.connect(self.upd_models_list)
+        self.search_input.textChanged[str].connect(self.prepare_and_search)
+        # self.search_input.cursorPositionChanged.connect(self.upd_models_list)
 
         self.ui.chb_show_exact.stateChanged.connect(self.start_search_on_rule_change)
         self.ui.chb_show_exact.setToolTip(
@@ -110,12 +114,9 @@ class App(QMainWindow):
         # models list appearing on search
         self.model_list_widget.setParent(self)
         self.model_list_widget.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        self.model_list_widget.setFixedWidth(self.ui.input_search.width())
-        # self.model_list_widget.itemSelectionChanged.connect(self.scheduler)
+        self.model_list_widget.setFixedWidth(self.search_input.width())
         self.model_list_widget.itemClicked.connect(self.scheduler)
         self.model_list_widget.hide()
-
-        # self.model_list_widget.setBaseSize(self.ui.input_search.width(), 26 * 10)
 
     def init_ui_dynamics(self):
         font = QtGui.QFont()
@@ -138,11 +139,6 @@ class App(QMainWindow):
 
         self.fix_models_list_position()
         self.model_list_widget.setFont(font)
-        # self.model_list_widget.setMaximumSize(self.ui.input_search.width(), int(C.TABLE_FONT_SIZE * 1.5) * 6)
-
-        # self.ui.table_parts.setMouseTracking(True)
-        # self.ui.table_accesory.setMouseTracking(True)
-        # self.ui.table_accesory.mouseMoveEvent(QtGui.QMouseEvent)
 
         for i in range(self.ui.table_parts.columnCount()):
             if i == 3:
@@ -158,30 +154,21 @@ class App(QMainWindow):
             else:
                 self.ui.table_price.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
 
-    # def search_on_narrow_change(self, state):
-    #     C.NARROW_SEARCH = state
-    #     self.search_and_upd_model_buttons(self.ui.input_search.text())
-    #
-    # def search_smart_change(self, state):
-    #     C.SMART_SEARCH = state
-    #     self.search_and_upd_model_buttons(self.ui.input_search.text())
-    #
-    # def search_latin_change(self, state):
-    #     C.LATIN_SEARCH = state
-    #     self.search_and_upd_model_buttons(self.ui.input_search.text())
+    # =============================================================================================================
+
     def fix_models_list_position(self):
-        self.model_list_widget.move(int(self.ui.input_search.x() + 12),
+        self.model_list_widget.move(int(self.ui.search_widget.x() + 12),
                                     int(self.ui.HEAD.height() - 6))
-        # self.model_list_widget.move(int(self.width() / 2 - self.ui.input_search.width() / 2),
-        #                             int(self.ui.HEAD.height() - 6))
 
     def start_search_on_rule_change(self):
         C.NARROW_SEARCH = self.ui.chb_search_narrow.checkState()
         C.SMART_SEARCH = self.ui.chb_show_exact.checkState()
         C.LATIN_SEARCH = self.ui.chb_search_eng.checkState()
-        self.prepare_and_search(self.ui.input_search.text(), True)
+        self.prepare_and_search(self.search_input.text(), True)
 
     def on_ui_loaded(self):
+        # self.search_input.textChanged[str].connect(self.prepare_and_search)
+        # self.search_input.cursorPositionChanged.connect(self.upd_models_list)
         print('Loading Price')
         self.read_price()
         print('Login to DK9')
@@ -189,10 +176,11 @@ class App(QMainWindow):
         # self.update_price_status()
 
     def prepare_and_search(self, search_req, force_search=False):
-        # print(f'{search_req=} {self.ui.input_search.isModified()=}')
-        if self.ui.input_search.isModified() or force_search:
+        print(f'{search_req=} {self.search_input.isModified()=}')
+        if self.search_input.isModified() or force_search:
             if search_req == '':
-                self.upd_models_list(True)
+                self.upd_manufacturer_wheel(clear=True)
+                # self.upd_models_list(True)
                 return
 
             result_req = self.apply_rule_latin(search_req)
@@ -206,11 +194,13 @@ class App(QMainWindow):
                 # else:
                 #     self.update_price_status()
                 if self.models:
-                    self.upd_models_list()
+                    self.upd_manufacturer_wheel()
+                    # self.upd_models_list()
                 # else:
                 #     self.upd_models_list(True)
             else:
-                self.upd_models_list(True)
+                self.upd_manufacturer_wheel(clear=True)
+                # self.upd_models_list(True)
 
     def apply_rule_latin(self, search_req):
         # LATIN RULE: Turn all input text into ascii
@@ -223,7 +213,7 @@ class App(QMainWindow):
                     result_req = f'{result_req}{C.SYMBOL_TO_LATIN[symbol]}'
                 else:
                     result_req = f'{result_req}{symbol}'
-            self.ui.input_search.setText(result_req)
+            self.search_input.setText(result_req)
         else:
             result_req = search_req
         return result_req
@@ -235,26 +225,36 @@ class App(QMainWindow):
             return
         return in_req
 
-    def upd_model_wheel(self, clear: bool = False):
+    def upd_manufacturer_wheel(self, increment: int = 0, clear: bool = False):
         for label in self.manufacturer_wheel:
             label.setText('')
         if clear:
+            self.upd_models_list(True)
             return
-        start_label_man_idx = 2
+        start_idx = 2
         # for man_label_idx, man_label in enumerate(self.manufacturer_wheel):
         #     manufacturer =
         #     if self.curr_manufacturer_idx + 2 >= man_label_idx >= self.curr_manufacturer_idx - 2:
         #         man_label[2].setText(manufacturer)
 
+        _len = len(self.models) - 1
+        self.curr_manufacturer_idx += increment
+        if self.curr_manufacturer_idx > _len:
+            self.curr_manufacturer_idx = _len
+        if self.curr_manufacturer_idx < 0:
+            self.curr_manufacturer_idx = 0
+
+        print(f'{self.curr_manufacturer_idx=}')
         for m, manufacturer in enumerate(self.models):
             # if self.curr_manufacturer_idx + 2 >= m >= self.curr_manufacturer_idx - 2:
             if self.curr_manufacturer_idx + 2 >= m >= self.curr_manufacturer_idx - 2:
-                self.manufacturer_wheel[m + 2].setText(manufacturer)
+                # for man_label_idx, man_label in enumerate(self.manufacturer_wheel)
+                self.manufacturer_wheel[m - self.curr_manufacturer_idx + 2].setText(manufacturer)
                 if m == self.curr_manufacturer_idx:
                     self.curr_manufacturer = manufacturer
-
+                    self.upd_models_list()
                 # self.ui.manufacturer_3.setText(manufacturer)
-                print(f'{manufacturer=}')
+                print(f'CHANGED: {m=} {manufacturer=}')
 
     def upd_models_list(self, clear=False):
         if clear or not self.models:
@@ -262,9 +262,9 @@ class App(QMainWindow):
             # self.curr_manufacturer = ''
             self.model_list_widget.clear()
             self.model_list_widget.hide()
-            self.upd_model_wheel(True)
+            # self.upd_manufacturer_wheel(True)
             return
-        self.upd_model_wheel()
+        # self.upd_manufacturer_wheel()
         curr_models = [f'{model} -> {params[2]}' if params[2] != '' else model
                        for model, params in self.models[self.curr_manufacturer].items()]
         # curr_models = list(self.models.values() + self.models.values())[self.curr_manufacturer_idx]
@@ -369,8 +369,8 @@ class App(QMainWindow):
         self.upd_models_list(True)
         # model = self.model_list_widget.itemClicked.text()
         self.update_price_table(text_lower)
-        if self.ui.input_search.text() and self.ui.input_search.text() != self.old_search:
-            self.old_search = self.ui.input_search.text()
+        if self.search_input.text() and self.search_input.text() != self.old_search:
+            self.old_search = self.search_input.text()
             self.curr_model = self.old_search.lower()
             # self.curr_model = (self.old_search.split())[0].lower()
             # if model in C.NOT_FULL_MODEL_NAMES:  # For models with divided name like iPhone | 11
@@ -618,10 +618,12 @@ class App(QMainWindow):
             # print(f"\nwindow is the active window: {self.isActiveWindow()}")
             # self.setWindowState(QtCore.Qt.WindowMinimized)
         else:
-            self.ui.input_search.setFocus()
-            # self.ui.input_search.text.selectAll()
-            # self.update_status()
-            # print(f"window is the active window: {self.isActiveWindow()}")
+            self.search_input.setFocus()
+        # else:
+        #     self.ui.input_search.setFocus()
+        #     # self.ui.input_search.text.selectAll()
+        #     # self.update_status()
+        #     # print(f"window is the active window: {self.isActiveWindow()}")
 
     # def event(self, event):
     #     # print(f'Event type: {event.type()}')
@@ -637,30 +639,46 @@ class App(QMainWindow):
         self.resized.emit()
         return super(QMainWindow, self).resizeEvent(event)
 
-    def keyPressEvent(self, event) -> None:
+    def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
+        # super(self.ui, self).keyPressEvent(event)
         # print(f'KEYPRESS: {event.key()}')
-        if self.models \
-                and (0 <= self.model_list_widget.currentRow() < len(self.models) or self.model_list_widget.isHidden()):
-            # print(f'{self.current_model_button_index=} {self.model_buttons=} ')
-            if event.key() in (Qt.Key_Return, Qt.Key_Enter):
-                if self.model_list_widget.isHidden():
-                    self.upd_models_list()
-                    return
-                self.scheduler(self.model_list_widget.currentItem())
-            elif event.key() == Qt.Key_Up:
-                idx = self.model_list_widget.currentRow() - 1
-                if idx < 0:
-                    idx = len(self.models) - 1
-                self.model_list_widget.setCurrentRow(idx)
-                # print('Wow, Up')
-            elif event.key() == Qt.Key_Down:
-                if self.model_list_widget.isHidden():
-                    self.upd_models_list()
-                    return
-                idx = self.model_list_widget.currentRow() + 1
-                if idx > len(self.models) - 1:
-                    idx = 0
-                self.model_list_widget.setCurrentRow(idx)
+        # print(f'{self.models=}')
+        # if self.models \
+        #         and (0 <= self.model_list_widget.currentRow() < len(self.models[self.curr_manufacturer])
+        #              or self.model_list_widget.isHidden()):
+        #     # print(f'{self.current_model_button_index=} {self.model_buttons=} ')
+        #     if event.key() in (Qt.Key_Return, Qt.Key_Enter):
+        #         if self.model_list_widget.isHidden():
+        #             self.upd_models_list()
+        #             return
+        #         self.scheduler(self.model_list_widget.currentItem())
+        #     elif event.key() == Qt.Key_Up:
+        #         # print('Wow, Up')
+        #         idx = self.model_list_widget.currentRow() - 1
+        #         if idx < 0:
+        #             idx = len(self.models[self.curr_manufacturer]) - 1
+        #         self.model_list_widget.setCurrentRow(idx)
+        #     elif event.key() == Qt.Key_Down:
+        #         # print('Wow, Down')
+        #         if self.model_list_widget.isHidden():
+        #             self.upd_models_list()
+        #             return
+        #         idx = self.model_list_widget.currentRow() + 1
+        #         print(f'{idx=} {len(self.models[self.curr_manufacturer])=}')
+        #         if idx > len(self.models[self.curr_manufacturer]) - 1:
+        #             idx = 0
+        #         self.model_list_widget.setCurrentRow(idx)
+        #
+        #     elif event.key() == Qt.Key_Right:
+        #         print('Wow, Right')
+        #         self.curr_manufacturer_idx += 1 if self.curr_manufacturer_idx > len(self.models) - 1 else 0
+        #         self.upd_models_list()
+        #
+        #     elif event.key() == Qt.Key_Tab:
+        #         print('Wow, TAB')
+        #         self.curr_manufacturer_idx += 1 if self.curr_manufacturer_idx > len(self.models) - 1 else 0
+        #         self.upd_models_list()
+
         # elif self.model_list_widget.isHidden() \
         #         and (event.key() == Qt.Key_Down
         #              or event.key() == Qt.Key_Return
@@ -693,8 +711,11 @@ class App(QMainWindow):
             else:
                 self.ui.tab_widget.setCurrentIndex(0)
 
-        self.ui.input_search.setFocus()
-        self.ui.input_search.selectAll()
+        # self.ui.input_search.setFocus()
+        # self.ui.input_search.selectAll()
+
+        self.search_input.setFocus()
+        self.search_input.selectAll()
 
     def open_settings(self):
         settings_ui = ConfigWindow(C, self, DK9)
@@ -728,6 +749,68 @@ class App(QMainWindow):
         msg_box.show()
 
 
+class SearchInput(QLineEdit):
+    def __init__(self, main_app: type(App)):
+        super().__init__()
+        self.app = main_app
+        sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.sizePolicy().hasHeightForWidth())
+        self.setSizePolicy(sizePolicy)
+        self.setMinimumSize(QtCore.QSize(460, 30))
+        self.setMaximumSize(QtCore.QSize(460, 30))
+        self.setBaseSize(QtCore.QSize(460, 30))
+
+        font = QtGui.QFont()
+        font.setFamily("MS Shell Dlg 2")
+        font.setPointSize(17)
+        self.setFont(font)
+        self.setMaxLength(32)
+        self.setAlignment(Qt.AlignCenter)
+        self.setObjectName("search_input")
+
+    def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
+        super(SearchInput, self).keyPressEvent(event)
+        if self.app.models \
+                and (0 <= self.app.model_list_widget.currentRow() < len(self.app.models[self.app.curr_manufacturer])
+                     or self.app.model_list_widget.isHidden()):
+            # print(f'{self.current_model_button_index=} {self.model_buttons=} ')
+
+            if event.key() in (Qt.Key_Return, Qt.Key_Enter):
+                # print('Wow, Enter')
+                if self.app.model_list_widget.isHidden():
+                    self.app.upd_models_list()
+                    return
+                self.app.scheduler(self.app.model_list_widget.currentItem())
+
+            elif event.key() == Qt.Key_Up:
+                # print('Wow, Up')
+                idx = self.app.model_list_widget.currentRow() - 1
+                if idx < 0:
+                    idx = len(self.app.models[self.app.curr_manufacturer]) - 1
+                self.app.model_list_widget.setCurrentRow(idx)
+
+            elif event.key() == Qt.Key_Down:
+                print('Wow, Down')
+                if self.app.model_list_widget.isHidden():
+                    self.app.upd_models_list()
+                    return
+                idx = self.app.model_list_widget.currentRow() + 1
+                # print(f'{idx=} {len(self.app.models[self.app.curr_manufacturer])=}')
+                if idx > len(self.app.models[self.app.curr_manufacturer]) - 1:
+                    idx = 0
+                self.app.model_list_widget.setCurrentRow(idx)
+
+            elif event.key() == Qt.Key_Right:
+                # print('Wow, Right')
+                self.app.upd_manufacturer_wheel(1)
+
+            elif event.key() == Qt.Key_Left:
+                # print('Wow, Left')
+                self.app.upd_manufacturer_wheel(-1)
+
+
 if __name__ == "__main__":
     try:
         app = QApplication(sys.argv)
@@ -736,7 +819,7 @@ if __name__ == "__main__":
         window = App()
         window.setWindowIcon(QtGui.QIcon(C.LOGO))
         QtCore.QTimer.singleShot(1, window.on_ui_loaded)
-        window.ui.input_search.setFocus()
+        window.search_input.setFocus()
         sys.exit(app.exec_())
     except Exception as err:
         App.error((f'Error:\nGLOBAL', err))
