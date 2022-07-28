@@ -800,19 +800,19 @@
                   </property>
                   <property name="minimumSize">
                    <size>
-                    <width>460</width>
+                    <width>520</width>
                     <height>30</height>
                    </size>
                   </property>
                   <property name="maximumSize">
                    <size>
-                    <width>460</width>
+                    <width>520</width>
                     <height>30</height>
                    </size>
                   </property>
                   <property name="baseSize">
                    <size>
-                    <width>460</width>
+                    <width>520</width>
                     <height>30</height>
                    </size>
                   </property>

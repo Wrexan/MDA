@@ -265,7 +265,7 @@ class App(QMainWindow):
             # self.upd_manufacturer_wheel(True)
             return
         # self.upd_manufacturer_wheel()
-        curr_models = [f'{model} -> {params[2]}' if params[2] != '' else model
+        curr_models = [f'{model} -> {params[2]}' if isinstance(params[2], str) and 'см' in params[2] else model
                        for model, params in self.models[self.curr_manufacturer].items()]
         # curr_models = list(self.models.values() + self.models.values())[self.curr_manufacturer_idx]
         # curr_models = list(self.models.values())[self.curr_manufacturer_idx]
@@ -399,7 +399,7 @@ class App(QMainWindow):
         # self.worker.signals.result.connect(self.update_dk9_data)
         # self.worker.signals.progress.connect(self.load_progress)
         self.worker.signals.finished.connect(self.update_dk9_data)
-        # self.worker.signals.error.connect(self.error)
+        self.worker.signals.error.connect(self.error)
         self.worker.signals.status.connect(self.update_price_status)
         print('Starting thread to read price')
         self.thread.start(self.worker, priority=QtCore.QThread.Priority.HighestPriority)
@@ -759,14 +759,14 @@ class SearchInput(QLineEdit):
     def __init__(self, main_app: type(App)):
         super().__init__()
         self.app = main_app
-        sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.sizePolicy().hasHeightForWidth())
         self.setSizePolicy(sizePolicy)
-        self.setMinimumSize(QtCore.QSize(460, 30))
-        self.setMaximumSize(QtCore.QSize(460, 30))
-        self.setBaseSize(QtCore.QSize(460, 30))
+        self.setMinimumSize(QtCore.QSize(520, 30))
+        self.setMaximumSize(QtCore.QSize(520, 30))
+        self.setBaseSize(QtCore.QSize(520, 30))
 
         font = QtGui.QFont()
         font.setFamily("MS Shell Dlg 2")
