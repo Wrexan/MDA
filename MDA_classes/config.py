@@ -21,10 +21,9 @@ class Config:
         self.FULLSCREEN = False
         self.MODEL_LIST_MAX_SIZE = 15
         self.NARROW_SEARCH = True  # from n symbols
-        self.SMART_SEARCH = False  # filter, from start
+        self.FILTER_SEARCH_RESULT = True  # filter, from start
         self.LATIN_SEARCH = True
         self.SEARCH_BY_PRICE_MODEL = True
-        self.MODEL_LIST_REVERSED = False
 
         # tables
         self.PRICE_COLORED = True  # work slower if True

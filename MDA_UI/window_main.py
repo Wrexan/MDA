@@ -484,9 +484,9 @@ class Ui_MainWindow(object):
         _translate = QtCore.QCoreApplication.translate
         self.help.setText(_translate("MainWindow", "Помощь"))
         self.settings_button.setText(_translate("MainWindow", "Настройки"))
-        self.chb_show_exact.setText(_translate("MainWindow", "Только искомое"))
+        self.chb_show_exact.setText(_translate("MainWindow", "Искомая модель"))
         self.pb_adv_search.setText(_translate("MainWindow", "Расширенный поиск"))
-        self.chb_price_name_only.setText(_translate("MainWindow", "По прайсу"))
+        self.chb_price_name_only.setText(_translate("MainWindow", "Модель прайса"))
         self.chb_search_eng.setText(_translate("MainWindow", "Латиница"))
         self.chb_search_narrow.setText(_translate("MainWindow", "Минимум 2"))
         self.tab_widget.setTabText(self.tab_widget.indexOf(self.tab_3), _translate("MainWindow", "   ЗАПЧАСТИ   "))

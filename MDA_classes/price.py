@@ -12,6 +12,7 @@ class Price:
 
     def __init__(self, C):
         self.C = C
+        self.SMART_SEARCH = True
         # self.PATH: str = C.PATH
         # self.PRICE_PATH: str = C.PRICE_PATH
         # self.PRICE_PARTIAL_NAME: tuple = C.PRICE_PARTIAL_NAME
@@ -71,7 +72,7 @@ class Price:
         return position[0].row_values(position[1], 0, 7)  # position[1], 0, 9
         # ['Xiaomi Mi A2 M1804D2SG ', '', '', 0.0, '', '', '', '', '']
 
-    def search_price_models(self, search_req: str, MODEL_LIST_SIZE: int, SMART_SEARCH: bool, STRICT_SEARCH: bool):
+    def search_price_models(self, search_req: str, MODEL_LIST_SIZE: int):
         search_req_len = len(search_req)
         models = {}  # {manufacturer: {model: [sheet, ruw_num],...}...}
         # print(self.DB.sheets())
@@ -105,7 +106,7 @@ class Price:
                         # if search request > 3 symbols, cut everything from left
                         # for smaller, cut from both sides (more strict)
                         # print(f'{len(models)=} {models=} {name_cell=} {sheet=} {row_num=}')  # ERROR LOG
-                        if SMART_SEARCH:
+                        if self.SMART_SEARCH:
                             ok = False
                             if found_pos == 0 or name_cell[found_pos - 1] in "/\\ ":
                                 ok = True

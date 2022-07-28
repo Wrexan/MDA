@@ -1,5 +1,6 @@
 import sys
 
+import bs4
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, \
     QHeaderView, qApp, QMessageBox, QListWidget, QSizePolicy, QLineEdit, QSpacerItem, QPushButton
 from PyQt5 import QtCore, QtGui
@@ -58,6 +59,7 @@ class App(QMainWindow):
         self.thread = QtCore.QThread
         self.worker = None  # Worker(self.update_dk9_data, 'mi8 lite')
         self.Price = Price(C)
+        self.soup = None
         self.web_status = 0
         self.price_status = 0
         # self.login_dk9()
@@ -73,7 +75,7 @@ class App(QMainWindow):
         self.search_input.textChanged[str].connect(self.prepare_and_search)
         # self.search_input.cursorPositionChanged.connect(self.upd_models_list)
 
-        self.ui.chb_show_exact.stateChanged.connect(self.start_search_on_rule_change)
+        self.ui.chb_show_exact.stateChanged.connect(self.upd_dk9_on_rule_change)
         self.ui.chb_show_exact.setToolTip(
             'Вкл - отображает только выбранную модель\n'
             'Откл - отображаются похожие модели (Mi8 lite по запросу Mi8)')
@@ -163,14 +165,17 @@ class App(QMainWindow):
                                     int(self.ui.HEAD.height() - 6))
 
     def start_search_on_rule_change(self):
-        C.NARROW_SEARCH = self.ui.chb_search_narrow.checkState()
-        C.SMART_SEARCH = self.ui.chb_show_exact.checkState()
+        C.SEARCH_BY_PRICE_MODEL = self.ui.chb_price_name_only.checkState()
         C.LATIN_SEARCH = self.ui.chb_search_eng.checkState()
+        C.NARROW_SEARCH = self.ui.chb_search_narrow.checkState()
         self.prepare_and_search(self.search_input.text(), True)
 
+    def upd_dk9_on_rule_change(self):
+        C.FILTER_SEARCH_RESULT = self.ui.chb_show_exact.checkState()
+        if self.soup:
+            self.update_dk9_data(use_old_soup=True)
+
     def on_ui_loaded(self):
-        # self.search_input.textChanged[str].connect(self.prepare_and_search)
-        # self.search_input.cursorPositionChanged.connect(self.upd_models_list)
         print('Loading Price')
         self.read_price()
         print('Login to DK9')
@@ -178,7 +183,7 @@ class App(QMainWindow):
         # self.update_price_status()
 
     def prepare_and_search(self, search_req, force_search=False):
-        print(f'{search_req=} {self.search_input.isModified()=}')
+        # print(f'{search_req=} {self.search_input.isModified()=}')
         if self.search_input.isModified() or force_search:
             if search_req == '':
                 self.upd_manufacturer_wheel(clear=True)
@@ -191,8 +196,7 @@ class App(QMainWindow):
             if result_req:
                 # print(f'{search_req=} {result_req=}')
                 if self.price_status >= len(C.PRICE_STATUSES):
-                    self.models = self.Price.search_price_models(search_req, C.MODEL_LIST_MAX_SIZE,
-                                                                 C.SMART_SEARCH, C.SEARCH_BY_PRICE_MODEL)
+                    self.models = self.Price.search_price_models(search_req, C.MODEL_LIST_MAX_SIZE)
                 # else:
                 #     self.update_price_status()
                 if self.models:
@@ -422,20 +426,22 @@ class App(QMainWindow):
 
         self.thread.start(self.worker)
 
-    def update_dk9_data(self, table_soups=None):
-        if not table_soups:
-            self.update_web_status(0)
-        elif not table_soups[0]:
-            self.update_web_status(2)
+    def update_dk9_data(self, table_soups: type(bs4.BeautifulSoup) = None, use_old_soup: bool = False):
+        if not use_old_soup:
+            self.soup = table_soups
+            if not self.soup:
+                self.update_web_status(0)
+            elif not self.soup[0]:
+                self.update_web_status(2)
 
         if self.web_status == 2:
             self.load_progress(70)
-            self.fill_table_from_soup(table_soups[0], self.ui.table_parts, C.DK9_BG_P_COLOR1, C.DK9_BG_P_COLOR2)
+            self.fill_table_from_soup(self.soup[0], self.ui.table_parts, C.DK9_BG_P_COLOR1, C.DK9_BG_P_COLOR2)
             self.load_progress(85)
-            self.fill_table_from_soup(table_soups[1], self.ui.table_accesory, C.DK9_BG_A_COLOR1, C.DK9_BG_A_COLOR2)
+            self.fill_table_from_soup(self.soup[1], self.ui.table_accesory, C.DK9_BG_A_COLOR1, C.DK9_BG_A_COLOR2)
         else:
             self.login_dk9()
-        self.load_progress(100)
+        self.load_progress(0) if use_old_soup else self.load_progress(100)
 
     def update_price_table(self, model):  # 'xiaomi mi a2 m1804d2sg'
         try:
@@ -526,10 +532,13 @@ class App(QMainWindow):
                             style = str(dk9_row['style'])
                             row_palette = C.DK9_BG_COLORS[style[style.find(':') + 1: style.find(';')]]
                     c = 0
+                    row = dk9_row.findAll('td')
+                    if C.FILTER_SEARCH_RESULT:
+                        if row[2].string.lower() != self.curr_model and self.curr_model not in row[3].string.lower():
+                            continue
                     table.insertRow(r)
-                    for dk9_td in dk9_row.findAll('td'):
-                        # if c == 3:
-                        #     print(f'{dk9_td.string} {}')
+                    for dk9_td in row:
+                        # print(f'{dk9_td.string} {self.curr_model=}')
                         table.setItem(r, c, QTableWidgetItem(dk9_td.string))
                         table.item(r, c).setToolTip(dk9_td.string)
                         if C.DK9_COLORED:

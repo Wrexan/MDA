@@ -755,7 +755,7 @@
                       </size>
                      </property>
                      <property name="text">
-                      <string>Только искомое</string>
+                      <string>Искомая модель</string>
                      </property>
                      <property name="checked">
                       <bool>true</bool>
@@ -866,7 +866,7 @@
                       <bool>true</bool>
                      </property>
                      <property name="text">
-                      <string>По прайсу</string>
+                      <string>Модель прайса</string>
                      </property>
                      <property name="checked">
                       <bool>true</bool>
