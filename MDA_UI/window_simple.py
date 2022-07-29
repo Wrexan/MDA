@@ -63,6 +63,6 @@ class Ui_Dialog(object):
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
         Dialog.setWindowTitle(_translate("Dialog", "Dialog"))
-        self.label.setText(_translate("Dialog", "Автор: Гостев В.   Помощь в тестировании: Дяченко А."))
+        self.label.setText(_translate("Dialog", "Автор: Гостев В.   Помощь в тестировании: Дяченко А., Довгопятый Т."))
         self.project_link.setText(_translate("Dialog", "<a href=\"https://github.com/Wrexan/MDA\"> <font size=3 color=black>Страница проекта</font> </a>"))
         self.label_2.setText(_translate("Dialog", "[2022]"))
