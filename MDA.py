@@ -306,8 +306,15 @@ class App(QMainWindow):
     # @QtCore.pyqtSlot
     def scheduler(self, item):
         text_lower: str = item.text().lower()
+        # text_lower = text_lower.replace('с', 'c')
+        # text_lower = text_lower.replace('е', 'e')
 
-        models_str = text_lower.replace(self.curr_manufacturer.lower(), '')
+        models_str = text_lower.\
+            replace(self.curr_manufacturer.lower(), '').\
+            replace('телефон', '').\
+            replace('планшет', '').\
+            replace('с', 'c').\
+            replace('е', 'e')
         recursive_model_idx = models_str.find('см')
         recursive_model = ''
         if recursive_model_idx >= 0:
