@@ -12,7 +12,7 @@ class Price:
 
     def __init__(self, C):
         self.C = C
-        self.SMART_SEARCH = True
+        self.SMART_SEARCH = False
         # self.PATH: str = C.PATH
         # self.PRICE_PATH: str = C.PRICE_PATH
         # self.PRICE_PARTIAL_NAME: tuple = C.PRICE_PARTIAL_NAME
@@ -75,7 +75,7 @@ class Price:
     def search_price_models(self, search_req: str, MODEL_LIST_SIZE: int):
         search_req_len = len(search_req)
         models = {}  # {manufacturer: {model: [sheet, ruw_num],...}...}
-        # print(self.DB.sheets())
+        # print(f'{search_req=} {MODEL_LIST_SIZE=}')
         if not self.DB:
             return
         try:

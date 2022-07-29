@@ -52,6 +52,7 @@ class App(QMainWindow):
         self.curr_model: str = ''  # --------------------------------------
         self.curr_model_idx: int = 0
         self.curr_description: str = ''
+        self.recursor = ' -> '
 
         self.search_req_ruled: str = ''
         self.search_again = False
@@ -75,9 +76,12 @@ class App(QMainWindow):
         self.search_input.textChanged[str].connect(self.prepare_and_search)
         # self.search_input.cursorPositionChanged.connect(self.upd_models_list)
 
+        self.ui.pb_adv_search.setToolTip(
+            'Необходимо для поиска в веб базе в конкретных полях. Актуальность под вопросом')
+
         self.ui.chb_show_exact.stateChanged.connect(self.upd_dk9_on_rule_change)
         self.ui.chb_show_exact.setToolTip(
-            'Вкл - отображает только выбранную модель\n'
+            'Вкл - отображает максимально релевантные модели\n'
             'Откл - отображаются похожие модели (Mi8 lite по запросу Mi8)')
 
         self.ui.chb_price_name_only.stateChanged.connect(self.start_search_on_rule_change)
@@ -88,7 +92,7 @@ class App(QMainWindow):
 
         self.ui.chb_search_eng.stateChanged.connect(self.start_search_on_rule_change)
         self.ui.chb_search_eng.setToolTip(
-            'Вкл - Переводит символы алфавита в латиницу нижнего регистра.')
+            'Вкл - переводит символы алфавита в латиницу нижнего регистра.')
 
         self.ui.chb_search_narrow.stateChanged.connect(self.start_search_on_rule_change)
         self.ui.chb_search_narrow.setToolTip(
@@ -256,8 +260,9 @@ class App(QMainWindow):
             self.model_list_widget.hide()
             return
 
-        curr_models = [f'{model} -> {params[2]}' if isinstance(params[2], str) and 'см' in params[2] else model
+        curr_models = [f'{model}{self.recursor}{params[2]}' if isinstance(params[2], str) and 'см' in params[2] else model
                        for model, params in self.models[self.curr_manufacturer].items()]
+        # print(f'{curr_models=} {hide_list=} {self.models[self.curr_manufacturer].items()=}')
         size = C.MODEL_LIST_MAX_SIZE if len(curr_models) > C.MODEL_LIST_MAX_SIZE else len(curr_models)
         self.model_list_widget.show()
         models_list = curr_models
@@ -296,15 +301,29 @@ class App(QMainWindow):
             self.ui.price_status.setText(C.PRICE_STATUSES[status])
         else:
             self.ui.price_status.setText(self.Price.NAME)
-        print(f'{self.price_status=}')
+        # print(f'{self.price_status=}')
 
     # @QtCore.pyqtSlot
     def scheduler(self, item):
         text_lower: str = item.text().lower()
 
         models_str = text_lower.replace(self.curr_manufacturer.lower(), '')
+        recursive_model_idx = models_str.find('см')
+        recursive_model = ''
+        if recursive_model_idx >= 0:
+            recursive_model = models_str[recursive_model_idx + 2:].strip()
+            models_str = models_str[:recursive_model_idx].replace(self.recursor, '')
         models_for_buttons = [m.strip() for m in models_str.split(',', 4)]
-        print(f'{C.SEARCH_BY_PRICE_MODEL=} {models_for_buttons[0]=} {self.search_req_ruled=} ')
+
+        if recursive_model:
+            for m in self.models[self.curr_manufacturer]:
+                if m != text_lower and recursive_model in m:
+                    text_lower = m.lower()
+
+            models_for_buttons.append(models_for_buttons[0])
+            models_for_buttons[0] = recursive_model
+        # print(f'{models_for_buttons=}  {text_lower=}')
+        # print(f'{C.SEARCH_BY_PRICE_MODEL=} {recursive_model=} {self.search_req_ruled=} ')
         if C.SEARCH_BY_PRICE_MODEL:
             self.curr_model = models_for_buttons[0]
         else:
@@ -338,18 +357,19 @@ class App(QMainWindow):
         self.search_dk9()
 
     def search_dk9(self):
+        manufacturer = '' if not C.SEARCH_BY_PRICE_MODEL else self.curr_manufacturer
         if self.search_again:
             print(f'SEARCH AGAIN: {self.curr_model}')
             self.worker = Worker(DK9.adv_search,
                                  self.curr_type,
-                                 self.curr_manufacturer,
+                                 manufacturer,
                                  self.curr_model,
                                  self.curr_description)
             self.search_again = False
         else:
             self.worker = Worker(DK9.adv_search,
                                  self.curr_type,
-                                 self.curr_manufacturer,
+                                 manufacturer,
                                  self.curr_model,
                                  self.curr_description)
         self.worker.signals.result.connect(self.update_dk9_data)
@@ -399,7 +419,7 @@ class App(QMainWindow):
             # print(f'{model=}\n{self.models=}\n{self.curr_model_idx=}\n'
             #       f'{self.curr_manufacturer=}\n{self.curr_manufacturer_idx=}')
             if model in self.models[self.curr_manufacturer]:
-                print(f'FOUND')
+                # print(f'FOUND')
                 position = self.models[self.curr_manufacturer][model]  # [Sheet 27:<XIAOMI>, 813] - sheet, row
                 # print(f'{position=}')
                 # Take needed columns for exact model
@@ -431,7 +451,7 @@ class App(QMainWindow):
                             else:
                                 cells_texts.append('')
 
-                        if cells_texts[0] or len(cells_texts[1]) > 3:
+                        if cells_texts[0]:  # or len(cells_texts[1]) > 3:
 
                             self.ui.table_price.insertRow(new_row_num)
                             for j, txt in enumerate(cells_texts):
@@ -485,8 +505,12 @@ class App(QMainWindow):
                     c = 0
                     row = dk9_row.findAll('td')
                     if C.FILTER_SEARCH_RESULT:
-                        if row[2].string.lower() != self.curr_model and self.curr_model not in row[3].string.lower():
-                            continue
+                        # print(f'{self.curr_model=}{row[2].string.lower()=}{row[3].string.lower()=}')
+                        # Filter models different more than 1 symbol
+                        if self.curr_model not in row[2].string.lower() \
+                                or len(self.curr_model) + 1 < len(row[2].string.lower()):
+                            if self.curr_model not in row[3].string.lower():
+                                continue
                     table.insertRow(r)
                     for dk9_td in row:
                         # print(f'{dk9_td.string} {self.curr_model=}')
@@ -655,10 +679,10 @@ class SearchInput(QLineEdit):
                 self.app.model_list_widget.setCurrentRow(idx)
 
         if event.key() == Qt.Key_Right:
-            self.app.upd_manufacturer_wheel(1)
+            self.app.upd_manufacturer_wheel(increment=1)
 
         if event.key() == Qt.Key_Left:
-            self.app.upd_manufacturer_wheel(-1)
+            self.app.upd_manufacturer_wheel(increment=-1)
 
 
 if __name__ == "__main__":
