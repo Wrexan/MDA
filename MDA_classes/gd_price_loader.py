@@ -1,39 +1,83 @@
-import requests
+from __future__ import print_function
+
+import io
+
+import google.auth
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+from googleapiclient.http import MediaIoBaseDownload
 
 
-def download_file_from_google_drive(id, destination):
-    URL = "https://docs.google.com/uc?export=download"
+def download_file(real_file_id):
+    """Downloads a file
+    Args:
+        real_file_id: ID of the file to download
+    Returns : IO object with location.
 
-    session = requests.Session()
+    Load pre-authorized user credentials from the environment.
+    TODO(developer) - See https://developers.google.com/identity
+    for guides on implementing OAuth2 for the application.
+    """
+    creds, _ = google.auth.default()
 
-    response = session.get(URL, params={'id': id}, stream=True)
-    token = get_confirm_token(response)
+    try:
+        # create gmail api client
+        service = build('drive', 'v3', credentials=creds)
 
-    if token:
-        params = {'id': id, 'confirm': token}
-        response = session.get(URL, params=params, stream=True)
+        file_id = real_file_id
 
-    save_response_content(response, destination)
+        # pylint: disable=maybe-no-member
+        request = service.files().get_media(fileId=file_id)
+        file = io.BytesIO()
+        downloader = MediaIoBaseDownload(file, request)
+        done = False
+        while done is False:
+            status, done = downloader.next_chunk()
+            print(F'Download {int(status.progress() * 100)}.')
 
+    except HttpError as error:
+        print(F'An error occurred: {error}')
+        file = None
 
-def get_confirm_token(response):
-    for key, value in response.cookies.items():
-        if key.startswith('download_warning'):
-            return value
-
-    return None
-
-
-def save_response_content(response, destination):
-    CHUNK_SIZE = 32768
-
-    with open(destination, "wb") as f:
-        for chunk in response.iter_content(CHUNK_SIZE):
-            if chunk:  # filter out keep-alive new chunks
-                f.write(chunk)
+    return file.getvalue()
 
 
-if __name__ == "__main__":
-    file_id = 'TAKE ID FROM SHAREABLE LINK'
-    destination = 'DESTINATION FILE ON YOUR DISK'
-    download_file_from_google_drive(file_id, destination)
+def search_file():
+    """Search file in drive location
+
+    Load pre-authorized user credentials from the environment.
+    TODO(developer) - See https://developers.google.com/identity
+    for guides on implementing OAuth2 for the application.
+    """
+    creds, _ = google.auth.default()
+
+    try:
+        # create gmail api client
+        service = build('drive', 'v3', credentials=creds)
+        files = []
+        page_token = None
+        while True:
+            # pylint: disable=maybe-no-member
+            response = service.files().list(q="mimeType='image/jpeg'",
+                                            spaces='drive',
+                                            fields='nextPageToken, '
+                                                   'files(id, name)',
+                                            pageToken=page_token).execute()
+            for file in response.get('files', []):
+                # Process change
+                print(F'Found file: {file.get("name")}, {file.get("id")}')
+            files.extend(response.get('files', []))
+            page_token = response.get('nextPageToken', None)
+            if page_token is None:
+                break
+
+    except HttpError as error:
+        print(F'An error occurred: {error}')
+        files = None
+
+    return files
+
+
+if __name__ == '__main__':
+    search_file()
+    download_file(real_file_id='1KuPmvGq8yoYgbfW74OENMCB5H0n_2Jm9')

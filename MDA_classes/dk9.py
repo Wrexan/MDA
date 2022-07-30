@@ -26,6 +26,7 @@ class DK9Parser:
             '__EVENTVALIDATION': soup.find('input', attrs={'id': '__EVENTVALIDATION'})['value']}
 
     def addiction(self):
+        print(f'{self.DATA.values()=} {sum([len(d) for d in self.DATA.values()])=}')
         return sum([len(d) for d in self.DATA.values()]) > 15
 
     def login(self, progress, status, error):

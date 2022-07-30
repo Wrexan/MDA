@@ -67,4 +67,4 @@ class ConfigWindow(QtWidgets.QDialog):
         if login:
             self.DK9.change_data(self.C.data())
             print(f'{self.DK9.DATA=}')
-            self.Parent.login_func()
+            self.Parent.login_dk9()
