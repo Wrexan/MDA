@@ -9,15 +9,6 @@ from googleapiclient.http import MediaIoBaseDownload
 
 
 def download_file(real_file_id):
-    """Downloads a file
-    Args:
-        real_file_id: ID of the file to download
-    Returns : IO object with location.
-
-    Load pre-authorized user credentials from the environment.
-    TODO(developer) - See https://developers.google.com/identity
-    for guides on implementing OAuth2 for the application.
-    """
     creds, _ = google.auth.default()
 
     try:
@@ -43,12 +34,6 @@ def download_file(real_file_id):
 
 
 def search_file():
-    """Search file in drive location
-
-    Load pre-authorized user credentials from the environment.
-    TODO(developer) - See https://developers.google.com/identity
-    for guides on implementing OAuth2 for the application.
-    """
     creds, _ = google.auth.default()
 
     try:

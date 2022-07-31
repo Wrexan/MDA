@@ -1,5 +1,4 @@
 import sys
-
 import bs4
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, \
     QHeaderView, qApp, QMessageBox, QListWidget, QSizePolicy, QLineEdit, QSpacerItem, QPushButton
@@ -15,6 +14,7 @@ from MDA_UI.window_main import Ui_MainWindow
 
 C = Config()
 DK9 = DK9Parser(C)
+
 
 #
 # class MainUI(Ui_MainWindow):
@@ -260,8 +260,9 @@ class App(QMainWindow):
             self.model_list_widget.hide()
             return
 
-        curr_models = [f'{model}{self.recursor}{params[2]}' if isinstance(params[2], str) and 'см' in params[2] else model
-                       for model, params in self.models[self.curr_manufacturer].items()]
+        curr_models = [
+            f'{model}{self.recursor}{params[2]}' if isinstance(params[2], str) and 'см' in params[2] else model
+            for model, params in self.models[self.curr_manufacturer].items()]
         # print(f'{curr_models=} {hide_list=} {self.models[self.curr_manufacturer].items()=}')
         size = C.MODEL_LIST_MAX_SIZE if len(curr_models) > C.MODEL_LIST_MAX_SIZE else len(curr_models)
         self.model_list_widget.show()
@@ -313,11 +314,11 @@ class App(QMainWindow):
         # text_lower = text_lower.replace('с', 'c')
         # text_lower = text_lower.replace('е', 'e')
 
-        models_str = text_lower.\
-            replace(self.curr_manufacturer.lower(), '').\
-            replace('телефон', '').\
-            replace('планшет', '').\
-            replace('с', 'c').\
+        models_str = text_lower. \
+            replace(self.curr_manufacturer.lower(), ''). \
+            replace('телефон', ''). \
+            replace('планшет', ''). \
+            replace('с', 'c'). \
             replace('е', 'e')
         recursive_model_idx = models_str.find('см')
         recursive_model = ''
@@ -484,7 +485,10 @@ class App(QMainWindow):
                         else:
                             return
         except Exception as _err:
-            self.error((f'Error updating price table for:\n{model}', _err))
+            self.error((f'Error updating price table for:\n'
+                        f'{model}\n'
+                        f'{sys.exc_info()[0]} at: {sys.exc_info()[2]}\n',
+                        sys.exc_info()[1]))
 
     def load_progress(self, progress):
         self.ui.web_load_progress_bar.setValue(progress)
@@ -538,7 +542,10 @@ class App(QMainWindow):
                         c += 1
                 r += 1
         except Exception as _err:
-            self.error((f'Error updating table:\n{table}', _err))
+            self.error((f'Error updating table:\n'
+                        f'{table}\n'
+                        f'{sys.exc_info()[0]} at: {sys.exc_info()[2]}\n',
+                        sys.exc_info()[1]))
 
     def copy_web_table_items(self):
         font = QtGui.QFont()
@@ -703,4 +710,7 @@ if __name__ == "__main__":
         window.search_input.setFocus()
         sys.exit(app.exec_())
     except Exception as err:
-        App.error((f'Error:\nGLOBAL', err))
+        App.error((f'Error:\n'
+                   f'GLOBAL\n'
+                   f'{sys.exc_info()[0]} at: {sys.exc_info()[2]}\n',
+                   sys.exc_info()[1]))

@@ -1,4 +1,5 @@
 import requests
+import sys
 from bs4 import BeautifulSoup
 from MDA_classes.config import Config
 
@@ -86,8 +87,9 @@ class DK9Parser:
                 progress.emit(100)
                 print(f'Error: (No connection) Message :\n{str(err)}')
                 return
-            print(f'Error: on LOGIN' 'Message:\n{str(err)}')
-            error.emit((f'Error {type(err)=} while trying to login:', err))
+            error.emit((f'Error while trying to login\n'
+                        f'{sys.exc_info()[0]} at: {sys.exc_info()[2]}\n',
+                        sys.exc_info()[1]))
 
     def adv_search(self, type_: str, firm_: str, model_: str, description_: str, progress, status, error) -> tuple:
         if not self.LOGIN_SUCCESS:
@@ -145,8 +147,11 @@ class DK9Parser:
                 progress.emit(100)
                 print(f'Error: (No connection) on CONNECT Message:\n{str(err)}')
                 return ()
-            print(f'Error: on SEARCH Message:\n{str(err)}\n{err.__str__()=}')
-            error.emit((f'Error while trying to search:\n{model_}', err))
+            # print(f'Error: on SEARCH Message:\n{str(err)}\n{err.__str__()=}')
+            error.emit((f'Error while trying to search:\n'
+                        f'{model_}\n'
+                        f'{sys.exc_info()[0]} at: {sys.exc_info()[2]}\n',
+                        sys.exc_info()[1]))
 
     def change_data(self, data):
         self.CDATA = data

@@ -1,4 +1,5 @@
 import os
+import sys
 import xlrd
 
 
@@ -54,8 +55,10 @@ class Price:
                 self.DB = None
         except Exception as _err:
             status.emit(self.S_READING_ERROR)
-            error.emit((f'Error {type(_err)=} while trying to load price:', _err))
-            print(f'Error while trying to load price: {_err}')
+            error.emit((f'Error while trying to load price:\n'
+                        f'{self.NAME}\n'
+                        f'{sys.exc_info()[0]} at: {sys.exc_info()[2]}\n',
+                        sys.exc_info()[1]))
 
     def approve(self):
         if self.DB:
