@@ -1,5 +1,6 @@
 import sys
 import bs4
+import traceback
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, \
     QHeaderView, qApp, QMessageBox, QListWidget, QSizePolicy, QLineEdit, QSpacerItem, QPushButton
 from PyQt5 import QtCore, QtGui
@@ -424,8 +425,8 @@ class App(QMainWindow):
 
     def update_price_table(self, model):  # 'xiaomi mi a2 m1804d2sg'
         try:
-            # print(f'{model=}\n{self.models=}\n{self.curr_model_idx=}\n'
-            #       f'{self.curr_manufacturer=}\n{self.curr_manufacturer_idx=}')
+            print(f'{model=}\n{self.models=}\n{self.curr_model_idx=}\n'
+                  f'{self.curr_manufacturer=}\n{self.curr_manufacturer_idx=}')
             if model in self.models[self.curr_manufacturer]:
                 # print(f'FOUND')
                 position = self.models[self.curr_manufacturer][model]  # [Sheet 27:<XIAOMI>, 813] - sheet, row
@@ -486,9 +487,8 @@ class App(QMainWindow):
                             return
         except Exception as _err:
             self.error((f'Error updating price table for:\n'
-                        f'{model}\n'
-                        f'{sys.exc_info()[0]} at: {sys.exc_info()[2]}\n',
-                        sys.exc_info()[1]))
+                        f'{model}',
+                        f'{traceback.format_exc()}'))
 
     def load_progress(self, progress):
         self.ui.web_load_progress_bar.setValue(progress)
@@ -543,9 +543,8 @@ class App(QMainWindow):
                 r += 1
         except Exception as _err:
             self.error((f'Error updating table:\n'
-                        f'{table}\n'
-                        f'{sys.exc_info()[0]} at: {sys.exc_info()[2]}\n',
-                        sys.exc_info()[1]))
+                        f'{table}',
+                        f'{traceback.format_exc()}'))
 
     def copy_web_table_items(self):
         font = QtGui.QFont()
@@ -710,7 +709,5 @@ if __name__ == "__main__":
         window.search_input.setFocus()
         sys.exit(app.exec_())
     except Exception as err:
-        App.error((f'Error:\n'
-                   f'GLOBAL\n'
-                   f'{sys.exc_info()[0]} at: {sys.exc_info()[2]}\n',
-                   sys.exc_info()[1]))
+        App.error((f'Global Error',
+                   f'{traceback.format_exc()}'))

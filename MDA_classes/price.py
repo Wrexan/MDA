@@ -1,5 +1,5 @@
 import os
-import sys
+import traceback
 import xlrd
 
 
@@ -56,9 +56,8 @@ class Price:
         except Exception as _err:
             status.emit(self.S_READING_ERROR)
             error.emit((f'Error while trying to load price:\n'
-                        f'{self.NAME}\n'
-                        f'{sys.exc_info()[0]} at: {sys.exc_info()[2]}\n',
-                        sys.exc_info()[1]))
+                        f'{self.NAME}',
+                        f'{traceback.format_exc()}'))
 
     def approve(self):
         if self.DB:
