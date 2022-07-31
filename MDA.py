@@ -187,55 +187,67 @@ class App(QMainWindow):
         # self.login_dk9()
         # self.update_price_status()
 
-    def prepare_and_search(self, search_req, force_search=False):
+    def prepare_and_search(self, search_req: str, force_search: bool = False):
         # print(f'{search_req=} {self.search_input.isModified()=}')
-        if self.search_input.isModified() or force_search:
-            if search_req == '':
-                self.upd_manufacturer_wheel(clear=True)
-                return
+        if search_req == '':
+            self.models = {}
+            self.curr_model = ''
+            self.upd_manufacturer_wheel(clear=True)
+            return
 
+        if self.search_input.isModified() or force_search:  # Only if user type something or by event
             result_req = self.apply_rule_latin(search_req)
             result_req = self.apply_rule_narrow(result_req)
+        else:
+            result_req = search_req
 
-            self.search_req_ruled = result_req
-            if result_req:
-                if force_search:
-                    self.search_input.selectAll()
-                # print(f'{search_req=} {result_req=}')
-                if self.price_status >= len(C.PRICE_STATUSES):
-                    self.models = self.Price.search_price_models(search_req, C.MODEL_LIST_MAX_SIZE)
-                if self.models:
-                    self.upd_manufacturer_wheel(hide_list=force_search)
-            else:
-                self.upd_manufacturer_wheel(clear=True)
+        # print(f'{result_req=} {self.price_status=} {len(C.PRICE_STATUSES)=}')
 
-    def apply_rule_latin(self, search_req):
+        self.search_req_ruled = result_req
+        if result_req:
+            if force_search:
+                self.search_input.selectAll()
+            # print(f'{search_req=} {result_req=}')
+            if self.price_status >= len(C.PRICE_STATUSES):
+                self.models = self.Price.search_price_models(result_req, C.MODEL_LIST_MAX_SIZE)
+            if self.models:
+                self.upd_manufacturer_wheel(hide_list=force_search)
+        else:
+            self.upd_manufacturer_wheel(clear=True)
+
+    def apply_rule_latin(self, search_req: str):
         # LATIN RULE: Turn all input text into ascii
-        result_req = ''
+        if not search_req:
+            return
+        result_req: list = []
         if C.LATIN_SEARCH:
             # print(f'Applying LATIN to: {search_req}')
             lower_req = search_req.lower()
             for symbol in lower_req:
                 if symbol in C.SYMBOL_TO_LATIN:
-                    result_req = f'{result_req}{C.SYMBOL_TO_LATIN[symbol]}'
+                    result_req.append(C.SYMBOL_TO_LATIN[symbol])
                 else:
-                    result_req = f'{result_req}{symbol}'
-            self.search_input.setText(result_req)
+                    result_req.append(symbol)
+            result_str = ''.join(result_req)
+            self.search_input.setText(result_str)
         else:
-            result_req = search_req
-        return result_req
+            result_str = search_req
+        return result_str
 
     @staticmethod
-    def apply_rule_narrow(in_req):
+    def apply_rule_narrow(in_req: str):
         # NARROW RULE: search only if search request longer then C.NARROW_SEARCH_LEN
         if C.NARROW_SEARCH and len(in_req) < C.NARROW_SEARCH_LEN:
             return
         return in_req
 
     def upd_manufacturer_wheel(self, increment: int = 0, clear: bool = False, hide_list: bool = False):
+        # print(f'upd_manufacturer_wheel({increment=}, {clear=}, {hide_list=}, ')
         for label in self.manufacturer_wheel:
             label.setText('')
         if clear:
+            self.curr_manufacturer = ''
+            self.curr_manufacturer_idx = 0
             self.upd_models_list(clear=True)
             return
 
@@ -341,7 +353,7 @@ class App(QMainWindow):
             self.curr_model = models_for_buttons[0]
         else:
             self.curr_model = self.search_req_ruled
-        self.upd_models_list(True)
+        self.upd_models_list(clear=True)
         self.upd_model_buttons(models_for_buttons)
         self.update_price_table(text_lower)
 
