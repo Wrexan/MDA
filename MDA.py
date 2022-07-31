@@ -14,7 +14,7 @@ from MDA_classes.thread_worker import Worker
 from MDA_UI.window_main import Ui_MainWindow
 
 C = Config()
-DK9 = DK9Parser(C.DK9_LOGIN_URL, C.DK9_SEARCH_URL, C.DK9_HEADERS, C.data())
+DK9 = DK9Parser(C)
 
 #
 # class MainUI(Ui_MainWindow):
@@ -289,7 +289,11 @@ class App(QMainWindow):
             if num == 0:
                 self.model_buttons[num].setDefault(True)
                 # self.curr_model = model
-                self.search_dk9()
+                if self.web_status == 2:
+                    if DK9.LOGIN_SUCCESS:
+                        self.search_dk9()
+                else:
+                    self.login_dk9()
             lay.addWidget(self.model_buttons[num], 0)
             le -= 1
         sp = QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -343,8 +347,8 @@ class App(QMainWindow):
         if status in C.WEB_STATUSES:
             self.web_status = status
             self.ui.web_status.setText(C.WEB_STATUSES[status])
-            if status != 2:
-                self.curr_model = ''
+            # if status != 2:
+            #     self.curr_model = ''
         else:
             print(f'Error: status code {status} not present {C.WEB_STATUSES=}')
 
@@ -364,21 +368,17 @@ class App(QMainWindow):
         self.search_dk9()
 
     def search_dk9(self):
+        if not DK9.LOGIN_SUCCESS:
+            return
         manufacturer = '' if not C.SEARCH_BY_PRICE_MODEL else self.curr_manufacturer
         if self.search_again:
             print(f'SEARCH AGAIN: {self.curr_model}')
-            self.worker = Worker(DK9.adv_search,
-                                 self.curr_type,
-                                 manufacturer,
-                                 self.curr_model,
-                                 self.curr_description)
             self.search_again = False
-        else:
-            self.worker = Worker(DK9.adv_search,
-                                 self.curr_type,
-                                 manufacturer,
-                                 self.curr_model,
-                                 self.curr_description)
+        self.worker = Worker(DK9.adv_search,
+                             self.curr_type,
+                             manufacturer,
+                             self.curr_model,
+                             self.curr_description)
         self.worker.signals.result.connect(self.update_dk9_data)
         self.worker.signals.progress.connect(self.load_progress)
         self.worker.signals.finished.connect(self.finished)

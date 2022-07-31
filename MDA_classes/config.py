@@ -98,11 +98,12 @@ class Config:
                               'Red': (255, 80, 80),
                               }
 
-        self.DK9_LOGIN = ''
-        self.DK9_PASSWORD = ''
+        self.DK9_LOGIN, self.LOGIN = '', ''
+        self.DK9_PASSWORD, self.PASSWORD = '', ''
         self.DK9_LOGIN_DATA = {}
 
         self.DK9_LOGIN_URL = "http://dimkak9-001-site1.htempurl.com/Login.aspx"
+        self.DK9_LOGGED_IN_URL = "http://dimkak9-001-site1.htempurl.com/Default.aspx"
         self.DK9_SEARCH_URL = "http://dimkak9-001-site1.htempurl.com/AllInOne.aspx"
         self.DK9_HEADERS = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
@@ -147,33 +148,33 @@ class Config:
              color[2] - self.DK9_COL_DIFF if color[2] >= self.DK9_COL_DIFF else 0)
 
     def load_or_generate_config(self):
-            config = configparser.ConfigParser()
-            config.read(self.USER_CONFIG)
-            if 'SETTINGS' in config:
-                print(f'Reading {self.USER_CONFIG}')
-                try:
-                    self.DK9_LOGIN = config['WEB DATABASE']['DK9_LOGIN']
-                    self.DK9_PASSWORD = config['WEB DATABASE']['DK9_PASSWORD']
-                    self.FULLSCREEN = True if config['SETTINGS']['FULLSCREEN'] == 'True' else False
-                    self.PRICE_COLORED = True if config['SETTINGS']['PRICE_COLORED'] == 'True' else False
-                    self.DK9_COLORED = True if config['SETTINGS']['DK9_COLORED'] == 'True' else False
-                    self.DK9_COL_DIFF = int(config['SETTINGS']['DK9_COL_DIFF'])
-                    self.TABLE_FONT_SIZE = int(config['SETTINGS']['TABLE_FONT_SIZE'])
-                    # self.WIDE_MONITOR = True if config['SETTINGS']['WIDE_MONITOR'] == 'True' else False
-                    # self.TABLE_COLUMN_SIZE_MAX = int(config['SETTINGS']['TABLE_COLUMN_SIZE_MAX'])
-                    # self.DK9_LOGIN_DATA = self.data()
-                except Exception as _err:
-                    print(f'Error while trying to read/create config at:\n{self.USER_CONFIG}', _err)
-                    os.remove(self.USER_CONFIG)
-                    self.save_user_config()
-            else:
+        config = configparser.ConfigParser()
+        config.read(self.USER_CONFIG)
+        if 'SETTINGS' in config:
+            print(f'Reading {self.USER_CONFIG}')
+            try:
+                self.DK9_LOGIN = config['WEB DATABASE']['DK9_LOGIN']
+                self.DK9_PASSWORD = config['WEB DATABASE']['DK9_PASSWORD']
+                self.FULLSCREEN = True if config['SETTINGS']['FULLSCREEN'] == 'True' else False
+                self.PRICE_COLORED = True if config['SETTINGS']['PRICE_COLORED'] == 'True' else False
+                self.DK9_COLORED = True if config['SETTINGS']['DK9_COLORED'] == 'True' else False
+                self.DK9_COL_DIFF = int(config['SETTINGS']['DK9_COL_DIFF'])
+                self.TABLE_FONT_SIZE = int(config['SETTINGS']['TABLE_FONT_SIZE'])
+                # self.WIDE_MONITOR = True if config['SETTINGS']['WIDE_MONITOR'] == 'True' else False
+                # self.TABLE_COLUMN_SIZE_MAX = int(config['SETTINGS']['TABLE_COLUMN_SIZE_MAX'])
+                # self.DK9_LOGIN_DATA = self.data()
+            except Exception as _err:
+                print(f'Error while trying to read/create config at:\n{self.USER_CONFIG}', _err)
+                os.remove(self.USER_CONFIG)
                 self.save_user_config()
+        else:
+            self.save_user_config()
 
-    def data(self):
+    def c_data(self):
         return {
             'TextBoxName': self.DK9_LOGIN,
             'TextBoxPassword': self.DK9_PASSWORD,
-            'ButtonLogin': 'Submit',
+            'ButtonLogin': 'Submit'
         }
 
     # def save_user_config(self):
@@ -202,7 +203,7 @@ class Config:
         config['SETTINGS']['DK9_COL_DIFF'] = str(self.DK9_COL_DIFF)
         config['SETTINGS']['TABLE_FONT_SIZE'] = str(self.TABLE_FONT_SIZE)
 
-        self.DK9_LOGIN_DATA = self.data()
+        self.DK9_LOGIN_DATA = self.c_data()
         try:
             with open(self.USER_CONFIG, 'w') as conf:
                 config.write(conf)
@@ -210,3 +211,10 @@ class Config:
         except Exception as err:
             print(f'Error while trying to save config at:\n{self.USER_CONFIG}', err)
             # error.emit(f'Error while trying to save config at:\n{self.USER_CONFIG}', err)
+
+    def r_data(self):
+        return {
+            'TextBoxName': self.LOGIN,
+            'TextBoxPassword': self.PASSWORD,
+            'ButtonLogin': 'Submit'
+        }

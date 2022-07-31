@@ -65,6 +65,6 @@ class ConfigWindow(QtWidgets.QDialog):
         except Exception as _err:
             self.Parent.error((f'Error while saving config file:\n{self.C.HELP}', _err))
         if login:
-            self.DK9.change_data(self.C.data())
-            print(f'{self.DK9.DATA=}')
+            self.DK9.change_data(self.C.c_data())
+            print(f'{self.DK9.CDATA=}')
             self.Parent.login_dk9()

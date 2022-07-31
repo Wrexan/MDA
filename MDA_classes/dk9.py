@@ -1,19 +1,22 @@
 import requests
 from bs4 import BeautifulSoup
+from MDA_classes.config import Config
 
 
 class DK9Parser:
     S_NO_CONN, S_PROCESS, S_OK, S_REDIRECT, S_CLI_ERR, S_SERV_ERR, S_NO_LOGIN = 0, 1, 2, 3, 4, 5, 6
 
-    def __init__(self, login_url: str, search_url: str, headers: dict, data: dict):
-        self.WIN = None
-        self.LOGIN_URL = login_url
-        self.SEARCH_URL = search_url
-        self.HEADERS = headers
-        self.DATA = data
+    def __init__(self, C: type(Config)):
+        self.LOGIN_URL = C.DK9_LOGIN_URL
+        self.LOGGED_IN_URL = C.DK9_LOGGED_IN_URL
+        self.SEARCH_URL = C.DK9_SEARCH_URL
+        self.HEADERS = C.DK9_HEADERS
+        self.CDATA = C.c_data()
+        self.RDATA = C.r_data()
         self.SESSION = requests.Session()
         self.validation_data: dict = {}
         self.TIMEOUT = 5
+        self.LOGIN_SUCCESS = False
 
         # self.WEB_STATUSES = {0: 'Нет соединения', 1: 'Не залогинен', 2: 'Подключен',
         #                      3: 'Перенаправление', 4: 'Запрос отклонен', 5: 'Ошибка сервера'}
@@ -26,55 +29,71 @@ class DK9Parser:
             '__EVENTVALIDATION': soup.find('input', attrs={'id': '__EVENTVALIDATION'})['value']}
 
     def addiction(self):
-        print(f'{self.DATA.values()=} {sum([len(d) for d in self.DATA.values()])=}')
-        return sum([len(d) for d in self.DATA.values()]) > 15
+        return sum([len(d) for d in self.CDATA.values()]) > 15
+
+    def send_dk9_post(self, url, data, validation_data):
+        self.SESSION.post(
+            url,
+            data={**data, **validation_data},
+            headers=self.HEADERS,
+            timeout=self.TIMEOUT)
 
     def login(self, progress, status, error):
         progress.emit(10)
         try:
             print('GETTING RESPONSE')
             status.emit(self.S_PROCESS)
+            # =============================================== LOGIN PAGE ==============================================
             r = self.get_response(self.LOGIN_URL, status)
             if r:
                 progress.emit(20)
                 soup = BeautifulSoup(r.content, 'html.parser')
                 progress.emit(40)
-                # ===============================================================================================
-                self.SESSION.post(
-                    self.LOGIN_URL,
-                    data={**self.DATA, **self.get_validation_data(soup)},
-                    headers=self.HEADERS,
-                    timeout=self.TIMEOUT)
+                # ============================================= LOGOUT ================================================
+                if soup.find("a", attrs={"id": "LinkButton1"}):
+                    data_to_logout = {'LinkButton1': 'Submit'}
+                    self.send_dk9_post(self.LOGGED_IN_URL, data_to_logout, self.get_validation_data(soup))
+                    r = self.get_response(self.LOGIN_URL, status)
+                    soup = BeautifulSoup(r.content, 'html.parser')
+                # ============================================= LOGIN ==================================================
+                self.send_dk9_post(self.LOGIN_URL, self.RDATA, self.get_validation_data(soup))
                 progress.emit(60)
-                # ===============================================================================================
+                # ============================================== READY =================================================
                 r = self.get_response(self.SEARCH_URL, status)
                 if r:
                     progress.emit(80)
                     if self.addiction():
                         print('LOGIN OK')
                         self.validation_data = self.get_validation_data(BeautifulSoup(r.content, 'html.parser'))
+                        self.LOGIN_SUCCESS = True
                         status.emit(self.S_OK)
                     else:
                         print('LOGIN FAIL')
                         self.validation_data = {'__VIEWSTATE': 'C78cd8ds6csC^dc7s',
                                                 '__VIEWSTATEGENERATOR': '567Ddc67DS57s&&dtc',
                                                 '__EVENTVALIDATION': 'cdc9796cjlmckdmjNCydc565nysdi'}
+                        self.LOGIN_SUCCESS = False
                         status.emit(self.S_NO_LOGIN)
                     progress.emit(100)
         except requests.exceptions.Timeout as err:
             status.emit(self.S_NO_CONN)
+            progress.emit(100)
             print(f'Error: (Timeout) on CONNECT Message:\n{str(err)}')
             return
         except Exception as err:
             if '[Errno 11001]' in err.__str__():
                 status.emit(self.S_NO_CONN)
+                progress.emit(100)
                 print(f'Error: (No connection) Message :\n{str(err)}')
                 return
             print(f'Error: on LOGIN' 'Message:\n{str(err)}')
             error.emit((f'Error {type(err)=} while trying to login:', err))
 
     def adv_search(self, type_: str, firm_: str, model_: str, description_: str, progress, status, error) -> tuple:
+        if not self.LOGIN_SUCCESS:
+            return ()
         print(f'Searching: {type_=}  {firm_=}  {model_=}  {description_=}')
+        # print(f'+++++++++: {self.validation_data=}')
         progress.emit(10)
         try:
             # ===============================================================================================
@@ -95,6 +114,7 @@ class DK9Parser:
             progress.emit(20)
             # print(f'Answer: {r}')
             soup = BeautifulSoup(r.content, 'html.parser', from_encoding='utf-8')
+            print(f'Search Title: {soup.title}')
             progress.emit(50)
             part_table_soup = soup.find("table", attrs={"id": "ctl00_ContentPlaceHolder1_GridView1"})
             progress.emit(60)
@@ -116,63 +136,20 @@ class DK9Parser:
             # id="ctl00_ContentPlaceHolder1_TextBoxDescription_new" style="width:64%;">
         except requests.exceptions.Timeout as err:
             status.emit(self.S_NO_CONN)
+            progress.emit(100)
             print(f'Error: on CONNECT (Timeout) Message:\n{str(err)}')
             return ()
         except Exception as err:
             if '[Errno 11001]' in err.__str__():
                 status.emit(self.S_NO_CONN)
+                progress.emit(100)
                 print(f'Error: (No connection) on CONNECT Message:\n{str(err)}')
                 return ()
             print(f'Error: on SEARCH Message:\n{str(err)}\n{err.__str__()=}')
             error.emit((f'Error while trying to search:\n{model_}', err))
 
-    # def search(self, model_: str, progress, status, error) -> tuple:
-    #     print(f'Searching: {model_}')
-    #     progress.emit(10)
-    #     try:
-    #         # print(f'{"*"*80}\nSOUP_2_DEF={soup.find("div", attrs={"id": "ctl00_ContentPlaceHolder1_UpdatePanel2"})}')
-    #         # ===============================================================================================
-    #         data_to_send = {
-    #             'ctl00$ContentPlaceHolder1$TextBoxAdvanced_new': str(model_),
-    #             'ctl00$ContentPlaceHolder1$ButtonSearch': 'Submit',
-    #         }
-    #         print(f'Sending: POST')
-    #         r = self.SESSION.post(
-    #             self.SEARCH_URL,
-    #             data={**data_to_send, **self.validation_data},
-    #             headers=self.HEADERS,
-    #             timeout=self.TIMEOUT)
-    #         progress.emit(20)
-    #         # print(f'Answer: {r}')
-    #         soup = BeautifulSoup(r.content, 'html.parser', from_encoding='utf-8')
-    #         progress.emit(50)
-    #         # print(f'{"*" * 80}\nSOUP_3_DEF={soup.find("table", attrs={"id": "ctl00_ContentPlaceHolder1_GridView1"})}')
-    #         part_table_soup = soup.find("table", attrs={"id": "ctl00_ContentPlaceHolder1_GridView1"})
-    #         progress.emit(60)
-    #         # self.fill_table_from_soup(part_table_soup, self.ui.table_parts, DK9_BG_P_COLOR1, DK9_BG_P_COLOR2)
-    #         accessory_table_soup = soup.find("table", attrs={"id": "ctl00_ContentPlaceHolder1_GridView2"})
-    #         # self.fill_table_from_soup(accessory_table_soup, self.ui.table_accesory, DK9_BG_A_COLOR1, DK9_BG_A_COLOR2)
-    #
-    #         return part_table_soup, accessory_table_soup
-    #         # ctl00$ContentPlaceHolder1$TextBoxAdvanced_new   строка поиска text
-    #         # ctl00$ContentPlaceHolder1$ButtonSearch   кнопка поиска submit
-    #         # ctl00_ContentPlaceHolder1_UpdatePanel2   div, внутри таблица,
-    #         # ctl00_ContentPlaceHolder1_GridView1 - запчасти
-    #         # ctl00_ContentPlaceHolder1_GridView2 - аксессуары
-    #     except requests.exceptions.Timeout as err:
-    #         status.emit(self.S_NO_CONN)
-    #         print(f'Error: on CONNECT (Timeout) Message:\n{str(err)}')
-    #         return ()
-    #     except Exception as err:
-    #         if '[Errno 11001]' in err.__str__():
-    #             status.emit(self.S_NO_CONN)
-    #             print(f'Error: (No connection) on CONNECT Message:\n{str(err)}')
-    #             return ()
-    #         print(f'Error: on SEARCH Message:\n{str(err)}\n{err.__str__()=}')
-    #         error.emit((f'Error while trying to search:\n{model_}', err))
-
     def change_data(self, data):
-        self.DATA = data
+        self.CDATA = data
 
     def get_response(self, url, status):
         response = self.SESSION.get(url, headers=self.HEADERS, timeout=self.TIMEOUT)
@@ -181,7 +158,7 @@ class DK9Parser:
             status.emit(self.S_PROCESS)
             return response
         elif 200 <= response.status_code < 300:
-            status.emit(self.S_OK)
+            status.emit(self.S_PROCESS)
             return response
         elif 300 <= response.status_code < 400:
             status.emit(self.S_REDIRECT)
