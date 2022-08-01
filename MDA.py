@@ -17,13 +17,6 @@ C = Config()
 DK9 = DK9Parser(C)
 
 
-#
-# class MainUI(Ui_MainWindow):
-#     def setupUi_1(self):
-#         self.search_input = SearchInput(self)
-#         self.search_layout.addWidget(self.search_input)
-
-
 class App(QMainWindow):
     resized = QtCore.pyqtSignal()
 
@@ -185,7 +178,6 @@ class App(QMainWindow):
         self.read_price()
         print('Login to DK9')
         # self.login_dk9()
-        # self.update_price_status()
 
     def prepare_and_search(self, search_req: str, force_search: bool = False):
         # print(f'{search_req=} {self.search_input.isModified()=}')
@@ -324,8 +316,6 @@ class App(QMainWindow):
     # @QtCore.pyqtSlot
     def scheduler(self, item):
         text_lower: str = item.text().lower()
-        # text_lower = text_lower.replace('с', 'c')
-        # text_lower = text_lower.replace('е', 'e')
 
         models_str = text_lower. \
             replace(self.curr_manufacturer.lower(), ''). \
@@ -437,8 +427,8 @@ class App(QMainWindow):
 
     def update_price_table(self, model):  # 'xiaomi mi a2 m1804d2sg'
         try:
-            print(f'{model=}\n{self.models=}\n{self.curr_model_idx=}\n'
-                  f'{self.curr_manufacturer=}\n{self.curr_manufacturer_idx=}')
+            # print(f'{model=}\n{self.models=}\n{self.curr_model_idx=}\n'
+            #       f'{self.curr_manufacturer=}\n{self.curr_manufacturer_idx=}')
             if model in self.models[self.curr_manufacturer]:
                 # print(f'FOUND')
                 position = self.models[self.curr_manufacturer][model]  # [Sheet 27:<XIAOMI>, 813] - sheet, row

@@ -1,13 +1,12 @@
 import requests
 import traceback
 from bs4 import BeautifulSoup
-from MDA_classes.config import Config
 
 
 class DK9Parser:
     S_NO_CONN, S_PROCESS, S_OK, S_REDIRECT, S_CLI_ERR, S_SERV_ERR, S_NO_LOGIN = 0, 1, 2, 3, 4, 5, 6
 
-    def __init__(self, C: type(Config)):
+    def __init__(self, C):
         self.LOGIN_URL = C.DK9_LOGIN_URL
         self.LOGGED_IN_URL = C.DK9_LOGGED_IN_URL
         self.SEARCH_URL = C.DK9_SEARCH_URL

@@ -123,6 +123,8 @@ class Config:
             'ї': ']', 'і': 's', 'є': "'",
         }
 
+        self.UPDATE_FOLDER = '1JauaFxPrsksy3cuYiQ-VKoz3tv2dpO0x'
+
         self.load_or_generate_config()
 
     def set_error_signal(self, signal):
