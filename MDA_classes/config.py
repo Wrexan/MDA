@@ -19,7 +19,7 @@ class Config:
         # =============APP SETTINGS====================
         # ====================UI====================
         self.FULLSCREEN = False
-        self.MODEL_LIST_MAX_SIZE = 15
+        self.MODEL_LIST_MAX_SIZE = 20
         self.NARROW_SEARCH = True  # from n symbols
         self.FILTER_SEARCH_RESULT = True  # filter, from start
         self.LATIN_SEARCH = True

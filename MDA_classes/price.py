@@ -86,17 +86,24 @@ class Price:
                 manufacturer = sheet.name
                 if manufacturer in self.C.MANUFACTURER_BLACKLIST:
                     continue
+                if manufacturer in self.C.PRICE_SEARCH_COLUMN_NUMBERS.keys():
+                    compat_model_column = self.C.PRICE_SEARCH_COLUMN_NUMBERS[manufacturer][1]
+                else:
+                    compat_model_column = self.C.PRICE_SEARCH_COLUMN_NUMBERS['+'][1]
+                # print(f'{compat_model_column=}')
 
                 for row_num in range(sheet.nrows):  # Rows cycle
-                    cell_value = sheet.row_values(row_num, 0, 3)
+                    cell_value = sheet.row_values(row_num, 0, 7)
                     if not cell_value or not cell_value[0] or (cell_value[0] in self.C.PRICE_TRASH_IN_CELLS):
                         continue
+                    # print(f'{sheet.row_values(row_num, 0, 7)=}')
                     # if SMART_SEARCH and (not cell_value or not cell_value[0] or len(cell_value) < 2
                     #                      or cell_value[0] in self.C.PRICE_TRASH_IN_CELLS):
                     #     continue
                     # print(f'{cell_value[0]}')
                     # print(f'{cell_value=}')
                     name_cell = str(cell_value[0]).strip().lower()
+                    # print(f'{name_cell=}')
                     a, b, = 0, len(name_cell)
                     while a < b:
                         found_pos = name_cell.find(search_req, a, b)
@@ -105,8 +112,18 @@ class Price:
                             break
                         if manufacturer not in models:
                             models[manufacturer] = {}
-                        # if search request > 3 symbols, cut everything from left
-                        # for smaller, cut from both sides (more strict)
+
+                        if isinstance(cell_value[compat_model_column], str):
+                            compat_model_name: str = cell_value[compat_model_column].strip().lower()
+                            # ru ru, en ru, ru en, en en
+                            if compat_model_name.startswith('см', 0, 2) \
+                                    or compat_model_name.startswith('cм', 0, 2) \
+                                    or compat_model_name.startswith('сm', 0, 2) \
+                                    or compat_model_name.startswith('cm', 0, 2):
+                                compat_model_name = compat_model_name[2:].strip()
+                        else:
+                            compat_model_name = ''
+                        # print(f'{compat_model_name=}')
                         # print(f'{len(models)=} {models=} {name_cell=} {sheet=} {row_num=}')  # ERROR LOG
                         if self.SMART_SEARCH:
                             ok = False
@@ -126,7 +143,7 @@ class Price:
                             # print(f'{len(models)=} {models=} {name_cell=} {sheet=} {row_num=}')
                             if ok:
                                 if len(models[manufacturer]) < MODEL_LIST_SIZE:
-                                    models[manufacturer][name_cell] = [sheet, row_num, cell_value[2]]
+                                    models[manufacturer][name_cell] = [sheet, row_num, compat_model_name]
                                 # if len(models[manufacturer]) >= MODEL_LIST_SIZE:
                                 #     return models
                                 # print(f'=========={name_cell}==========')
@@ -135,7 +152,7 @@ class Price:
                                 a += found_pos + search_req_len
                         else:
                             if len(models[manufacturer]) < MODEL_LIST_SIZE:
-                                models[manufacturer][name_cell] = [sheet, row_num, cell_value[2]]
+                                models[manufacturer][name_cell] = [sheet, row_num, compat_model_name]
                             # if len(models[manufacturer]) >= MODEL_LIST_SIZE:
                             #     # print(f'{models=}')
                             #     return models
