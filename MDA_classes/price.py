@@ -89,7 +89,7 @@ class Price:
 
                 for row_num in range(sheet.nrows):  # Rows cycle
                     cell_value = sheet.row_values(row_num, 0, 3)
-                    if not cell_value[0] or (cell_value[0] in self.C.PRICE_TRASH_IN_CELLS):
+                    if not cell_value or not cell_value[0] or (cell_value[0] in self.C.PRICE_TRASH_IN_CELLS):
                         continue
                     # if SMART_SEARCH and (not cell_value or not cell_value[0] or len(cell_value) < 2
                     #                      or cell_value[0] in self.C.PRICE_TRASH_IN_CELLS):

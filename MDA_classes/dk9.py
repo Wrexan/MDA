@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 
 
 class DK9Parser:
-    S_NO_CONN, S_PROCESS, S_OK, S_REDIRECT, S_CLI_ERR, S_SERV_ERR, S_NO_LOGIN = 0, 1, 2, 3, 4, 5, 6
+    S_NO_CONN, S_PROCESS, S_OK, S_REDIRECT, S_CLI_ERR, S_SERV_ERR, S_NO_LOGIN, S_CONN_ERROR = 0, 1, 2, 3, 4, 5, 6, 7
 
     def __init__(self, C):
         self.LOGIN_URL = C.DK9_LOGIN_URL
@@ -22,7 +22,7 @@ class DK9Parser:
         #                      3: 'Перенаправление', 4: 'Запрос отклонен', 5: 'Ошибка сервера'}
 
     @staticmethod
-    def get_validation_data(soup: type(BeautifulSoup)):
+    def _get_validation_data(soup: type(BeautifulSoup)):
         return {
             '__VIEWSTATE': soup.find('input', attrs={'id': '__VIEWSTATE'})['value'],
             '__VIEWSTATEGENERATOR': soup.find('input', attrs={'id': '__VIEWSTATEGENERATOR'})['value'],
@@ -31,7 +31,7 @@ class DK9Parser:
     def addiction(self):
         return sum([len(d) for d in self.CDATA.values()]) > 15
 
-    def send_dk9_post(self, url, data, validation_data):
+    def _send_dk9_post(self, url, data, validation_data):
         self.SESSION.post(
             url,
             data={**data, **validation_data},
@@ -44,7 +44,7 @@ class DK9Parser:
             print('GETTING RESPONSE')
             status.emit(self.S_PROCESS)
             # =============================================== LOGIN PAGE ==============================================
-            r = self.get_response(self.LOGIN_URL, status)
+            r = self._get_response(self.LOGIN_URL, status)
             if r:
                 progress.emit(20)
                 soup = BeautifulSoup(r.content, 'html.parser')
@@ -52,19 +52,19 @@ class DK9Parser:
                 # ============================================= LOGOUT ================================================
                 if soup.find("a", attrs={"id": "LinkButton1"}):
                     data_to_logout = {'LinkButton1': 'Submit'}
-                    self.send_dk9_post(self.LOGGED_IN_URL, data_to_logout, self.get_validation_data(soup))
-                    r = self.get_response(self.LOGIN_URL, status)
+                    self._send_dk9_post(self.LOGGED_IN_URL, data_to_logout, self._get_validation_data(soup))
+                    r = self._get_response(self.LOGIN_URL, status)
                     soup = BeautifulSoup(r.content, 'html.parser')
                 # ============================================= LOGIN ==================================================
-                self.send_dk9_post(self.LOGIN_URL, self.RDATA, self.get_validation_data(soup))
+                self._send_dk9_post(self.LOGIN_URL, self.RDATA, self._get_validation_data(soup))
                 progress.emit(60)
                 # ============================================== READY =================================================
-                r = self.get_response(self.SEARCH_URL, status)
+                r = self._get_response(self.SEARCH_URL, status)
                 if r:
                     progress.emit(80)
                     if self.addiction():
                         print('LOGIN OK')
-                        self.validation_data = self.get_validation_data(BeautifulSoup(r.content, 'html.parser'))
+                        self.validation_data = self._get_validation_data(BeautifulSoup(r.content, 'html.parser'))
                         self.LOGIN_SUCCESS = True
                         status.emit(self.S_OK)
                     else:
@@ -81,10 +81,8 @@ class DK9Parser:
             print(f'Error: (Timeout) on CONNECT Message:\n{str(err)}')
             return
         except Exception as err:
-            if '[Errno 11001]' in err.__str__():
-                status.emit(self.S_NO_CONN)
-                progress.emit(100)
-                print(f'Error: (No connection) Message :\n{str(err)}')
+            if '[Errno 110' in err.__str__():
+                self._110xx_error_handler(err, progress, status)
                 return
             error.emit((f'Error while trying to login',
                         f'{traceback.format_exc()}'))
@@ -140,12 +138,9 @@ class DK9Parser:
             print(f'Error: on CONNECT (Timeout) Message:\n{str(err)}')
             return ()
         except Exception as err:
-            if '[Errno 11001]' in err.__str__():
-                status.emit(self.S_NO_CONN)
-                progress.emit(100)
-                print(f'Error: (No connection) on CONNECT Message:\n{str(err)}')
+            if '[Errno 110' in err.__str__():
+                self._110xx_error_handler(err, progress, status)
                 return ()
-            # print(f'Error: on SEARCH Message:\n{str(err)}\n{err.__str__()=}')
             error.emit((f'Error while trying to search:\n'
                         f'{model_}',
                         f'{traceback.format_exc()}'))
@@ -153,7 +148,7 @@ class DK9Parser:
     def change_data(self, data):
         self.CDATA = data
 
-    def get_response(self, url, status):
+    def _get_response(self, url, status):
         response = self.SESSION.get(url, headers=self.HEADERS, timeout=self.TIMEOUT)
         print(f'{response=}')
         if 100 <= response.status_code < 200:
@@ -168,3 +163,12 @@ class DK9Parser:
             status.emit(self.S_CLI_ERR)
         elif 500 <= response.status_code < 600:
             status.emit(self.S_SERV_ERR)
+
+    def _110xx_error_handler(self, err, progress, status):
+        if '[Errno 11001]' in err.__str__():
+            status.emit(self.S_NO_CONN)
+            print(f'Error: (No connection) Message :\n{str(err)}')
+        else:
+            status.emit(self.S_CONN_ERROR)
+            print(f'Error: (Connection error) Message :\n{str(err)}')
+        progress.emit(100)

@@ -372,7 +372,7 @@ class App(QMainWindow):
         self.search_dk9()
 
     def search_dk9(self):
-        if not DK9.LOGIN_SUCCESS:
+        if not DK9.LOGIN_SUCCESS or self.web_status != 2:
             return
         manufacturer = '' if not C.SEARCH_BY_PRICE_MODEL else self.curr_manufacturer
         if self.search_again:
