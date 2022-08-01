@@ -112,7 +112,7 @@ class DK9Parser:
             progress.emit(20)
             # print(f'Answer: {r}')
             soup = BeautifulSoup(r.content, 'html.parser', from_encoding='utf-8')
-            print(f'Search Title: {soup.title}')
+            # print(f'Search Title: {soup.title}')
             progress.emit(50)
             part_table_soup = soup.find("table", attrs={"id": "ctl00_ContentPlaceHolder1_GridView1"})
             progress.emit(60)

@@ -265,7 +265,7 @@ class App(QMainWindow):
             self.model_list_widget.clear()
             self.model_list_widget.hide()
             return
-        print(f'Upd_models_list: {self.models[self.curr_manufacturer].items()=}')
+        # print(f'Upd_models_list: {self.models[self.curr_manufacturer].items()=}')
         curr_models = [
             f'{model}{self.recursor}{params[2]}' if params[2] else model
             for model, params in self.models[self.curr_manufacturer].items()]
@@ -319,7 +319,7 @@ class App(QMainWindow):
     # @QtCore.pyqtSlot
     def scheduler(self, item):
         text_lower: str = item.text().lower()
-        print(f'Scheduler: {text_lower=}')
+        # print(f'Scheduler: {text_lower=}')
         models_str = text_lower. \
             replace(self.curr_manufacturer.lower(), ''). \
             replace('телефон', ''). \
@@ -333,7 +333,7 @@ class App(QMainWindow):
             recursive_model = models_str[recursor_idx + len(self.recursor):].strip()
             models_str = models_str[:recursor_idx]
         models_for_buttons = [m.strip() for m in models_str.split(',', 4)]
-        print(f'Recursive: {models_str=} {recursor_idx=} {recursive_model=} {models_for_buttons=}')
+        # print(f'Recursive: {models_str=} {recursor_idx=} {recursive_model=} {models_for_buttons=}')
         if recursive_model:
             for m in self.models[self.curr_manufacturer]:
                 if m != text_lower and recursive_model in m:
@@ -431,8 +431,8 @@ class App(QMainWindow):
 
     def update_price_table(self, model):  # 'xiaomi mi a2 m1804d2sg'
         try:
-            print(f'{model=}\n{self.models=}\n{self.curr_model_idx=}\n'
-                  f'{self.curr_manufacturer=}\n{self.curr_manufacturer_idx=}')
+            # print(f'{model=}\n{self.models=}\n{self.curr_model_idx=}\n'
+            #       f'{self.curr_manufacturer=}\n{self.curr_manufacturer_idx=}')
             if model in self.models[self.curr_manufacturer]:
                 # print(f'FOUND')
                 position = self.models[self.curr_manufacturer][model]  # [Sheet 27:<XIAOMI>, 813] - sheet, row
@@ -442,7 +442,7 @@ class App(QMainWindow):
                     columns = C.PRICE_SEARCH_COLUMN_NUMBERS[self.curr_manufacturer]  # [2, 6, 7]
                 else:
                     columns = C.PRICE_SEARCH_COLUMN_NUMBERS['+']
-                print(f'{columns=}')
+                # print(f'{columns=}')
                 row = Price.get_row_in_pos(position)
                 row_len = len(row)
                 # print(f'{row=}')
@@ -525,9 +525,21 @@ class App(QMainWindow):
                     if C.FILTER_SEARCH_RESULT:
                         # print(f'{self.curr_model=}{row[2].string.lower()=}{row[3].string.lower()=}')
                         # Filter models different more than 1 symbol
-                        if self.curr_model not in row[2].string.lower() \
-                                or len(self.curr_model) + 1 < len(row[2].string.lower()):
-                            if self.curr_model not in row[3].string.lower():
+                        curr_model_len = len(self.curr_model)
+                        model_cell = row[2].string.lower()
+                        model_cell_len = len(model_cell)
+                        description_cell = row[3].string.lower()
+                        description_cell_len = len(description_cell)
+                        model_idx_in_desc = description_cell.find(self.curr_model)
+                        if self.curr_model not in model_cell \
+                                or (4 > model_cell_len > curr_model_len) \
+                                or curr_model_len + 1 < model_cell_len:
+                            if self.curr_model not in description_cell \
+                                    or (model_idx_in_desc > 0
+                                        and description_cell[model_idx_in_desc - 1].isalpha()) \
+                                    or (model_idx_in_desc < description_cell_len - 1
+                                        and (description_cell[model_idx_in_desc + curr_model_len].isalpha()
+                                             or description_cell[model_idx_in_desc + curr_model_len].isdigit())):
                                 continue
                     table.insertRow(r)
                     for dk9_td in row:
