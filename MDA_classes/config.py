@@ -6,6 +6,7 @@ import configparser
 
 
 class Config:
+    FILTER_SEARCH_RESULT = None
     def __init__(self):
         self.error = None
         self.PATH = f'{os.path.dirname(os.path.dirname(os.path.realpath(__file__)))}\\'
@@ -20,10 +21,11 @@ class Config:
         # ====================UI====================
         self.FULLSCREEN = False
         self.MODEL_LIST_MAX_SIZE = 20
-        self.NARROW_SEARCH = True  # from n symbols
+
         self.FILTER_SEARCH_RESULT = True  # filter, from start
-        self.LATIN_SEARCH = True
         self.SEARCH_BY_PRICE_MODEL = True
+        self.NARROW_SEARCH = True  # from n symbols
+        self.LATIN_SEARCH = True
 
         # tables
         self.PRICE_COLORED = True  # work slower if True
@@ -159,6 +161,12 @@ class Config:
                 self.DK9_LOGIN = config['WEB DATABASE']['DK9_LOGIN']
                 self.DK9_PASSWORD = config['WEB DATABASE']['DK9_PASSWORD']
                 self.FULLSCREEN = True if config['SETTINGS']['FULLSCREEN'] == 'True' else False
+
+                self.FILTER_SEARCH_RESULT = True if config['SETTINGS']['FILTER_SEARCH_RESULT'] == 'True' else False
+                self.SEARCH_BY_PRICE_MODEL = True if config['SETTINGS']['SEARCH_BY_PRICE_MODEL'] == 'True' else False
+                self.LATIN_SEARCH = True if config['SETTINGS']['LATIN_SEARCH'] == 'True' else False
+                self.NARROW_SEARCH = True if config['SETTINGS']['NARROW_SEARCH'] == 'True' else False
+
                 self.PRICE_COLORED = True if config['SETTINGS']['PRICE_COLORED'] == 'True' else False
                 self.DK9_COLORED = True if config['SETTINGS']['DK9_COLORED'] == 'True' else False
                 self.DK9_COL_DIFF = int(config['SETTINGS']['DK9_COL_DIFF'])
@@ -201,6 +209,12 @@ class Config:
         config['WEB DATABASE']['DK9_PASSWORD'] = str(self.DK9_PASSWORD)
         config['SETTINGS'] = {}
         config['SETTINGS']['FULLSCREEN'] = str(self.FULLSCREEN)
+
+        config['SETTINGS']['FILTER_SEARCH_RESULT'] = str(self.FILTER_SEARCH_RESULT)
+        config['SETTINGS']['SEARCH_BY_PRICE_MODEL'] = str(self.SEARCH_BY_PRICE_MODEL)
+        config['SETTINGS']['LATIN_SEARCH'] = str(self.LATIN_SEARCH)
+        config['SETTINGS']['NARROW_SEARCH'] = str(self.NARROW_SEARCH)
+
         config['SETTINGS']['PRICE_COLORED'] = str(self.PRICE_COLORED)
         config['SETTINGS']['DK9_COLORED'] = str(self.DK9_COLORED)
         config['SETTINGS']['DK9_COL_DIFF'] = str(self.DK9_COL_DIFF)

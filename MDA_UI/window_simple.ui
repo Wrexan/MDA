@@ -33,7 +33,7 @@
     <widget class="QPlainTextEdit" name="text">
      <property name="font">
       <font>
-       <family>Segoe UI</family>
+       <family>Courier New</family>
        <pointsize>12</pointsize>
       </font>
      </property>
@@ -41,7 +41,10 @@
       <bool>true</bool>
      </property>
      <property name="plainText">
-      <string/>
+      <string>fffff
+FFFFF
+.....
+_____</string>
      </property>
     </widget>
    </item>

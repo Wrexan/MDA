@@ -21,11 +21,10 @@ class Ui_Dialog(object):
         self.verticalLayout.setObjectName("verticalLayout")
         self.text = QtWidgets.QPlainTextEdit(Dialog)
         font = QtGui.QFont()
-        font.setFamily("Segoe UI")
+        font.setFamily("Courier New")
         font.setPointSize(12)
         self.text.setFont(font)
         self.text.setReadOnly(True)
-        self.text.setPlainText("")
         self.text.setObjectName("text")
         self.verticalLayout.addWidget(self.text)
         self.frame = QtWidgets.QFrame(Dialog)
@@ -63,6 +62,10 @@ class Ui_Dialog(object):
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
         Dialog.setWindowTitle(_translate("Dialog", "Dialog"))
+        self.text.setPlainText(_translate("Dialog", "fffff\n"
+"FFFFF\n"
+".....\n"
+"_____"))
         self.label.setText(_translate("Dialog", "Автор: Гостев В.   Помощь в тестировании: Дяченко А., Довгопятый Т."))
         self.project_link.setText(_translate("Dialog", "<a href=\"https://github.com/Wrexan/MDA\"> <font size=3 color=black>Страница проекта</font> </a>"))
         self.label_2.setText(_translate("Dialog", "[2022]"))

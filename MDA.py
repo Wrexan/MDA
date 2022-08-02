@@ -36,7 +36,10 @@ class App(QMainWindow):
         self.search_input.setParent(self.ui.frame_3)
         self.ui.search_layout.addWidget(self.search_input)
 
+        self.freeze_ui_update = True
+
         self.init_ui_statics()
+        self.apply_window_size()
         self.init_ui_dynamics()
 
         self.curr_manufacturer_idx: int = 0
@@ -64,7 +67,8 @@ class App(QMainWindow):
 
     def init_ui_statics(self):
 
-        self.resized.connect(self.fix_models_list_position)
+        # self.resized.connect(self.fix_models_list_position)
+        self.resized.connect(self.init_ui_dynamics)
         # self.ui.input_search.textChanged[str].connect(self.prepare_and_search)
         # self.ui.input_search.cursorPositionChanged.connect(self.upd_models_list)
         self.search_input.textChanged[str].connect(self.prepare_and_search)
@@ -76,7 +80,7 @@ class App(QMainWindow):
         self.ui.chb_show_exact.stateChanged.connect(self.upd_dk9_on_rule_change)
         self.ui.chb_show_exact.setToolTip(
             'Вкл - отображает максимально релевантные модели\n'
-            'Откл - отображаются похожие модели (Mi8 lite по запросу Mi8)')
+            'Откл - отображается все, что выдает база (Mi8 lite по запросу Mi8)')
 
         self.ui.chb_price_name_only.stateChanged.connect(self.start_search_on_rule_change)
         self.ui.chb_price_name_only.setToolTip(
@@ -120,15 +124,16 @@ class App(QMainWindow):
         self.model_list_widget.itemClicked.connect(self.scheduler)
         self.model_list_widget.hide()
 
-    def init_ui_dynamics(self):
-        font = QtGui.QFont()
-        # font.setBold(True)
-        font.setPixelSize(C.TABLE_FONT_SIZE)
-
+    def apply_window_size(self):
         if C.FULLSCREEN:
             self.showMaximized()
         else:
             self.showNormal()
+
+    def init_ui_dynamics(self):
+        font = QtGui.QFont()
+        # font.setBold(True)
+        font.setPixelSize(C.TABLE_FONT_SIZE)
         self.ui.table_price.verticalHeader().setDefaultSectionSize(C.TABLE_FONT_SIZE + 4)
         self.ui.table_parts.verticalHeader().setDefaultSectionSize(C.TABLE_FONT_SIZE + 4)
         self.ui.table_accesory.verticalHeader().setDefaultSectionSize(C.TABLE_FONT_SIZE + 4)
@@ -150,11 +155,33 @@ class App(QMainWindow):
                 self.ui.table_parts.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
                 self.ui.table_accesory.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
 
-        for i in range(self.ui.table_price.columnCount()):
-            if i == 2:
-                self.ui.table_price.horizontalHeader().setSectionResizeMode(i, QHeaderView.Stretch)
-            else:
-                self.ui.table_price.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
+        table_width = self.ui.table_price.width()
+        table_width_n_percent = int(table_width/3.5 + (table_width - 640)/4)
+        # table_width_n_percent = int(table_width/(3.5 * table_width/640))
+        # self.ui.table_price.horizontalHeader().secsetMaximumSectionSize(table_width_10_percent)
+        self.ui.table_price.horizontalHeader().setDefaultSectionSize(table_width_n_percent)
+        self.ui.table_price.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+        self.ui.table_price.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+
+        self.freeze_ui_update = True
+        self.ui.chb_show_exact.setCheckState(2 if C.FILTER_SEARCH_RESULT else 0)
+        self.ui.chb_price_name_only.setCheckState(2 if C.SEARCH_BY_PRICE_MODEL else 0)
+        self.ui.chb_search_eng.setCheckState(2 if C.LATIN_SEARCH else 0)
+        self.ui.chb_search_narrow.setCheckState(2 if C.NARROW_SEARCH else 0)
+        self.freeze_ui_update = False
+
+        # for i in range(self.ui.table_price.columnCount()):
+        #     if i == 0 or i == 2:
+        #         self.ui.table_price.horizontalHeader().setSectionResizeMode(i, QHeaderView.Stretch)
+        #     # if i == 2:
+        #     #     pass
+        #         # self.ui.table_price.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
+        #         # self.ui.table_price.horizontalHeader().setSectionResizeMode(i, QHeaderView.Stretch)
+        #         # self.ui.table_price.horizontalHeader().setMinimumWidth(table_width_10_percent)
+        #         # self.ui.table_price.horizontalHeader().setMaximumWidth(table_width_10_percent)
+        #         # self.ui.table_price.horizontalHeader().setSectionResizeMode(i, QHeaderView.Stretch)
+        #     else:
+        #         self.ui.table_price.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
 
     # =============================================================================================================
 
@@ -163,13 +190,17 @@ class App(QMainWindow):
                                     int(self.ui.HEAD.height() - 6))
 
     def start_search_on_rule_change(self):
-        C.SEARCH_BY_PRICE_MODEL = self.ui.chb_price_name_only.checkState()
-        C.LATIN_SEARCH = self.ui.chb_search_eng.checkState()
-        C.NARROW_SEARCH = self.ui.chb_search_narrow.checkState()
+        if self.freeze_ui_update:
+            return
+        C.SEARCH_BY_PRICE_MODEL = True if self.ui.chb_price_name_only.checkState() == 2 else False
+        C.LATIN_SEARCH = True if self.ui.chb_search_eng.checkState() == 2 else False
+        C.NARROW_SEARCH = True if self.ui.chb_search_narrow.checkState() == 2 else False
         self.prepare_and_search(self.search_input.text(), True)
 
     def upd_dk9_on_rule_change(self):
-        C.FILTER_SEARCH_RESULT = self.ui.chb_show_exact.checkState()
+        if self.freeze_ui_update:
+            return
+        C.FILTER_SEARCH_RESULT = True if self.ui.chb_show_exact.checkState() == 2 else False
         if self.soup:
             self.update_dk9_data(use_old_soup=True)
 
@@ -537,9 +568,9 @@ class App(QMainWindow):
                             if self.curr_model not in description_cell \
                                     or (model_idx_in_desc > 0
                                         and description_cell[model_idx_in_desc - 1].isalpha()) \
-                                    or (model_idx_in_desc < description_cell_len - 1
-                                        and (description_cell[model_idx_in_desc + curr_model_len].isalpha()
-                                             or description_cell[model_idx_in_desc + curr_model_len].isdigit())):
+                                    or (model_idx_in_desc + curr_model_len < description_cell_len
+                                        and (description_cell[model_idx_in_desc + curr_model_len - 1].isalpha()
+                                             or description_cell[model_idx_in_desc + curr_model_len - 1].isdigit())):
                                 continue
                     table.insertRow(r)
                     for dk9_td in row:
