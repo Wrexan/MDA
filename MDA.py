@@ -616,15 +616,15 @@ class App(QMainWindow):
                         description_cell = row[3].string.lower()
                         description_cell_len = len(description_cell)
                         model_idx_in_desc = description_cell.find(self.curr_model)
+                        # print(f'{description_cell=} {description_cell[model_idx_in_desc + curr_model_len]=} ')
                         if self.curr_model not in model_cell \
                                 or (4 > model_cell_len > curr_model_len) \
                                 or curr_model_len + 1 < model_cell_len:
                             if self.curr_model not in description_cell \
                                     or (model_idx_in_desc > 0
                                         and description_cell[model_idx_in_desc - 1].isalpha()) \
-                                    or (model_idx_in_desc + curr_model_len < description_cell_len
-                                        and (description_cell[model_idx_in_desc + curr_model_len - 1].isalpha()
-                                             or description_cell[model_idx_in_desc + curr_model_len - 1].isdigit())):
+                                    or (model_idx_in_desc + curr_model_len < description_cell_len - 1
+                                        and (description_cell[model_idx_in_desc + curr_model_len] not in '/,.')):
                                 continue
                     table.insertRow(r)
                     for dk9_td in row:
