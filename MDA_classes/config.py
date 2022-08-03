@@ -27,6 +27,8 @@ class Config:
         self.NARROW_SEARCH = True  # from n symbols
         self.LATIN_SEARCH = True
 
+        self.SHOW_DATE = False
+
         # tables
         self.PRICE_COLORED = True  # work slower if True
         self.DK9_COLORED = True  # work slower if True
@@ -126,7 +128,7 @@ class Config:
             'ї': ']', 'і': 's', 'є': "'",
         }
 
-        self.UPDATE_FOLDER = '1JauaFxPrsksy3cuYiQ-VKoz3tv2dpO0x'
+        # self.UPDATE_FOLDER = '1JauaFxPrsksy3cuYiQ-VKoz3tv2dpO0x'
 
         self.load_or_generate_config()
 

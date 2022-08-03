@@ -86,6 +86,11 @@ class App(QMainWindow):
             'Вкл - отображает максимально релевантные модели\n'
             'Откл - отображается все, что выдает база (Mi8 lite по запросу Mi8)')
 
+        self.ui.chb_show_date.stateChanged.connect(self.switch_n_upd_dk9_tables_grid)
+        self.ui.chb_show_date.setToolTip(
+            'Вкл - отображает дату поступления товара\n'
+            'Откл - дата поступления товара урезана (появляется при наведении курсора)')
+
         self.ui.chb_price_name_only.stateChanged.connect(self.start_search_on_rule_change)
         self.ui.chb_price_name_only.setToolTip(
             'Вкл - запросом в интернет базу являются производитель и модель из прайса\n'
@@ -151,13 +156,7 @@ class App(QMainWindow):
         self.model_list_widget.setFont(font)
         self.fix_models_list_position()
 
-        for i in range(self.ui.table_parts.columnCount()):
-            if i == 3:
-                self.ui.table_parts.horizontalHeader().setSectionResizeMode(i, QHeaderView.Stretch)
-                self.ui.table_accesory.horizontalHeader().setSectionResizeMode(i, QHeaderView.Stretch)
-            else:
-                self.ui.table_parts.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
-                self.ui.table_accesory.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
+        self.upd_dk9_tables_grid()
 
         table_width = self.ui.table_price.width()
         table_width_n_percent = int(table_width / 3.5 + (table_width - 640) / 4)
@@ -173,19 +172,6 @@ class App(QMainWindow):
         self.ui.chb_search_eng.setCheckState(2 if C.LATIN_SEARCH else 0)
         self.ui.chb_search_narrow.setCheckState(2 if C.NARROW_SEARCH else 0)
         self.freeze_ui_update = False
-
-        # for i in range(self.ui.table_price.columnCount()):
-        #     if i == 0 or i == 2:
-        #         self.ui.table_price.horizontalHeader().setSectionResizeMode(i, QHeaderView.Stretch)
-        #     # if i == 2:
-        #     #     pass
-        #         # self.ui.table_price.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
-        #         # self.ui.table_price.horizontalHeader().setSectionResizeMode(i, QHeaderView.Stretch)
-        #         # self.ui.table_price.horizontalHeader().setMinimumWidth(table_width_10_percent)
-        #         # self.ui.table_price.horizontalHeader().setMaximumWidth(table_width_10_percent)
-        #         # self.ui.table_price.horizontalHeader().setSectionResizeMode(i, QHeaderView.Stretch)
-        #     else:
-        #         self.ui.table_price.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
 
     # =============================================================================================================
 
@@ -207,6 +193,28 @@ class App(QMainWindow):
         C.FILTER_SEARCH_RESULT = True if self.ui.chb_show_exact.checkState() == 2 else False
         if self.soup:
             self.update_dk9_data(use_old_soup=True)
+
+    def switch_n_upd_dk9_tables_grid(self):
+        C.SHOW_DATE = True if self.ui.chb_show_date.checkState() == 2 else False
+        self.upd_dk9_tables_grid()
+
+    def upd_dk9_tables_grid(self):
+        if C.SHOW_DATE:
+            self.ui.table_parts.horizontalHeader().setSectionResizeMode(6, QHeaderView.ResizeToContents)
+            self.ui.table_accesory.horizontalHeader().setSectionResizeMode(6, QHeaderView.ResizeToContents)
+        else:
+            self.ui.table_parts.horizontalHeader().setDefaultSectionSize(int(C.TABLE_FONT_SIZE * 1.2 + 6))
+            self.ui.table_accesory.horizontalHeader().setDefaultSectionSize(int(C.TABLE_FONT_SIZE * 1.2 + 6))
+            for i in range(self.ui.table_parts.columnCount()):
+                if i == 3:
+                    self.ui.table_parts.horizontalHeader().setSectionResizeMode(i, QHeaderView.Stretch)
+                    self.ui.table_accesory.horizontalHeader().setSectionResizeMode(i, QHeaderView.Stretch)
+                elif i != 6 or C.SHOW_DATE:
+                    self.ui.table_parts.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
+                    self.ui.table_accesory.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
+                else:
+                    self.ui.table_parts.horizontalHeader().setSectionResizeMode(i, QHeaderView.Fixed)
+                    self.ui.table_accesory.horizontalHeader().setSectionResizeMode(i, QHeaderView.Fixed)
 
     def on_ui_loaded(self):
         print('Loading Price')
@@ -454,9 +462,11 @@ class App(QMainWindow):
 
         if self.web_status == 2:
             self.load_progress(70)
-            self.fill_table_from_soup(self.soup[0], self.ui.table_parts, C.DK9_BG_P_COLOR1, C.DK9_BG_P_COLOR2)
+            self.fill_table_from_soup(self.soup[0], self.ui.table_parts, C.DK9_BG_P_COLOR1, C.DK9_BG_P_COLOR2,
+                                      align={4: Qt.AlignRight})
             self.load_progress(85)
-            self.fill_table_from_soup(self.soup[1], self.ui.table_accesory, C.DK9_BG_A_COLOR1, C.DK9_BG_A_COLOR2)
+            self.fill_table_from_soup(self.soup[1], self.ui.table_accesory, C.DK9_BG_A_COLOR1, C.DK9_BG_A_COLOR2,
+                                      align={4: Qt.AlignRight})
         else:
             self.login_dk9()
         self.load_progress(0) if use_old_soup else self.load_progress(100)
@@ -489,10 +499,11 @@ class App(QMainWindow):
                 self.ui.table_price.setRowCount(0)
 
                 if True:  # if model row must be shown in price table
+                    # print(f'{row=} {columns=} {cells_texts=} ')
                     self._add_price_table_row(table=self.ui.table_price, sheet=position[0],
                                               columns=columns, cells_texts=cells_texts,
-                                              t_row_num=new_row_num, p_row_num=0,
-                                              colored=C.PRICE_COLORED, bold=True)
+                                              t_row_num=new_row_num, p_row_num=position[1],
+                                              align={1: Qt.AlignRight}, colored=C.PRICE_COLORED, bold=True)
                     new_row_num += 1
 
                 for i in range(position[1], position[0].nrows - 1):
@@ -516,7 +527,8 @@ class App(QMainWindow):
                         if cells_texts[0]:  # or len(cells_texts[1]) > 3:
                             self._add_price_table_row(table=self.ui.table_price, sheet=position[0],
                                                       columns=columns, cells_texts=cells_texts,
-                                                      t_row_num=new_row_num, p_row_num=i, colored=C.PRICE_COLORED)
+                                                      t_row_num=new_row_num, p_row_num=i,
+                                                      align={1: Qt.AlignRight}, colored=C.PRICE_COLORED)
 
                             new_row_num += 1
                         if i < position[0].nrows:
@@ -534,25 +546,31 @@ class App(QMainWindow):
                         f'{traceback.format_exc()}'))
 
     def _add_price_table_row(self, table, sheet, columns, cells_texts: list, t_row_num: int, p_row_num: int,
-                             colored: bool = False, bold: bool = False):
+                             align: dict = None, colored: bool = False, bold: bool = False):
         table.insertRow(t_row_num)
         bold_font = None
         if bold:
             bold_font = QtGui.QFont()
             bold_font.setBold(True)
-        for j, txt in enumerate(cells_texts):
+        for c, txt in enumerate(cells_texts):
             if not isinstance(txt, str):
-                txt = str(txt)
-            table.setItem(t_row_num, j, QTableWidgetItem(txt))
-            table.item(t_row_num, j).setToolTip(txt)
-            if bold:
-                table.item(t_row_num, j).setFont(bold_font)
-            if colored and txt:
+                if isinstance(txt, float):
+                    txt = str(int(txt))
+                else:
+                    txt = str(txt)
+            table.setItem(t_row_num, c, QTableWidgetItem(txt))
+            table.item(t_row_num, c).setToolTip(txt)
+            if align and c in align:
+                table.item(t_row_num, c).setTextAlignment(align[c])
+            if colored:
                 bgd = self.Price.DB.colour_map. \
-                    get(self.Price.DB.xf_list[sheet.
-                        cell(p_row_num, columns[j]).xf_index].background.pattern_colour_index)
+                    get(self.Price.DB.xf_list[sheet.cell(p_row_num, columns[c]).xf_index].
+                        background.pattern_colour_index)
                 if bgd:
-                    table.item(t_row_num, j).setBackground(QtGui.QColor(bgd[0], bgd[1], bgd[2]))
+                    table.item(t_row_num, c).setBackground(QtGui.QColor(bgd[0], bgd[1], bgd[2]))
+                # print(f' colour: {p_row_num=}  {columns[j]=}  {txt=}  {bgd=}')
+            if bold:
+                table.item(t_row_num, c).setFont(bold_font)
 
     def load_progress(self, progress):
         self.ui.web_load_progress_bar.setValue(progress)
@@ -563,7 +581,7 @@ class App(QMainWindow):
         else:
             self.ui.web_load_progress_bar.setValue(0)
 
-    def fill_table_from_soup(self, soup, table, def_bg_color1, def_bg_color2):
+    def fill_table_from_soup(self, soup, table, def_bg_color1, def_bg_color2, align: dict = None):
         try:
             r = 0
             table.setRowCount(0)
@@ -603,6 +621,8 @@ class App(QMainWindow):
                         # print(f'{dk9_td.string} {self.curr_model=}')
                         table.setItem(r, c, QTableWidgetItem(dk9_td.string))
                         table.item(r, c).setToolTip(dk9_td.string)
+                        if align and c in align:
+                            table.item(r, c).setTextAlignment(align[c])
                         if C.DK9_COLORED:
                             if row_palette:
                                 table.item(r, c). \
