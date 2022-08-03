@@ -112,10 +112,10 @@ class Price:
                             break
                         if manufacturer not in models:
                             models[manufacturer] = {}
-
+                        # Getting main model to redirect, if present
                         if isinstance(cell_value[compat_model_column], str):
                             compat_model_name: str = cell_value[compat_model_column].strip().lower()
-                            # ru ru, en ru, ru en, en en
+                            # ru ru, en ru, ru en, en en  -  separating trash
                             if compat_model_name.startswith('см', 0, 2) \
                                     or compat_model_name.startswith('cм', 0, 2) \
                                     or compat_model_name.startswith('сm', 0, 2) \

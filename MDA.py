@@ -23,6 +23,10 @@ class App(QMainWindow):
     def __init__(self):
         super().__init__()
         qApp.focusChanged.connect(self.on_focusChanged)
+        # self.tab_font = QtGui.QFont()
+        # self.tab_font_bold = QtGui.QFont()
+        # self.tab_font_bold.setBold(True)
+
         self.models = {}
         self.model_buttons = {}
         self.manufacturer_wheel = None
@@ -156,7 +160,7 @@ class App(QMainWindow):
                 self.ui.table_accesory.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
 
         table_width = self.ui.table_price.width()
-        table_width_n_percent = int(table_width/3.5 + (table_width - 640)/4)
+        table_width_n_percent = int(table_width / 3.5 + (table_width - 640) / 4)
         # table_width_n_percent = int(table_width/(3.5 * table_width/640))
         # self.ui.table_price.horizontalHeader().secsetMaximumSectionSize(table_width_10_percent)
         self.ui.table_price.horizontalHeader().setDefaultSectionSize(table_width_n_percent)
@@ -468,21 +472,32 @@ class App(QMainWindow):
                 # print(f'FOUND')
                 position = self.models[self.curr_manufacturer][model]  # [Sheet 27:<XIAOMI>, 813] - sheet, row
                 # print(f'{position=}')
+
                 # Take needed columns for exact model
                 if self.curr_manufacturer in C.PRICE_SEARCH_COLUMN_NUMBERS:
                     columns = C.PRICE_SEARCH_COLUMN_NUMBERS[self.curr_manufacturer]  # [2, 6, 7]
                 else:
                     columns = C.PRICE_SEARCH_COLUMN_NUMBERS['+']
                 # print(f'{columns=}')
+
                 row = Price.get_row_in_pos(position)
                 row_len = len(row)
+                cells_texts = [row[0], row[columns[1]], row[columns[2]]]
+                new_row_num = 0
                 # print(f'{row=}')
 
-                new_row_num = 0
                 self.ui.table_price.setRowCount(0)
+
+                if True:  # if model row must be shown in price table
+                    self._add_price_table_row(table=self.ui.table_price, sheet=position[0],
+                                              columns=columns, cells_texts=cells_texts,
+                                              t_row_num=new_row_num, p_row_num=0,
+                                              colored=C.PRICE_COLORED, bold=True)
+                    new_row_num += 1
+
                 for i in range(position[1], position[0].nrows - 1):
-                    # print(row[col[0] - 1, col[1] - 1, col[2] - 1])
-                    if row_len < columns[-1]:  # If row shorter, than we expect, then place all row in 0 column
+                    # print(f'{row=} {row_len=} {i=} {columns[-1]=} {columns=} ')
+                    if row_len < columns[-1] + 1:  # If row shorter, than we expect, then place all row in 0 column
                         # print('SHORT row:' + str(row))
                         cell_text = self.list_to_string(row)
                         self.ui.table_price.insertRow(new_row_num)
@@ -494,24 +509,14 @@ class App(QMainWindow):
                         cells_texts = []
                         for c in range(len(columns)):
                             if columns[c] < row_len:
-                                cells_texts.append(str(row[columns[c]]))
+                                cells_texts.append(row[columns[c]])
                             else:
                                 cells_texts.append('')
-
+                        # print(f"{cells_texts=}")
                         if cells_texts[0]:  # or len(cells_texts[1]) > 3:
-
-                            self.ui.table_price.insertRow(new_row_num)
-                            for j, txt in enumerate(cells_texts):
-                                self.ui.table_price.setItem(new_row_num, j, QTableWidgetItem(txt))
-                                self.ui.table_price.item(new_row_num, j).setToolTip(txt)
-
-                                if C.PRICE_COLORED and txt:
-                                    bgd = self.Price.DB.colour_map. \
-                                        get(self.Price.DB.xf_list[position[0].
-                                            cell(i, columns[j]).xf_index].background.pattern_colour_index)
-                                    if bgd:
-                                        self.ui.table_price.item(new_row_num, j). \
-                                            setBackground(QtGui.QColor(bgd[0], bgd[1], bgd[2]))
+                            self._add_price_table_row(table=self.ui.table_price, sheet=position[0],
+                                                      columns=columns, cells_texts=cells_texts,
+                                                      t_row_num=new_row_num, p_row_num=i, colored=C.PRICE_COLORED)
 
                             new_row_num += 1
                         if i < position[0].nrows:
@@ -527,6 +532,27 @@ class App(QMainWindow):
             self.error((f'Error updating price table for:\n'
                         f'{model}',
                         f'{traceback.format_exc()}'))
+
+    def _add_price_table_row(self, table, sheet, columns, cells_texts: list, t_row_num: int, p_row_num: int,
+                             colored: bool = False, bold: bool = False):
+        table.insertRow(t_row_num)
+        bold_font = None
+        if bold:
+            bold_font = QtGui.QFont()
+            bold_font.setBold(True)
+        for j, txt in enumerate(cells_texts):
+            if not isinstance(txt, str):
+                txt = str(txt)
+            table.setItem(t_row_num, j, QTableWidgetItem(txt))
+            table.item(t_row_num, j).setToolTip(txt)
+            if bold:
+                table.item(t_row_num, j).setFont(bold_font)
+            if colored and txt:
+                bgd = self.Price.DB.colour_map. \
+                    get(self.Price.DB.xf_list[sheet.
+                        cell(p_row_num, columns[j]).xf_index].background.pattern_colour_index)
+                if bgd:
+                    table.item(t_row_num, j).setBackground(QtGui.QColor(bgd[0], bgd[1], bgd[2]))
 
     def load_progress(self, progress):
         self.ui.web_load_progress_bar.setValue(progress)
