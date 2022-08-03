@@ -312,8 +312,6 @@ class App(QMainWindow):
         curr_models = [
             f'{model}{self.recursor}{params[2]}' if params[2] else model
             for model, params in self.models[self.curr_manufacturer].items()]
-        # f'{model}{self.recursor}{params[2]}' if isinstance(params[2], str) and 'см' in params[2] else model
-        # for model, params in self.models[self.curr_manufacturer].items()]
         # print(f'{curr_models=} {hide_list=} {self.models[self.curr_manufacturer].items()=}')
         size = C.MODEL_LIST_MAX_SIZE if len(curr_models) > C.MODEL_LIST_MAX_SIZE else len(curr_models)
         self.model_list_widget.show()
@@ -362,7 +360,19 @@ class App(QMainWindow):
     # @QtCore.pyqtSlot
     def scheduler(self, item):
         text_lower: str = item.text().lower()
+        text_lower_orig = text_lower[:]
         # print(f'Scheduler: {text_lower=}')
+        for i in range(len(text_lower) - 2):
+            remark_start = text_lower.find('(')
+            if remark_start >= 0:
+                remark_end = text_lower[remark_start:].find(')')
+                # print(f'{text_lower[:remark_start]=}  {text_lower[ + remark_end:]=}')
+                # print(f'{remark_start=}  {remark_end=}')
+                text_lower = f'{text_lower[:remark_start]}' \
+                                 f'{text_lower[remark_start + remark_end + 1:]}'
+            else:
+                break
+        # print(f'CUT: {text_lower=}')
         models_str = text_lower. \
             replace(self.curr_manufacturer.lower(), ''). \
             replace('телефон', ''). \
@@ -392,7 +402,7 @@ class App(QMainWindow):
             self.curr_model = self.search_req_ruled
         self.upd_models_list(clear=True)
         self.upd_model_buttons(models_for_buttons)
-        self.update_price_table(text_lower)
+        self.update_price_table(text_lower_orig)
 
     def update_web_status(self, status: int):
         if status in C.WEB_STATUSES:
