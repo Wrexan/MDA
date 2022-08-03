@@ -718,6 +718,14 @@ class App(QMainWindow):
         self.search_input.setFocus()
         self.search_input.selectAll()
 
+    def wheelEvent(self, event: QtGui.QWheelEvent) -> None:
+        if self.model_list_widget.isHidden():
+            return
+        if event.angleDelta().y() < 0:
+            self.upd_manufacturer_wheel(increment=1)
+        if event.angleDelta().y() > 0:
+            self.upd_manufacturer_wheel(increment=-1)
+
     def open_settings(self):
         settings_ui = ConfigWindow(C, self, DK9)
         settings_ui.setWindowIcon(QtGui.QIcon(C.LOGO))
@@ -769,6 +777,16 @@ class SearchInput(QLineEdit):
         self.setMaxLength(32)
         self.setAlignment(Qt.AlignCenter)
         self.setObjectName("search_input")
+
+    def mouseDoubleClickEvent(self, a0: QtGui.QMouseEvent) -> None:
+        if self.app.models \
+                and (0 <= self.app.model_list_widget.currentRow() < len(self.app.models[self.app.curr_manufacturer])
+                     or self.app.model_list_widget.isHidden()):
+
+            if self.app.model_list_widget.isHidden():
+                self.app.upd_models_list()
+                return
+            self.app.scheduler(self.app.model_list_widget.currentItem())
 
     def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
         super(SearchInput, self).keyPressEvent(event)
