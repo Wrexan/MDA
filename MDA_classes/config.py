@@ -7,6 +7,7 @@ import configparser
 
 class Config:
     FILTER_SEARCH_RESULT = None
+
     def __init__(self):
         self.error = None
         self.PATH = f'{os.path.dirname(os.path.dirname(os.path.realpath(__file__)))}\\'
@@ -22,7 +23,7 @@ class Config:
         self.FULLSCREEN = False
         self.MODEL_LIST_MAX_SIZE = 20
 
-        self.FILTER_SEARCH_RESULT = True  # filter, from start
+        self.FILTER_SEARCH_RESULT = False  # filter, from start
         self.SEARCH_BY_PRICE_MODEL = True
         self.NARROW_SEARCH = True  # from n symbols
         self.LATIN_SEARCH = True
