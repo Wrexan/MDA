@@ -2,7 +2,7 @@ import sys
 import bs4
 import traceback
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, \
-    QHeaderView, qApp, QMessageBox, QListWidget, QSizePolicy, QLineEdit, QSpacerItem, QPushButton
+    QHeaderView, qApp, QMessageBox, QListWidget, QSizePolicy, QLineEdit, QSpacerItem, QPushButton, QLabel
 from PyQt5 import QtCore, QtGui
 from PyQt5.Qt import Qt
 
@@ -23,9 +23,13 @@ class App(QMainWindow):
     def __init__(self):
         super().__init__()
         qApp.focusChanged.connect(self.on_focusChanged)
-        # self.tab_font = QtGui.QFont()
-        # self.tab_font_bold = QtGui.QFont()
-        # self.tab_font_bold.setBold(True)
+        self.tab_font = QtGui.QFont()
+        self.tab_font_bold = QtGui.QFont()
+        self.tab_font_bold.setBold(True)
+
+        self.ui_font = QtGui.QFont()
+        self.ui_font_bold = QtGui.QFont()
+        self.ui_font_bold.setBold(True)
 
         self.models = {}
         self.model_buttons = {}
@@ -35,6 +39,7 @@ class App(QMainWindow):
         # self.ui = MainUI()
         self.ui.setupUi(self)
         self.model_list_widget = QListWidget()
+        self.dk9_request_label = QLabel()
 
         self.search_input = SearchInput(self)
         self.search_input.setParent(self.ui.frame_3)
@@ -120,6 +125,11 @@ class App(QMainWindow):
         self.ui.table_price.doubleClicked.connect(self.copy_price_table_item)
         self.ui.help.clicked.connect(self.open_help)
 
+        self.dk9_request_label.setParent(self.ui.tab_widget)
+        self.dk9_request_label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.dk9_request_label.setFixedWidth(80)
+        self.dk9_request_label.setAlignment(Qt.AlignRight)
+
         self.manufacturer_wheel = (self.ui.manufacturer_1,
                                    self.ui.manufacturer_2,
                                    self.ui.manufacturer_3,
@@ -140,20 +150,23 @@ class App(QMainWindow):
             self.showNormal()
 
     def init_ui_dynamics(self):
-        font = QtGui.QFont()
+        # font = QtGui.QFont()
         # font.setBold(True)
-        font.setPixelSize(C.TABLE_FONT_SIZE)
+        self.tab_font.setPixelSize(C.TABLE_FONT_SIZE)
+        self.tab_font_bold.setPixelSize(C.TABLE_FONT_SIZE)
+        self.ui_font.setPixelSize(C.SMALL_FONT_SIZE)
+        self.ui_font_bold.setPixelSize(C.SMALL_FONT_SIZE)
         self.ui.table_price.verticalHeader().setDefaultSectionSize(C.TABLE_FONT_SIZE + 4)
         self.ui.table_parts.verticalHeader().setDefaultSectionSize(C.TABLE_FONT_SIZE + 4)
         self.ui.table_accesory.verticalHeader().setDefaultSectionSize(C.TABLE_FONT_SIZE + 4)
-        self.ui.table_price.setFont(font)
-        self.ui.table_parts.setFont(font)
-        self.ui.table_accesory.setFont(font)
-        self.ui.pt_cash_name.setFont(font)
-        self.ui.pt_cash_descr.setFont(font)
-        self.ui.pt_cash_price.setFont(font)
+        self.ui.table_price.setFont(self.tab_font)
+        self.ui.table_parts.setFont(self.tab_font)
+        self.ui.table_accesory.setFont(self.tab_font)
+        self.ui.pt_cash_name.setFont(self.tab_font)
+        self.ui.pt_cash_descr.setFont(self.tab_font)
+        self.ui.pt_cash_price.setFont(self.tab_font)
 
-        self.model_list_widget.setFont(font)
+        self.model_list_widget.setFont(self.tab_font)
         self.fix_models_list_position()
 
         self.upd_dk9_tables_grid()
@@ -172,6 +185,10 @@ class App(QMainWindow):
         self.ui.chb_search_eng.setCheckState(2 if C.LATIN_SEARCH else 0)
         self.ui.chb_search_narrow.setCheckState(2 if C.NARROW_SEARCH else 0)
         self.freeze_ui_update = False
+
+        self.dk9_request_label.move(self.ui.table_parts.width() - 84, 3)
+        self.dk9_request_label.setFont(self.ui_font_bold)
+        # self.dk9_request_label.setText("Redmi AAAA")
 
     # =============================================================================================================
 
@@ -248,6 +265,8 @@ class App(QMainWindow):
             if self.models:
                 # print(f'prepare_and_search: {self.models.items()=}')
                 self.upd_manufacturer_wheel(hide_list=force_search)
+            else:
+                self.upd_manufacturer_wheel(clear=True)
         else:
             self.upd_manufacturer_wheel(clear=True)
 
@@ -435,6 +454,7 @@ class App(QMainWindow):
         if self.search_again:
             print(f'SEARCH AGAIN: {self.curr_model}')
             self.search_again = False
+        self.dk9_request_label.setText(self.curr_model)
         self.worker = Worker(DK9.adv_search,
                              self.curr_type,
                              manufacturer,
@@ -580,7 +600,7 @@ class App(QMainWindow):
                     table.item(t_row_num, c).setBackground(QtGui.QColor(bgd[0], bgd[1], bgd[2]))
                 # print(f' colour: {p_row_num=}  {columns[j]=}  {txt=}  {bgd=}')
             if bold:
-                table.item(t_row_num, c).setFont(bold_font)
+                table.item(t_row_num, c).setFont(self.tab_font_bold if bold else self.tab_font)
 
     def load_progress(self, progress):
         self.ui.web_load_progress_bar.setValue(progress)
@@ -786,7 +806,6 @@ class SearchInput(QLineEdit):
             if self.app.model_list_widget.isHidden():
                 self.app.upd_models_list()
                 return
-            self.app.scheduler(self.app.model_list_widget.currentItem())
 
     def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
         super(SearchInput, self).keyPressEvent(event)

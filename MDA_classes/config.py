@@ -34,6 +34,7 @@ class Config:
         self.DK9_COLORED = True  # work slower if True
         self.DK9_COL_DIFF = 14  # difference of odd/even bg
         self.TABLE_FONT_SIZE = 12
+        self.SMALL_FONT_SIZE = 12
 
         # ====================PRICE====================
         self.PRICE_PATH = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop\\')
