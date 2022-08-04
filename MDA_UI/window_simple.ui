@@ -33,7 +33,7 @@
     <widget class="QPlainTextEdit" name="text">
      <property name="font">
       <font>
-       <family>Courier New</family>
+       <family>Consolas</family>
        <pointsize>12</pointsize>
       </font>
      </property>
@@ -41,10 +41,7 @@
       <bool>true</bool>
      </property>
      <property name="plainText">
-      <string>fffff
-FFFFF
-.....
-_____</string>
+      <string/>
      </property>
     </widget>
    </item>
@@ -96,7 +93,7 @@ _____</string>
          </size>
         </property>
         <property name="text">
-         <string>Автор: Гостев В.   Помощь в тестировании: Дяченко А., Довгопятый Т.</string>
+         <string>Автор: Гостев В.   Помощь в тестировании: Дяченко А., Довгопятый Т., Кондратченко К.</string>
         </property>
        </widget>
       </item>

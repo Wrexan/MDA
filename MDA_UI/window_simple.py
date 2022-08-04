@@ -21,7 +21,7 @@ class Ui_Dialog(object):
         self.verticalLayout.setObjectName("verticalLayout")
         self.text = QtWidgets.QPlainTextEdit(Dialog)
         font = QtGui.QFont()
-        font.setFamily("Courier New")
+        font.setFamily("Consolas")
         font.setPointSize(12)
         self.text.setFont(font)
         self.text.setReadOnly(True)

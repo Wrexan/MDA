@@ -2,14 +2,15 @@ import sys
 import bs4
 import traceback
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, \
-    QHeaderView, qApp, QMessageBox, QListWidget, QSizePolicy, QLineEdit, QSpacerItem, QPushButton, QLabel
+    QHeaderView, qApp, QMessageBox, QListWidget, QSizePolicy, QLineEdit, QSpacerItem, QPushButton, QLabel,\
+    QStyle, QStyleFactory
 from PyQt5 import QtCore, QtGui
 from PyQt5.Qt import Qt
 
 from MDA_classes.config import Config
 from MDA_classes.dk9 import DK9Parser
 from MDA_classes.price import Price
-from MDA_classes.modal_windows import ConfigWindow, HelpWindow
+from MDA_classes.modal_windows import ConfigWindow, HelpWindow, AdvancedSearchWindow
 from MDA_classes.thread_worker import Worker
 from MDA_UI.window_main import Ui_MainWindow
 
@@ -76,12 +77,8 @@ class App(QMainWindow):
 
     def init_ui_statics(self):
 
-        # self.resized.connect(self.fix_models_list_position)
         self.resized.connect(self.init_ui_dynamics)
-        # self.ui.input_search.textChanged[str].connect(self.prepare_and_search)
-        # self.ui.input_search.cursorPositionChanged.connect(self.upd_models_list)
         self.search_input.textChanged[str].connect(self.prepare_and_search)
-        # self.search_input.cursorPositionChanged.connect(self.upd_models_list)
 
         self.ui.pb_adv_search.setToolTip(
             'Необходимо для поиска в веб базе в конкретных полях. Актуальность под вопросом')
@@ -111,6 +108,7 @@ class App(QMainWindow):
             'Вкл - поиск начинается с 2х символов\n'
             'Откл - позволяет найти отдельный символ (например украинскую С или Е)')
 
+        self.ui.pb_adv_search.clicked.connect(self.open_adv_search)
         self.ui.settings_button.clicked.connect(self.open_settings)
 
         self.ui.table_price.setHorizontalHeaderLabels(('Виды работ', 'Цена', 'Прим'))
@@ -152,6 +150,8 @@ class App(QMainWindow):
     def init_ui_dynamics(self):
         # font = QtGui.QFont()
         # font.setBold(True)
+        # print(QStyleFactory.keys())
+        # set_application_style('Fusion')
         self.tab_font.setPixelSize(C.TABLE_FONT_SIZE)
         self.tab_font_bold.setPixelSize(C.TABLE_FONT_SIZE)
         self.ui_font.setPixelSize(C.SMALL_FONT_SIZE)
@@ -173,8 +173,6 @@ class App(QMainWindow):
 
         table_width = self.ui.table_price.width()
         table_width_n_percent = int(table_width / 3.5 + (table_width - 640) / 4)
-        # table_width_n_percent = int(table_width/(3.5 * table_width/640))
-        # self.ui.table_price.horizontalHeader().secsetMaximumSectionSize(table_width_10_percent)
         self.ui.table_price.horizontalHeader().setDefaultSectionSize(table_width_n_percent)
         self.ui.table_price.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         self.ui.table_price.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
@@ -322,7 +320,7 @@ class App(QMainWindow):
                     self.upd_models_list(hide_list=hide_list)
 
     def upd_models_list(self, clear: bool = False, hide_list: bool = False):
-        if clear or not self.models:
+        if clear or not self.models or not self.curr_manufacturer:
             self.curr_manufacturer_idx = 0
             self.model_list_widget.clear()
             self.model_list_widget.hide()
@@ -447,19 +445,26 @@ class App(QMainWindow):
         # print(f'SEARCH BY BUTTON: {self.curr_model}')
         self.search_dk9()
 
-    def search_dk9(self):
-        if not DK9.LOGIN_SUCCESS or self.web_status != 2:
-            return
-        manufacturer = '' if not C.SEARCH_BY_PRICE_MODEL else self.curr_manufacturer
-        if self.search_again:
-            print(f'SEARCH AGAIN: {self.curr_model}')
-            self.search_again = False
-        self.dk9_request_label.setText(self.curr_model)
-        self.worker = Worker(DK9.adv_search,
-                             self.curr_type,
-                             manufacturer,
-                             self.curr_model,
-                             self.curr_description)
+    def search_dk9(self, advanced: dict = None):
+        if advanced:
+            self.worker = Worker(DK9.adv_search,
+                                 advanced['_type'],
+                                 advanced['_manufacturer'],
+                                 advanced['_model'],
+                                 advanced['_description'])
+        else:
+            if not DK9.LOGIN_SUCCESS or self.web_status != 2:
+                return
+            manufacturer = '' if not C.SEARCH_BY_PRICE_MODEL else self.curr_manufacturer
+            if self.search_again:
+                print(f'SEARCH AGAIN: {self.curr_model}')
+                self.search_again = False
+            self.dk9_request_label.setText(self.curr_model)
+            self.worker = Worker(DK9.adv_search,
+                                 self.curr_type,
+                                 manufacturer,
+                                 self.curr_model,
+                                 self.curr_description)
         self.worker.signals.result.connect(self.update_dk9_data)
         self.worker.signals.progress.connect(self.load_progress)
         self.worker.signals.finished.connect(self.finished)
@@ -578,10 +583,10 @@ class App(QMainWindow):
     def _add_price_table_row(self, table, sheet, columns, cells_texts: list, t_row_num: int, p_row_num: int,
                              align: dict = None, colored: bool = False, bold: bool = False):
         table.insertRow(t_row_num)
-        bold_font = None
-        if bold:
-            bold_font = QtGui.QFont()
-            bold_font.setBold(True)
+        # bold_font = None
+        # if bold:
+        #     bold_font = QtGui.QFont()
+        #     bold_font.setBold(True)
         for c, txt in enumerate(cells_texts):
             if not isinstance(txt, str):
                 if isinstance(txt, float):
@@ -746,6 +751,12 @@ class App(QMainWindow):
         if event.angleDelta().y() > 0:
             self.upd_manufacturer_wheel(increment=-1)
 
+    def open_adv_search(self):
+        settings_ui = AdvancedSearchWindow(self)
+        settings_ui.setWindowIcon(QtGui.QIcon(C.LOGO))
+        settings_ui.exec_()
+        settings_ui.show()
+
     def open_settings(self):
         settings_ui = ConfigWindow(C, self, DK9)
         settings_ui.setWindowIcon(QtGui.QIcon(C.LOGO))
@@ -786,9 +797,9 @@ class SearchInput(QLineEdit):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.sizePolicy().hasHeightForWidth())
         self.setSizePolicy(sizePolicy)
-        self.setMinimumSize(QtCore.QSize(520, 30))
-        self.setMaximumSize(QtCore.QSize(520, 30))
-        self.setBaseSize(QtCore.QSize(520, 30))
+        self.setMinimumSize(QtCore.QSize(540, 30))
+        self.setMaximumSize(QtCore.QSize(540, 30))
+        self.setBaseSize(QtCore.QSize(540, 30))
 
         font = QtGui.QFont()
         font.setFamily("MS Shell Dlg 2")
@@ -839,6 +850,10 @@ class SearchInput(QLineEdit):
 
         if event.key() == Qt.Key_Left:
             self.app.upd_manufacturer_wheel(increment=-1)
+
+
+# def set_application_style(style):
+#     app.setStyle(style)
 
 
 if __name__ == "__main__":

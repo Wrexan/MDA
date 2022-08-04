@@ -2,6 +2,7 @@ from PyQt5 import QtCore, QtWidgets
 
 from MDA_UI.window_settings import Ui_settings_window
 from MDA_UI.window_simple import Ui_Dialog
+from MDA_UI.adv_search import Ui_Dialog as AdvSearchDialog
 
 
 class HelpWindow(QtWidgets.QDialog):
@@ -80,3 +81,24 @@ class ConfigWindow(QtWidgets.QDialog):
             self.DK9.change_data(self.C.c_data())
             print(f'{self.DK9.CDATA=}')
             self.Parent.login_dk9()
+
+
+class AdvancedSearchWindow(QtWidgets.QDialog):
+    def __init__(self, Parent):
+        super().__init__(None,
+                         # QtCore.Qt.WindowSystemMenuHint |
+                         # QtCore.Qt.WindowTitleHint |
+                         QtCore.Qt.WindowCloseButtonHint
+                         )
+        self.Parent = Parent
+        self.ui = AdvSearchDialog()
+        self.ui.setupUi(self)
+        self.ui.buttonBox.accepted.connect(self.apply_search)
+
+    def apply_search(self):
+        print('Applying advanced search')
+        search = {'_type': self.ui.inp_name.text(),
+                  '_manufacturer': self.ui.inp_manuf.text(),
+                  '_model': self.ui.inp_model.text(),
+                  '_description': self.ui.inp_descr.text()}
+        self.Parent.search_dk9(advanced=search)
