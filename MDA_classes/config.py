@@ -82,7 +82,7 @@ class Config:
         #                              'Redmi 8', 'Redmi 8a', 'Redmi Note 4', 'Redmi Note 5', 'Redmi Note 6',
         #                              'Redmi Note 6 Pro', 'Redmi Note 7', 'Redmi Note 8',
         #                              'Redmi note 9', 'Redmi Note 6')
-        self.NOT_FULL_MODEL_NAMES = ('ipad', 'iphone')  # ------------------------------------
+        # self.NOT_FULL_MODEL_NAMES = ('ipad', 'iphone')  # ------------------------------------
         self.MODEL_NAME_BLACKLIST = ('телефон', 'планшет')
         self.MANUFACTURER_BLACKLIST = ('Alcatel', 'BlackBerry', 'Fly', 'HTC')
         self.PRICE_PARTIAL_NAME = ('Прайс', '.xls')
@@ -103,6 +103,8 @@ class Config:
                               'Goldenrod': (218, 165, 32),
                               'Red': (255, 80, 80),
                               }
+
+        self.DK9_TABLE_NAMES = (' ЗАПЧАСТИ - ', ' АКСЕССУАРЫ - ')
 
         self.DK9_LOGIN, self.LOGIN = '', ''
         self.DK9_PASSWORD, self.PASSWORD = '', ''

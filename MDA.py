@@ -2,7 +2,7 @@ import sys
 import bs4
 import traceback
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, \
-    QHeaderView, qApp, QMessageBox, QListWidget, QSizePolicy, QLineEdit, QSpacerItem, QPushButton, QLabel,\
+    QHeaderView, qApp, QMessageBox, QListWidget, QSizePolicy, QLineEdit, QSpacerItem, QPushButton, QLabel, \
     QStyle, QStyleFactory
 from PyQt5 import QtCore, QtGui
 from PyQt5.Qt import Qt
@@ -70,6 +70,10 @@ class App(QMainWindow):
         self.soup = None
         self.web_status = 0
         self.price_status = 0
+
+        # self.themes = ('windowsvista', 'Fusion', 'Windows')
+        self.themes = (*QStyleFactory.keys(),)
+        self.current_theme = 0
         # self.login_dk9()
         self.update_web_status(0)
         # self.update_price_status()
@@ -81,7 +85,7 @@ class App(QMainWindow):
         self.search_input.textChanged[str].connect(self.prepare_and_search)
 
         self.ui.pb_adv_search.setToolTip(
-            'Необходимо для поиска в веб базе в конкретных полях. Актуальность под вопросом')
+            'Необходимо для поиска в веб базе в конкретных полях')
 
         self.ui.chb_show_exact.stateChanged.connect(self.upd_dk9_on_rule_change)
         self.ui.chb_show_exact.setToolTip(
@@ -101,7 +105,7 @@ class App(QMainWindow):
 
         self.ui.chb_search_eng.stateChanged.connect(self.start_search_on_rule_change)
         self.ui.chb_search_eng.setToolTip(
-            'Вкл - переводит символы алфавита в латиницу нижнего регистра.')
+            'Вкл - переводит символы алфавита в латиницу нижнего регистра')
 
         self.ui.chb_search_narrow.stateChanged.connect(self.start_search_on_rule_change)
         self.ui.chb_search_narrow.setToolTip(
@@ -141,6 +145,14 @@ class App(QMainWindow):
         self.model_list_widget.itemClicked.connect(self.scheduler)
         self.model_list_widget.hide()
 
+        self.model_list_widget.setStyleSheet(
+            "QListView::item:hover"
+            "{"
+            "background: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 0, stop: 0 lightgreen, stop: 1 #DCF1DE);"
+            # "border: 1px solid #6a6ea9;"
+            # "background-color : lightgreen;"
+            "}")
+
     def apply_window_size(self):
         if C.FULLSCREEN:
             self.showMaximized()
@@ -148,10 +160,6 @@ class App(QMainWindow):
             self.showNormal()
 
     def init_ui_dynamics(self):
-        # font = QtGui.QFont()
-        # font.setBold(True)
-        # print(QStyleFactory.keys())
-        # set_application_style('Fusion')
         self.tab_font.setPixelSize(C.TABLE_FONT_SIZE)
         self.tab_font_bold.setPixelSize(C.TABLE_FONT_SIZE)
         self.ui_font.setPixelSize(C.SMALL_FONT_SIZE)
@@ -165,6 +173,10 @@ class App(QMainWindow):
         self.ui.pt_cash_name.setFont(self.tab_font)
         self.ui.pt_cash_descr.setFont(self.tab_font)
         self.ui.pt_cash_price.setFont(self.tab_font)
+        self._update_dk9_tooltip(tab_widget=self.ui.tab_widget,
+                                 num=0, tab_names=C.DK9_TABLE_NAMES, count_1=0, count_2=0)
+        self._update_dk9_tooltip(tab_widget=self.ui.tab_widget,
+                                 num=1, tab_names=C.DK9_TABLE_NAMES, count_1=0, count_2=0)
 
         self.model_list_widget.setFont(self.tab_font)
         self.fix_models_list_position()
@@ -386,7 +398,7 @@ class App(QMainWindow):
                 # print(f'{text_lower[:remark_start]=}  {text_lower[ + remark_end:]=}')
                 # print(f'{remark_start=}  {remark_end=}')
                 text_lower = f'{text_lower[:remark_start]}' \
-                                 f'{text_lower[remark_start + remark_end + 1:]}'
+                             f'{text_lower[remark_start + remark_end + 1:]}'
             else:
                 break
         # print(f'CUT: {text_lower=}')
@@ -497,10 +509,12 @@ class App(QMainWindow):
 
         if self.web_status == 2:
             self.load_progress(70)
-            self.fill_table_from_soup(self.soup[0], self.ui.table_parts, C.DK9_BG_P_COLOR1, C.DK9_BG_P_COLOR2,
+            self.fill_table_from_soup(self.soup, self.ui.table_parts, 0,
+                                      C.DK9_TABLE_NAMES, C.DK9_BG_P_COLOR1, C.DK9_BG_P_COLOR2, 5,
                                       align={4: Qt.AlignRight})
             self.load_progress(85)
-            self.fill_table_from_soup(self.soup[1], self.ui.table_accesory, C.DK9_BG_A_COLOR1, C.DK9_BG_A_COLOR2,
+            self.fill_table_from_soup(self.soup, self.ui.table_accesory, 1,
+                                      C.DK9_TABLE_NAMES, C.DK9_BG_A_COLOR1, C.DK9_BG_A_COLOR2, 5,
                                       align={4: Qt.AlignRight})
         else:
             self.login_dk9()
@@ -616,13 +630,19 @@ class App(QMainWindow):
         else:
             self.ui.web_load_progress_bar.setValue(0)
 
-    def fill_table_from_soup(self, soup, table, def_bg_color1, def_bg_color2, align: dict = None):
+    def fill_table_from_soup(self, soup, table, num: int, tab_names: tuple,
+                             def_bg_color1: tuple, def_bg_color2: tuple,
+                             count_column: int = None, align: dict = None):
         try:
+            item_counter = 0
             r = 0
             table.setRowCount(0)
-            if not soup:
+            if not soup[num]:
+                if count_column is not None:
+                    self._update_dk9_tooltip(tab_widget=self.ui.tab_widget,
+                                             num=num, tab_names=tab_names, count_1=0, count_2=0)
                 return
-            for dk9_row in soup.tr.next_siblings:
+            for dk9_row in soup[num].tr.next_siblings:
                 row_palette = None
                 if repr(dk9_row)[0] != "'":
                     # print(dk9_row)
@@ -651,6 +671,10 @@ class App(QMainWindow):
                                     or (model_idx_in_desc + curr_model_len < description_cell_len - 1
                                         and (description_cell[model_idx_in_desc + curr_model_len] not in '/,.')):
                                 continue
+                    amt = row[count_column].string
+                    if count_column is not None and amt.isdigit():
+                        item_counter += int(amt)
+
                     table.insertRow(r)
                     for dk9_td in row:
                         # print(f'{dk9_td.string} {self.curr_model=}')
@@ -672,10 +696,18 @@ class App(QMainWindow):
                                 table.item(r, c).setBackground(QtGui.QColor(dbgc[0], dbgc[1], dbgc[2]))
                         c += 1
                 r += 1
+            if count_column is not None:
+                self._update_dk9_tooltip(tab_widget=self.ui.tab_widget,
+                                         num=num, tab_names=tab_names, count_1=r - 1, count_2=item_counter)
         except Exception as _err:
             self.error((f'Error updating table:\n'
                         f'{table}',
                         f'{traceback.format_exc()}'))
+
+    @staticmethod
+    def _update_dk9_tooltip(tab_widget, num: int, tab_names: tuple, count_1: int, count_2: int):
+        tab_widget.setTabText(num, f'{tab_names[num]}{count_1} / {count_2} ')
+        tab_widget.setTabToolTip(num, f'{count_1} позиций/ {count_2} штук')
 
     def copy_web_table_items(self):
         font = QtGui.QFont()
@@ -739,6 +771,13 @@ class App(QMainWindow):
         if event.key() == Qt.Key_Escape:
             # print(f'TAB {self.ui.tab_widget.currentIndex()=}')
             self.model_list_widget.hide()
+
+        if event.key() == Qt.Key_F2:
+            if self.current_theme < len(self.themes) - 1:
+                self.current_theme += 1
+            else:
+                self.current_theme = 0
+            set_application_style(self.themes[self.current_theme])
 
         self.search_input.setFocus()
         self.search_input.selectAll()
@@ -852,8 +891,8 @@ class SearchInput(QLineEdit):
             self.app.upd_manufacturer_wheel(increment=-1)
 
 
-# def set_application_style(style):
-#     app.setStyle(style)
+def set_application_style(style):
+    app.setStyle(style)
 
 
 if __name__ == "__main__":
