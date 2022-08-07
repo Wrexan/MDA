@@ -718,7 +718,8 @@ class App(QMainWindow):
 
     @staticmethod
     def _update_dk9_tooltip(tab_widget, num: int, tab_names: tuple, count_1: int, count_2: int):
-        tab_widget.setTabText(num, f'{tab_names[num]}{count_1} / {count_2} ')
+        # tab_widget.setTabText(num, f'{tab_names[num]}{count_1} / {count_2} ')
+        tab_widget.setTabText(num, f'{tab_names[num]} {count_2} шт')
         tab_widget.setTabToolTip(num, f'{count_1} позиций/ {count_2} штук')
 
     def copy_web_table_items(self):
