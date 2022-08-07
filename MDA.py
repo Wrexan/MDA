@@ -146,10 +146,22 @@ class App(QMainWindow):
         self.model_list_widget.hide()
 
         self.model_list_widget.setStyleSheet(
+            "QListView::item"
+            "{"
+            # "background: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 0, stop: 0 lightgreen, stop: 1 #DCF1DE);"
+            "border: 1px solid #ffffff;"
+            # "background-color : lightgreen;"
+            "}"
             "QListView::item:hover"
             "{"
             "background: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 0, stop: 0 lightgreen, stop: 1 #DCF1DE);"
             # "border: 1px solid #6a6ea9;"
+            # "background-color : lightgreen;"
+            "}"
+            "QListView::item:selected"
+            "{"
+            "background: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 0, stop: 0 #b5BfF3, stop: 1 #E5E8F9);"
+            "border: 1px solid #6a6ea9;"
             # "background-color : lightgreen;"
             "}")
 
