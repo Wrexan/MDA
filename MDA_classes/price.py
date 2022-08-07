@@ -142,7 +142,7 @@ class Price:
                             # le = len(models)
                             # print(f'{len(models)=} {models=} {name_cell=} {sheet=} {row_num=}')
                             if ok:
-                                if len(models[manufacturer]) < MODEL_LIST_SIZE:
+                                if len(models[manufacturer]) < MODEL_LIST_SIZE and name_cell:
                                     models[manufacturer][name_cell] = [sheet, row_num, compat_model_name]
                                 # if len(models[manufacturer]) >= MODEL_LIST_SIZE:
                                 #     return models
@@ -151,7 +151,7 @@ class Price:
                             else:
                                 a += found_pos + search_req_len
                         else:
-                            if len(models[manufacturer]) < MODEL_LIST_SIZE:
+                            if len(models[manufacturer]) < MODEL_LIST_SIZE and name_cell:
                                 models[manufacturer][name_cell] = [sheet, row_num, compat_model_name]
                             # if len(models[manufacturer]) >= MODEL_LIST_SIZE:
                             #     # print(f'{models=}')
