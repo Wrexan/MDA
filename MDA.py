@@ -345,7 +345,7 @@ class App(QMainWindow):
 
     def upd_models_list(self, clear: bool = False, hide_list: bool = False):
         if clear or not self.models or not self.curr_manufacturer:
-            self.curr_manufacturer_idx = 0
+            # self.curr_manufacturer_idx = 0
             self.model_list_widget.clear()
             self.model_list_widget.hide()
             return
