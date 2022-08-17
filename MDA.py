@@ -553,7 +553,9 @@ class App(QMainWindow):
 
                 row = Price.get_row_in_pos(position)
                 row_len = len(row)
-                cells_texts = [row[0], row[columns[1]], row[columns[2]]]
+                cells_texts = [row[0],
+                               row[columns[1]] if columns[1] < row_len else '',
+                               row[columns[2]] if columns[2] < row_len else '']
                 new_row_num = 0
                 # print(f'{row=}')
 
@@ -623,7 +625,10 @@ class App(QMainWindow):
             table.item(t_row_num, c).setToolTip(txt)
             if align and c in align:
                 table.item(t_row_num, c).setTextAlignment(align[c])
-            if colored:
+            if colored and columns[c] < sheet.row_len(p_row_num):  # c < len(columns):
+                # print(f' colour: {p_row_num=}  {columns=}  {txt=}\n'
+                #       f'{sheet.cell(p_row_num, columns[c]).xf_index=}\n'
+                #       f'{len(self.Price.DB.xf_list)=}\n')
                 bgd = self.Price.DB.colour_map. \
                     get(self.Price.DB.xf_list[sheet.cell(p_row_num, columns[c]).xf_index].
                         background.pattern_colour_index)
@@ -742,9 +747,10 @@ class App(QMainWindow):
 
     def cash_table_element(self):
         selected_row = self.sender().selectedItems()
-        self.ui.pt_cash_name.setPlainText(selected_row[0].text())
-        self.ui.pt_cash_descr.setPlainText(selected_row[2].text())
-        self.ui.pt_cash_price.setPlainText(selected_row[1].text())
+        selected_row_len = len(selected_row)
+        self.ui.pt_cash_name.setPlainText(selected_row[0].text() if selected_row_len > 0 else '')
+        self.ui.pt_cash_price.setPlainText(selected_row[1].text() if selected_row_len > 1 else '')
+        self.ui.pt_cash_descr.setPlainText(selected_row[2].text() if selected_row_len > 2 else '')
         # clipboard.setText(text)
 
     @staticmethod

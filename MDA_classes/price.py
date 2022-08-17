@@ -93,8 +93,9 @@ class Price:
                 # print(f'{compat_model_column=}')
 
                 for row_num in range(sheet.nrows):  # Rows cycle
-                    cell_value = sheet.row_values(row_num, 0, 7)
-                    if not cell_value or not cell_value[0] or (cell_value[0] in self.C.PRICE_TRASH_IN_CELLS):
+                    row_values = sheet.row_values(row_num, 0, 7)
+                    row_values_len = len(row_values)
+                    if not row_values or not row_values[0] or (row_values[0] in self.C.PRICE_TRASH_IN_CELLS):
                         continue
                     # print(f'{sheet.row_values(row_num, 0, 7)=}')
                     # if SMART_SEARCH and (not cell_value or not cell_value[0] or len(cell_value) < 2
@@ -102,7 +103,7 @@ class Price:
                     #     continue
                     # print(f'{cell_value[0]}')
                     # print(f'{cell_value=}')
-                    name_cell = str(cell_value[0]).strip().lower()
+                    name_cell = str(row_values[0]).strip().lower()
                     # print(f'{name_cell=}')
                     a, b, = 0, len(name_cell)
                     while a < b:
@@ -113,8 +114,8 @@ class Price:
                         if manufacturer not in models:
                             models[manufacturer] = {}
                         # Getting main model to redirect, if present
-                        if isinstance(cell_value[compat_model_column], str):
-                            compat_model_name: str = cell_value[compat_model_column].strip().lower()
+                        if compat_model_column < row_values_len and isinstance(row_values[compat_model_column], str):
+                            compat_model_name: str = row_values[compat_model_column].strip().lower()
                             # ru ru, en ru, ru en, en en  -  separating trash
                             if compat_model_name.startswith('см', 0, 2) \
                                     or compat_model_name.startswith('cм', 0, 2) \
@@ -129,17 +130,6 @@ class Price:
                             ok = False
                             if found_pos == 0 or name_cell[found_pos - 1] in "/\\ ":
                                 ok = True
-                            # elif (found_pos + search_req_len == b
-                            #       or name_cell[found_pos + search_req_len] in '/\\ '
-                            #       or search_req[-1] == ' ') \
-                            #         and (search_req_len < 6 and found_pos > 0 and name_cell[found_pos - 1] not in '/\\ '):
-                            #     ok = True
-                            # if (search_req_len > 2  # and (found_pos == 0 or name_cell[found_pos - 1] in "/\\ ")
-                            #         or (search_req_len < 3 and (found_pos == 0 or name_cell[found_pos - 1] in "/\\ ")
-                            #             and (found_pos + search_req_len == b or
-                            #                  name_cell[found_pos + search_req_len] in '/\\ ' or
-                            #                  search_req[-1] == ' '))):
-                            # le = len(models)
                             # print(f'{len(models)=} {models=} {name_cell=} {sheet=} {row_num=}')
                             if ok:
                                 if len(models[manufacturer]) < MODEL_LIST_SIZE and name_cell:
@@ -157,11 +147,15 @@ class Price:
                             #     # print(f'{models=}')
                             #     return models
                             break
+                # if manufacturer in models and models[manufacturer] == {}:
+                #     del models[manufacturer]
             return models
         except Exception as err:
-            print(f'Error while searching:\n{search_req}',
-                  f'Found cells:\n{models}\n'
-                  f'Message:\n{err}')
+            print(f'Error while searching:  {search_req}\n',
+                  f'Found cells:  {models}\n'
+                  f'Message:  {err}\n'
+                  f'VARS:  {manufacturer=} {name_cell=} {row_num=} {row_values=} {models[manufacturer]=}\n'
+                  f'{traceback.format_exc()}')
             # M.warning(f'Error while searching:\n{search_req}',
             #           f'Found cells:\n{models}\n'
             #           f'Message:\n{err}')
