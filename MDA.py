@@ -24,8 +24,17 @@ class App(QMainWindow):
         super().__init__()
         qApp.focusChanged.connect(self.on_focusChanged)
         self.tab_font = QtGui.QFont()
+
         self.tab_font_bold = QtGui.QFont()
+        # self.tab_font_bold.setWeight(196)
         self.tab_font_bold.setBold(True)
+
+        self.tab_font_under = QtGui.QFont()
+        self.tab_font_under.setUnderline(True)
+
+        self.tab_font_bold_under = QtGui.QFont()
+        self.tab_font_bold_under.setBold(True)
+        self.tab_font_bold_under.setUnderline(True)
 
         self.ui_font = QtGui.QFont()
         self.ui_font_bold = QtGui.QFont()
@@ -210,6 +219,8 @@ class App(QMainWindow):
     def init_ui_dynamics(self):
         self.tab_font.setPixelSize(C.TABLE_FONT_SIZE)
         self.tab_font_bold.setPixelSize(C.TABLE_FONT_SIZE)
+        self.tab_font_under.setPixelSize(C.TABLE_FONT_SIZE)
+        self.tab_font_bold_under.setPixelSize(C.TABLE_FONT_SIZE)
         self.ui_font.setPixelSize(C.SMALL_FONT_SIZE)
         self.ui_font_bold.setPixelSize(C.SMALL_FONT_SIZE)
         self.ui.table_price.verticalHeader().setDefaultSectionSize(C.TABLE_FONT_SIZE + 4)
@@ -786,6 +797,8 @@ class App(QMainWindow):
                         table.item(r, c).setToolTip(dk9_td.string)
                         if align and c in align:
                             table.item(r, c).setTextAlignment(align[c])
+                        if 'ориг' in table.item(r, c).text():
+                            table.item(r, c).setFont(self.tab_font_bold)
                         if C.DK9_COLORED:
                             if row_palette:
                                 table.item(r, c). \
@@ -815,14 +828,15 @@ class App(QMainWindow):
         tab_widget.setTabToolTip(num, f'{count_1} позиций/ {count_2} штук')
 
     def copy_web_table_items(self):
-        font = QtGui.QFont()
-        font.setUnderline(True)
         selected_row = self.sender().selectedItems()
         text = ''
         for i in range(4):
             text = f'{text} {selected_row[i].text()} '
             # selected_row[i].setSelected(False)
-            selected_row[i].setFont(font)
+            if 'ориг' in selected_row[i].text():
+                selected_row[i].setFont(self.tab_font_bold_under)
+            else:
+                selected_row[i].setFont(self.tab_font_under)
         clipboard.setText(text)
 
     def copy_price_table_item(self):
