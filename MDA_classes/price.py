@@ -74,7 +74,7 @@ class Price:
         return position[0].row_values(position[1], 0, 7)  # position[1], 0, 9
         # ['Xiaomi Mi A2 M1804D2SG ', '', '', 0.0, '', '', '', '', '']
 
-    def search_price_models(self, search_req: str, MODEL_LIST_SIZE: int):
+    def search_price_models(self, search_req: str, MODEL_LIST_SIZE: int, exact: bool = False):
         search_req_len = len(search_req)
         models = {}  # {manufacturer: {model: [sheet, ruw_num],...}...}
         # print(f'{search_req=} {MODEL_LIST_SIZE=}')
@@ -108,9 +108,14 @@ class Price:
                     a, b, = 0, len(name_cell)
                     while a < b:
                         found_pos = name_cell.find(search_req, a, b)
-                        # print(f'{a=} {b=} {found_pos=} {name_cell=}')
                         if found_pos == -1:
                             break
+                        # print(f'{a=} {b=} {found_pos=} {name_cell=} {manufacturer=}')
+                        if exact \
+                                and (found_pos > 1
+                                     and (manufacturer in name_cell and found_pos > len(manufacturer) + 2)):
+                            break
+                        # print(f'GOOD {name_cell=}')
                         if manufacturer not in models:
                             models[manufacturer] = {}
                         # Getting main model to redirect, if present

@@ -443,7 +443,7 @@ class App(QMainWindow):
             self.curr_model = self.search_req_ruled
         self.upd_models_list(clear=True)
         self.upd_model_buttons(models_for_buttons)
-        self.update_price_table(text_lower_orig)
+        self.update_price_table(text_lower_orig, recursive_model)
 
     def update_web_status(self, status: int):
         if status in C.WEB_STATUSES:
@@ -535,13 +535,65 @@ class App(QMainWindow):
     def dummy(self):
         pass
 
-    def update_price_table(self, model):  # 'xiaomi mi a2 m1804d2sg'
+    def update_price_table(self, model, recursive_model: str = ''):  # 'xiaomi mi a2 m1804d2sg'
         try:
             # print(f'{model=}\n{self.models=}\n{self.curr_model_idx=}\n'
             #       f'{self.curr_manufacturer=}\n{self.curr_manufacturer_idx=}')
-            if model in self.models[self.curr_manufacturer]:
+            self.ui.table_price.setRowCount(0)
+
+            _models_of_manufacturer: dict = {}
+            _model: str = ''
+
+            if recursive_model:
+                if self.price_status >= len(C.PRICE_STATUSES):
+                    _rec_model_dict = self.Price.search_price_models(recursive_model, 5, True)
+                    # print(f'{model=}  {_rec_model_dict=}')
+                    if _rec_model_dict:
+                        _models_of_manufacturer_all_compatible = list(_rec_model_dict.values())[0]
+                        if len(_models_of_manufacturer_all_compatible) > 1:
+                            recursive_model_len = len(recursive_model)
+                            closest_delta_len = 10
+                            for _m in _models_of_manufacturer_all_compatible.items():
+
+                                _main_model = _m[0].split(',')[0].strip()
+                                if recursive_model not in _main_model:
+                                    continue
+
+                                _manufacturer_lower = self.curr_manufacturer.lower()
+                                if _manufacturer_lower in _main_model:
+                                    _m_manuf_cut = _main_model.replace(_manufacturer_lower, '')
+                                    this_delta_len = abs(recursive_model_len - len(_m_manuf_cut.strip()))
+                                    # print(f'WEEEE {_m_manuf_cut=}  {this_delta_len=}')
+                                else:
+                                    this_delta_len = abs(recursive_model_len - len(_main_model))
+                                if this_delta_len < closest_delta_len:
+                                    closest_delta_len = this_delta_len
+                                    _models_of_manufacturer[_m[0]] = _m[1]
+                                    _model = _m[0]
+                                    # print(f'WAAAA {_model=}  {_models_of_manufacturer=}  {self.curr_manufacturer=}')
+
+                            if not _models_of_manufacturer:
+                                _models_of_manufacturer = list(_rec_model_dict.values())[0]
+                                _model = next(iter(_models_of_manufacturer.keys()))
+                        else:
+                            _models_of_manufacturer = list(_rec_model_dict.values())[0]
+                            _model = next(iter(_models_of_manufacturer.keys()))
+                    else:
+                        self.ui.table_price.insertRow(0)
+                        self.ui.table_price.setItem(0, 0, QTableWidgetItem(
+                            f'Модель {recursive_model} не найдена в прайсе'))
+                        self.ui.table_price.item(0, 0).setFont(self.tab_font_bold)
+                        return
+            else:
+                _models_of_manufacturer = self.models[self.curr_manufacturer]
+                _model = model
+
+            print(f'{_models_of_manufacturer=}')
+            print(f'{_model=}')
+
+            if _model in _models_of_manufacturer:
                 # print(f'FOUND')
-                position = self.models[self.curr_manufacturer][model]  # [Sheet 27:<XIAOMI>, 813] - sheet, row
+                position = _models_of_manufacturer[_model]  # [Sheet 27:<XIAOMI>, 813] - sheet, row
                 # print(f'{position=}')
 
                 # Take needed columns for exact model
@@ -558,8 +610,6 @@ class App(QMainWindow):
                                row[columns[2]] if columns[2] < row_len else '']
                 new_row_num = 0
                 # print(f'{row=}')
-
-                self.ui.table_price.setRowCount(0)
 
                 if True:  # if model row must be shown in price table
                     # print(f'{row=} {columns=} {cells_texts=} ')

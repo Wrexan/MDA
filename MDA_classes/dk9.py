@@ -90,7 +90,7 @@ class DK9Parser:
     def adv_search(self, type_: str, firm_: str, model_: str, description_: str, progress, status, error) -> tuple:
         if not self.LOGIN_SUCCESS:
             return ()
-        print(f'Searching: {type_=}  {firm_=}  {model_=}  {description_=}')
+        print(f'Searching: {type_=}  {firm_=}  {model_=}  {description_=}\n')
         # print(f'+++++++++: {self.validation_data=}')
         progress.emit(10)
         try:
