@@ -2,8 +2,7 @@ import sys
 import bs4
 import traceback
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, \
-    QHeaderView, qApp, QMessageBox, QListWidget, QSizePolicy, QLineEdit, QSpacerItem, QPushButton, QLabel, \
-    QStyle, QStyleFactory
+    QHeaderView, qApp, QMessageBox, QListWidget, QSizePolicy, QLineEdit, QSpacerItem, QPushButton, QLabel, QStyleFactory
 from PyQt5 import QtCore, QtGui
 from PyQt5.Qt import Qt
 
@@ -164,6 +163,43 @@ class App(QMainWindow):
             "border: 1px solid #6a6ea9;"
             # "background-color : lightgreen;"
             "}")
+
+        self.ui.table_price.setStyleSheet(
+            # "QTableWidget::item"
+            # "{"
+            # # "background: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 0, stop: 0 lightgreen, stop: 1 #DCF1DE);"
+            # "border: 1px solid #ffffff;"
+            # # "background-color : lightgreen;"
+            # "}"
+            "QTableWidget::item:hover"
+            "{"
+            # "background: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 0, stop: 0 #DCF1DE, stop: 1 #DCF1DE);"
+            # "background: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 0, stop: 0 lightgreen, stop: 1 #DCF1DE);"
+            # "border-top: 1px solid #6a6ea9;"
+            # "border-bottom: 1px solid #6cde6e;"
+            "background-color : #cCFEcE;"
+            "}"
+            "QTableWidget::item:selected"
+            "{"
+            # "background: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 0, stop: 0 #b5BfF3, stop: 1 #E5E8F9);"
+            "border-top: 1px solid #6a6ea9;"
+            "border-bottom: 1px solid #6a6ea9;"
+            "background-color : #b5BfF3;"
+            "}")
+
+        self.ui.pt_cash_name.setStyleSheet(
+            "QPlainTextEdit"
+            "{selection-background-color: #b5BfF3;"
+            # "selection-color:white;"
+            "}")
+
+        self.ui.pt_cash_price.setStyleSheet(
+            "QPlainTextEdit"
+            "{selection-background-color: #b5BfF3;}")
+
+        self.ui.pt_cash_descr.setStyleSheet(
+            "QPlainTextEdit"
+            "{selection-background-color: #b5BfF3;}")
 
     def apply_window_size(self):
         if C.FULLSCREEN:
@@ -588,8 +624,8 @@ class App(QMainWindow):
                 _models_of_manufacturer = self.models[self.curr_manufacturer]
                 _model = model
 
-            print(f'{_models_of_manufacturer=}')
-            print(f'{_model=}')
+            # print(f'{_models_of_manufacturer=}')
+            # print(f'{_model=}')
 
             if _model in _models_of_manufacturer:
                 # print(f'FOUND')
@@ -682,8 +718,9 @@ class App(QMainWindow):
                 bgd = self.Price.DB.colour_map. \
                     get(self.Price.DB.xf_list[sheet.cell(p_row_num, columns[c]).xf_index].
                         background.pattern_colour_index)
-                if bgd:
-                    table.item(t_row_num, c).setBackground(QtGui.QColor(bgd[0], bgd[1], bgd[2]))
+                if not bgd:
+                    bgd = C.P_BG_COLOR1 if t_row_num % 2 else C.P_BG_COLOR2
+                table.item(t_row_num, c).setBackground(QtGui.QColor(bgd[0], bgd[1], bgd[2]))
                 # print(f' colour: {p_row_num=}  {columns[j]=}  {txt=}  {bgd=}')
             if bold:
                 table.item(t_row_num, c).setFont(self.tab_font_bold if bold else self.tab_font)

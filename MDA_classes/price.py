@@ -3,9 +3,6 @@ import traceback
 import xlrd
 
 
-# from MDA_content.windows import Messages as M
-
-
 class Price:
     # 0: 'Не загружен', 1: 'Не найден', 2: 'Загрузка',
     # 3: 'Ошибка загрузки', 4: 'Чтение', 5: 'Ошибка чтения'

@@ -2,9 +2,6 @@ import os
 import configparser
 
 
-# from MDA_content.windows import Messages as M
-
-
 class Config:
     FILTER_SEARCH_RESULT = None
 
@@ -33,7 +30,7 @@ class Config:
         # tables
         self.PRICE_COLORED = True  # work slower if True
         self.DK9_COLORED = True  # work slower if True
-        self.DK9_COL_DIFF = 14  # difference of odd/even bg
+        self.DK9_COL_DIFF = 16  # difference of odd/even bg
         self.TABLE_FONT_SIZE = 12
         self.SMALL_FONT_SIZE = 12
 
@@ -89,6 +86,10 @@ class Config:
 
         self.PRICE_STATUSES = {0: 'Не загружен', 1: 'Не найден', 2: 'Загрузка',
                                3: 'Ошибка загрузки', 4: 'Чтение', 5: 'Ошибка чтения'}
+
+        # Background colors for Price
+        self.P_BG_COLOR1 = (255, 255, 255)
+        self.P_BG_COLOR2 = (0, 0, 0)
 
         # ====================DK9====================
         # Preparing background colors for DK9
@@ -149,6 +150,7 @@ class Config:
     #     return os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop\\')
 
     def precalculate_color_diffs(self):
+        self.P_BG_COLOR2 = self._precalculate_color_diff(self.P_BG_COLOR1)
         self.DK9_BG_P_COLOR2 = self._precalculate_color_diff(self.DK9_BG_P_COLOR1)
         self.DK9_BG_A_COLOR2 = self._precalculate_color_diff(self.DK9_BG_A_COLOR1)
 
