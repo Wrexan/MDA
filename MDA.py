@@ -56,6 +56,8 @@ class App(QMainWindow):
 
         self.freeze_ui_update = True
 
+        self.copied_table_items = {}
+
         self.init_ui_statics()
         self.apply_window_size()
         self.init_ui_dynamics()
@@ -582,11 +584,16 @@ class App(QMainWindow):
     def dummy(self):
         pass
 
+    def clear_table(self, table):
+        self.copied_table_items = {}
+        table.clear()
+        table.setRowCount(0)
+
     def update_price_table(self, model, recursive_model: str = ''):  # 'xiaomi mi a2 m1804d2sg'
         try:
             # print(f'{model=}\n{self.models=}\n{self.curr_model_idx=}\n'
             #       f'{self.curr_manufacturer=}\n{self.curr_manufacturer_idx=}')
-            self.ui.table_price.setRowCount(0)
+            self.clear_table(self.ui.table_price)
 
             _models_of_manufacturer: dict = {}
             _model: str = ''
@@ -751,7 +758,7 @@ class App(QMainWindow):
         try:
             item_counter = 0
             r = 0
-            table.setRowCount(0)
+            self.clear_table(table)
             if not soup[num]:
                 if count_column is not None:
                     self._update_dk9_tooltip(tab_widget=self.ui.tab_widget,
@@ -830,9 +837,11 @@ class App(QMainWindow):
     def copy_web_table_items(self):
         selected_row = self.sender().selectedItems()
         text = ''
+        self.clear_table_items_on_new_copy()
+        self.copied_table_items[self.sender()] = []
         for i in range(4):
             text = f'{text} {selected_row[i].text()} '
-            # selected_row[i].setSelected(False)
+            self.copied_table_items[self.sender()].append(selected_row[i])
             if 'ориг' in selected_row[i].text():
                 selected_row[i].setFont(self.tab_font_bold_under)
             else:
@@ -840,11 +849,26 @@ class App(QMainWindow):
         clipboard.setText(text)
 
     def copy_price_table_item(self):
-        font = QtGui.QFont()
-        font.setUnderline(True)
         selected_row = self.sender().selectedItems()
-        selected_row[0].setFont(font)
+        self.clear_table_items_on_new_copy()
+        self.copied_table_items[self.sender()] = [selected_row[0]]
+        selected_row[0].setFont(self.tab_font_under)
         clipboard.setText(selected_row[0].text())
+
+    def clear_table_items_on_new_copy(self):
+        if not self.copied_table_items:
+            return
+        for table in self.copied_table_items.keys():
+            if not self.copied_table_items[table]:
+                return
+            for item in self.copied_table_items[table]:
+                # if not item:
+                #     continue
+                if table != self.ui.table_price and 'ориг' in item.text():
+                    item.setFont(self.tab_font_bold)
+                else:
+                    item.setFont(self.tab_font)
+            del table
 
     def cash_table_element(self):
         selected_row = self.sender().selectedItems()
