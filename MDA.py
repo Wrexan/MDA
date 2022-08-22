@@ -1,10 +1,10 @@
 import sys
 import bs4
 import traceback
-from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, \
+from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, QMenu,\
     QHeaderView, qApp, QMessageBox, QListWidget, QSizePolicy, QLineEdit, QSpacerItem, QPushButton, QLabel, QStyleFactory
 from PyQt5 import QtCore, QtGui
-from PyQt5.Qt import Qt
+from PyQt5.Qt import Qt, QEvent
 
 from MDA_classes.config import Config
 from MDA_classes.dk9 import DK9Parser
@@ -131,10 +131,13 @@ class App(QMainWindow):
         self.ui.table_accesory.setHorizontalHeaderLabels(('Тип', 'Фирма', 'Модель', 'Примечание',
                                                           'Цена', 'Шт', 'Дата', 'Где'))
 
-        self.ui.table_parts.doubleClicked.connect(self.copy_web_table_items)
-        self.ui.table_accesory.doubleClicked.connect(self.copy_web_table_items)
+        self.ui.table_parts.doubleClicked.connect(self.copy_web_table_items_connected)
+        self.ui.table_accesory.doubleClicked.connect(self.copy_web_table_items_connected)
+        self.ui.table_parts.installEventFilter(self)
+        self.ui.table_accesory.installEventFilter(self)
         self.ui.table_price.clicked.connect(self.cash_table_element)
-        self.ui.table_price.doubleClicked.connect(self.copy_price_table_item)
+        self.ui.table_price.doubleClicked.connect(self.copy_price_table_item_connected)
+        self.ui.table_price.installEventFilter(self)
         self.ui.help.clicked.connect(self.open_help)
 
         self.dk9_request_label.setParent(self.ui.tab_widget)
@@ -586,7 +589,7 @@ class App(QMainWindow):
 
     def clear_table(self, table):
         self.copied_table_items = {}
-        table.clear()
+        table.clearContents()
         table.setRowCount(0)
 
     def update_price_table(self, model, recursive_model: str = ''):  # 'xiaomi mi a2 m1804d2sg'
@@ -834,26 +837,28 @@ class App(QMainWindow):
         tab_widget.setTabText(num, f'{tab_names[num]} {count_2} шт')
         tab_widget.setTabToolTip(num, f'{count_1} позиций/ {count_2} штук')
 
-    def copy_web_table_items(self):
-        selected_row = self.sender().selectedItems()
-        text = ''
-        self.clear_table_items_on_new_copy()
-        self.copied_table_items[self.sender()] = []
-        for i in range(4):
-            text = f'{text} {selected_row[i].text()} '
-            self.copied_table_items[self.sender()].append(selected_row[i])
-            if 'ориг' in selected_row[i].text():
-                selected_row[i].setFont(self.tab_font_bold_under)
-            else:
-                selected_row[i].setFont(self.tab_font_under)
-        clipboard.setText(text)
+    def copy_web_table_items_connected(self):
+        self.copy_table_items(table=self.sender(), items=4)
 
-    def copy_price_table_item(self):
-        selected_row = self.sender().selectedItems()
+    def copy_price_table_item_connected(self):
+        self.copy_table_items(table=self.sender(), items=1)
+
+    def copy_table_items(self, table: QtCore.QObject, items: int = 0):
+        row = table.selectedItems()
+        print(f'{row=}')
         self.clear_table_items_on_new_copy()
-        self.copied_table_items[self.sender()] = [selected_row[0]]
-        selected_row[0].setFont(self.tab_font_under)
-        clipboard.setText(selected_row[0].text())
+        self.copied_table_items[table] = []
+        texts = []
+        for i in range(items if items else len(row)):
+            texts.append(row[i].text())
+            self.copied_table_items[table].append(row[i])
+            if table is not self.ui.table_price and 'ориг' in row[i].text():
+                row[i].setFont(self.tab_font_bold_under)
+            else:
+                row[i].setFont(self.tab_font_under)
+
+        clipboard.setText(' '.join(texts))
+        # print(f'Copied: {" ".join(texts)}')
 
     def clear_table_items_on_new_copy(self):
         if not self.copied_table_items:
@@ -862,8 +867,6 @@ class App(QMainWindow):
             if not self.copied_table_items[table]:
                 return
             for item in self.copied_table_items[table]:
-                # if not item:
-                #     continue
                 if table != self.ui.table_price and 'ориг' in item.text():
                     item.setFont(self.tab_font_bold)
                 else:
@@ -933,6 +936,26 @@ class App(QMainWindow):
             self.upd_manufacturer_wheel(increment=1)
         if event.angleDelta().y() > 0:
             self.upd_manufacturer_wheel(increment=-1)
+
+    def eventFilter(self, source, event):
+        if event.type() == QEvent.ContextMenu:
+            if source in (self.ui.table_parts, self.ui.table_accesory, self.ui.table_price):
+                row = source.selectedItems()
+                # print(f'{row=}')
+                if row:
+                    # user = str(row[0].data())
+                    contextMenu = QMenu(self)
+                    copy_for_order = contextMenu.addAction("Копировать для заказа")
+                    copy_full_row = contextMenu.addAction("Копировать всю строку")
+                    action = contextMenu.exec_(event.globalPos())
+                    if action == copy_for_order:
+                        if source is self.ui.table_price:
+                            self.copy_table_items(source, 1)
+                        else:
+                            self.copy_table_items(source, 4)
+                    if action == copy_full_row:
+                        self.copy_table_items(source)
+        return super().eventFilter(source, event)
 
     def open_adv_search(self):
         settings_ui = AdvancedSearchWindow(self)
