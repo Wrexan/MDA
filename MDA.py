@@ -466,8 +466,12 @@ class App(QMainWindow):
             else:
                 break
         # print(f'CUT: {text_lower=}')
+        manufacturer_lower = self.curr_manufacturer.lower()
+        if 'asus' in manufacturer_lower:             # -------------------ASUS
+            manufacturer_lower = 'asus'              # -------------------ASUS
+
         models_str = text_lower. \
-            replace(self.curr_manufacturer.lower(), ''). \
+            replace(manufacturer_lower, ''). \
             replace('телефон', ''). \
             replace('планшет', ''). \
             replace('с', 'c'). \
@@ -531,7 +535,11 @@ class App(QMainWindow):
         else:
             if not DK9.LOGIN_SUCCESS or self.web_status != 2:
                 return
-            manufacturer = '' if not C.SEARCH_BY_PRICE_MODEL else self.curr_manufacturer
+            if not C.SEARCH_BY_PRICE_MODEL or 'asus' in self.curr_manufacturer.lower():  # -------------------ASUS
+                manufacturer = ''
+            else:
+                manufacturer = self.curr_manufacturer
+
             if self.search_again:
                 print(f'SEARCH AGAIN: {self.curr_model}')
                 self.search_again = False
@@ -602,32 +610,44 @@ class App(QMainWindow):
             _model: str = ''
 
             if recursive_model:
+                recursive_model = recursive_model.replace('   ', ' ').replace('  ', ' ')
                 if self.price_status >= len(C.PRICE_STATUSES):
                     _rec_model_dict = self.Price.search_price_models(recursive_model, 5, True)
                     # print(f'{model=}  {_rec_model_dict=}')
+
                     if _rec_model_dict:
-                        _models_of_manufacturer_all_compatible = list(_rec_model_dict.values())[0]
+                        if self.curr_manufacturer in _rec_model_dict:
+                            _models_of_manufacturer_all_compatible\
+                                = dict(_rec_model_dict[self.curr_manufacturer].items())
+                        else:
+                            _models_of_manufacturer_all_compatible \
+                                = dict(_rec_model_dict.items())
+
+                        # print(f'{_models_of_manufacturer_all_compatible=}')
                         if len(_models_of_manufacturer_all_compatible) > 1:
                             recursive_model_len = len(recursive_model)
                             closest_delta_len = 10
                             for _m in _models_of_manufacturer_all_compatible.items():
 
-                                _main_model = _m[0].split(',')[0].strip()
+                                _main_model = _m[0].split(',')[0].strip().replace('   ', ' ').replace('  ', ' ')
+                                # print(f'{_main_model=}')
                                 if recursive_model not in _main_model:
                                     continue
 
                                 _manufacturer_lower = self.curr_manufacturer.lower()
                                 if _manufacturer_lower in _main_model:
-                                    _m_manuf_cut = _main_model.replace(_manufacturer_lower, '')
-                                    this_delta_len = abs(recursive_model_len - len(_m_manuf_cut.strip()))
-                                    # print(f'WEEEE {_m_manuf_cut=}  {this_delta_len=}')
+                                    if 'asus' in _manufacturer_lower:     # -------------------ASUS
+                                        _manufacturer_lower = 'asus'      # -------------------ASUS
+                                    _m_manuf_cut = _main_model.replace(_manufacturer_lower, '').strip()
+                                    this_delta_len = abs(recursive_model_len - len(_m_manuf_cut))
+                                    # print(f'CUTTING {_manufacturer_lower=} => {_m_manuf_cut=}  {this_delta_len=}')
                                 else:
                                     this_delta_len = abs(recursive_model_len - len(_main_model))
                                 if this_delta_len < closest_delta_len:
                                     closest_delta_len = this_delta_len
                                     _models_of_manufacturer[_m[0]] = _m[1]
                                     _model = _m[0]
-                                    # print(f'WAAAA {_model=}  {_models_of_manufacturer=}  {self.curr_manufacturer=}')
+                                    # print(f'FOUND {this_delta_len=}  {_model=}  {_models_of_manufacturer=}')
 
                             if not _models_of_manufacturer:
                                 _models_of_manufacturer = list(_rec_model_dict.values())[0]
