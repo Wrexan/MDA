@@ -1,7 +1,7 @@
 import sys
 import bs4
 import traceback
-from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, QMenu,\
+from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, QMenu, \
     QHeaderView, qApp, QMessageBox, QListWidget, QSizePolicy, QLineEdit, QSpacerItem, QPushButton, QLabel, QStyleFactory
 from PyQt5 import QtCore, QtGui
 from PyQt5.Qt import Qt, QEvent
@@ -467,8 +467,8 @@ class App(QMainWindow):
                 break
         # print(f'CUT: {text_lower=}')
         manufacturer_lower = self.curr_manufacturer.lower()
-        if 'asus' in manufacturer_lower:             # -------------------ASUS
-            manufacturer_lower = 'asus'              # -------------------ASUS
+        if 'asus' in manufacturer_lower:  # -------------------ASUS
+            manufacturer_lower = 'asus'  # -------------------ASUS
 
         models_str = text_lower. \
             replace(manufacturer_lower, ''). \
@@ -617,7 +617,7 @@ class App(QMainWindow):
 
                     if _rec_model_dict:
                         if self.curr_manufacturer in _rec_model_dict:
-                            _models_of_manufacturer_all_compatible\
+                            _models_of_manufacturer_all_compatible \
                                 = dict(_rec_model_dict[self.curr_manufacturer].items())
                         else:
                             _models_of_manufacturer_all_compatible \
@@ -636,8 +636,8 @@ class App(QMainWindow):
 
                                 _manufacturer_lower = self.curr_manufacturer.lower()
                                 if _manufacturer_lower in _main_model:
-                                    if 'asus' in _manufacturer_lower:     # -------------------ASUS
-                                        _manufacturer_lower = 'asus'      # -------------------ASUS
+                                    if 'asus' in _manufacturer_lower:  # -------------------ASUS
+                                        _manufacturer_lower = 'asus'  # -------------------ASUS
                                     _m_manuf_cut = _main_model.replace(_manufacturer_lower, '').strip()
                                     this_delta_len = abs(recursive_model_len - len(_m_manuf_cut))
                                     # print(f'CUTTING {_manufacturer_lower=} => {_m_manuf_cut=}  {this_delta_len=}')
@@ -950,8 +950,13 @@ class App(QMainWindow):
         self.search_input.selectAll()
 
     def wheelEvent(self, event: QtGui.QWheelEvent) -> None:
+        # print(f'{self.ui.HEAD.height()=}   {event.y()=}')
         if self.model_list_widget.isHidden():
-            return
+            if event.y() > self.ui.HEAD.height():
+                return
+            if self.models and (0 <= self.model_list_widget.currentRow() < len(self.models[self.curr_manufacturer])):
+                self.upd_models_list()
+
         if event.angleDelta().y() < 0:
             self.upd_manufacturer_wheel(increment=1)
         if event.angleDelta().y() > 0:
@@ -1042,7 +1047,6 @@ class SearchInput(QLineEdit):
 
             if self.app.model_list_widget.isHidden():
                 self.app.upd_models_list()
-                return
 
     def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
         super(SearchInput, self).keyPressEvent(event)
