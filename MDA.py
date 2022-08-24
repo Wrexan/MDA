@@ -156,7 +156,9 @@ class App(QMainWindow):
                                    self.ui.manufacturer_2,
                                    self.ui.manufacturer_3,
                                    self.ui.manufacturer_4,
-                                   self.ui.manufacturer_5)
+                                   self.ui.manufacturer_5,
+                                   self.ui.manufacturer_6,
+                                   self.ui.manufacturer_7)
         # models list appearing on search
         self.model_list_widget.setParent(self)
         self.model_list_widget.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
@@ -396,8 +398,9 @@ class App(QMainWindow):
 
         # print(f'{self.curr_manufacturer_idx=}')
         for m, manufacturer in enumerate(self.models):
-            if self.curr_manufacturer_idx + 2 >= m >= self.curr_manufacturer_idx - 2:
-                self.manufacturer_wheel[m - self.curr_manufacturer_idx + 2].setText(manufacturer)
+            manufs_aside = int((len(self.manufacturer_wheel) - 1) / 2)
+            if self.curr_manufacturer_idx + manufs_aside >= m >= self.curr_manufacturer_idx - manufs_aside:
+                self.manufacturer_wheel[m - self.curr_manufacturer_idx + manufs_aside].setText(manufacturer)
                 if m == self.curr_manufacturer_idx:
                     self.curr_manufacturer = manufacturer
                     self.upd_models_list(hide_list=hide_list)
