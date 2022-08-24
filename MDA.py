@@ -1,6 +1,11 @@
 import sys
 import bs4
 import traceback
+import os
+
+sys.path.append(os.path.join(os.getcwd(), 'PyQt5'))
+# print(f'{sys.path=}')
+
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, QMenu, \
     QHeaderView, qApp, QMessageBox, QListWidget, QSizePolicy, QLineEdit, QSpacerItem, QPushButton, QLabel, QStyleFactory
 from PyQt5 import QtCore, QtGui
