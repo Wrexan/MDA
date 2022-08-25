@@ -847,7 +847,7 @@ class App(QMainWindow):
                         table.item(r, c).setToolTip(dk9_td.string)
                         if align and c in align:
                             table.item(r, c).setTextAlignment(align[c])
-                        if 'ориг' in table.item(r, c).text():
+                        if 'ориг' in table.item(r, c).text() and 'вк ' not in table.item(r, c).text():
                             table.item(r, c).setFont(self.tab_font_bold)
                         if C.DK9_COLORED:
                             if row_palette:
@@ -892,7 +892,7 @@ class App(QMainWindow):
         for i in range(items if items else len(row)):
             texts.append(row[i].text())
             self.copied_table_items[table].append(row[i])
-            if table is not self.ui.table_price and 'ориг' in row[i].text():
+            if table is not self.ui.table_price and 'ориг' in row[i].text() and 'вк ' not in row[i].text():
                 row[i].setFont(self.tab_font_bold_under)
             else:
                 row[i].setFont(self.tab_font_under)
@@ -907,7 +907,7 @@ class App(QMainWindow):
             if not self.copied_table_items[table]:
                 return
             for item in self.copied_table_items[table]:
-                if table != self.ui.table_price and 'ориг' in item.text():
+                if table != self.ui.table_price and 'ориг' in item.text() and 'вк ' not in item.text():
                     item.setFont(self.tab_font_bold)
                 else:
                     item.setFont(self.tab_font)
