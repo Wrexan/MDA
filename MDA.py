@@ -8,6 +8,11 @@ sys.path.append(os.path.join(os.getcwd(), 'PyQt5\\Qt'))
 sys.path.append(os.path.join(os.getcwd(), 'PyQt5\\QtWidgets'))
 # print(f'{sys.path=}')
 
+os.add_dll_directory(f'{os.getcwd()}\\PyQt5')
+os.add_dll_directory(f'{os.getcwd()}\\PyQt5\\Qt')
+os.add_dll_directory(f'{os.getcwd()}\\PyQt5\\QtWidgets')
+# print(f'{os.path=}')
+
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, QMenu, \
     QHeaderView, qApp, QMessageBox, QListWidget, QSizePolicy, QLineEdit, QSpacerItem, QPushButton, QLabel, QStyleFactory
 from PyQt5 import QtCore, QtGui
@@ -159,6 +164,8 @@ class App(QMainWindow):
                                    self.ui.manufacturer_5,
                                    self.ui.manufacturer_6,
                                    self.ui.manufacturer_7)
+        for manuf_label in self.manufacturer_wheel:
+            manuf_label.clicked.connect(self.upd_manufacturer_wheel_connect)
         # models list appearing on search
         self.model_list_widget.setParent(self)
         self.model_list_widget.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
@@ -378,6 +385,9 @@ class App(QMainWindow):
         if C.NARROW_SEARCH and len(in_req) < C.NARROW_SEARCH_LEN:
             return
         return in_req
+
+    def upd_manufacturer_wheel_connect(self):
+        self.upd_manufacturer_wheel(increment=int(self.sender().objectName()[-1])-4)
 
     def upd_manufacturer_wheel(self, increment: int = 0, clear: bool = False, hide_list: bool = False):
         # print(f'upd_manufacturer_wheel({increment=}, {clear=}, {hide_list=}, ')

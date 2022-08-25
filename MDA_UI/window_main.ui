@@ -465,7 +465,7 @@
               </spacer>
              </item>
              <item>
-              <widget class="QLabel" name="manufacturer_1">
+              <widget class="QPushButton" name="manufacturer_1">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                  <horstretch>0</horstretch>
@@ -481,27 +481,25 @@
                <property name="maximumSize">
                 <size>
                  <width>128</width>
-                 <height>16777215</height>
+                 <height>30</height>
                 </size>
                </property>
                <property name="baseSize">
                 <size>
                  <width>128</width>
-                 <height>0</height>
+                 <height>30</height>
                 </size>
                </property>
-               <property name="font">
-                <font>
-                 <pointsize>8</pointsize>
-                </font>
+               <property name="focusPolicy">
+                <enum>Qt::NoFocus</enum>
                </property>
-               <property name="alignment">
-                <set>Qt::AlignCenter</set>
+               <property name="flat">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QLabel" name="manufacturer_2">
+              <widget class="QPushButton" name="manufacturer_2">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                  <horstretch>0</horstretch>
@@ -517,13 +515,13 @@
                <property name="maximumSize">
                 <size>
                  <width>128</width>
-                 <height>16777215</height>
+                 <height>30</height>
                 </size>
                </property>
                <property name="baseSize">
                 <size>
                  <width>128</width>
-                 <height>0</height>
+                 <height>30</height>
                 </size>
                </property>
                <property name="font">
@@ -531,13 +529,16 @@
                  <pointsize>9</pointsize>
                 </font>
                </property>
-               <property name="alignment">
-                <set>Qt::AlignCenter</set>
+               <property name="focusPolicy">
+                <enum>Qt::NoFocus</enum>
+               </property>
+               <property name="flat">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QLabel" name="manufacturer_3">
+              <widget class="QPushButton" name="manufacturer_3">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                  <horstretch>0</horstretch>
@@ -553,13 +554,13 @@
                <property name="maximumSize">
                 <size>
                  <width>128</width>
-                 <height>16777215</height>
+                 <height>30</height>
                 </size>
                </property>
                <property name="baseSize">
                 <size>
                  <width>128</width>
-                 <height>0</height>
+                 <height>30</height>
                 </size>
                </property>
                <property name="font">
@@ -567,13 +568,16 @@
                  <pointsize>11</pointsize>
                 </font>
                </property>
-               <property name="alignment">
-                <set>Qt::AlignCenter</set>
+               <property name="focusPolicy">
+                <enum>Qt::NoFocus</enum>
+               </property>
+               <property name="flat">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QLabel" name="manufacturer_4">
+              <widget class="QPushButton" name="manufacturer_4">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                  <horstretch>0</horstretch>
@@ -589,13 +593,13 @@
                <property name="maximumSize">
                 <size>
                  <width>128</width>
-                 <height>16777215</height>
+                 <height>30</height>
                 </size>
                </property>
                <property name="baseSize">
                 <size>
                  <width>128</width>
-                 <height>0</height>
+                 <height>30</height>
                 </size>
                </property>
                <property name="font">
@@ -605,13 +609,16 @@
                  <bold>true</bold>
                 </font>
                </property>
-               <property name="alignment">
-                <set>Qt::AlignCenter</set>
+               <property name="focusPolicy">
+                <enum>Qt::NoFocus</enum>
+               </property>
+               <property name="flat">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QLabel" name="manufacturer_5">
+              <widget class="QPushButton" name="manufacturer_5">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                  <horstretch>0</horstretch>
@@ -627,13 +634,13 @@
                <property name="maximumSize">
                 <size>
                  <width>128</width>
-                 <height>16777215</height>
+                 <height>30</height>
                 </size>
                </property>
                <property name="baseSize">
                 <size>
                  <width>128</width>
-                 <height>0</height>
+                 <height>30</height>
                 </size>
                </property>
                <property name="font">
@@ -641,13 +648,16 @@
                  <pointsize>11</pointsize>
                 </font>
                </property>
-               <property name="alignment">
-                <set>Qt::AlignCenter</set>
+               <property name="focusPolicy">
+                <enum>Qt::NoFocus</enum>
+               </property>
+               <property name="flat">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QLabel" name="manufacturer_6">
+              <widget class="QPushButton" name="manufacturer_6">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                  <horstretch>0</horstretch>
@@ -663,13 +673,13 @@
                <property name="maximumSize">
                 <size>
                  <width>128</width>
-                 <height>16777215</height>
+                 <height>30</height>
                 </size>
                </property>
                <property name="baseSize">
                 <size>
                  <width>128</width>
-                 <height>0</height>
+                 <height>30</height>
                 </size>
                </property>
                <property name="font">
@@ -677,13 +687,16 @@
                  <pointsize>9</pointsize>
                 </font>
                </property>
-               <property name="alignment">
-                <set>Qt::AlignCenter</set>
+               <property name="focusPolicy">
+                <enum>Qt::NoFocus</enum>
+               </property>
+               <property name="flat">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QLabel" name="manufacturer_7">
+              <widget class="QPushButton" name="manufacturer_7">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                  <horstretch>0</horstretch>
@@ -699,22 +712,20 @@
                <property name="maximumSize">
                 <size>
                  <width>128</width>
-                 <height>16777215</height>
+                 <height>30</height>
                 </size>
                </property>
                <property name="baseSize">
                 <size>
                  <width>128</width>
-                 <height>0</height>
+                 <height>30</height>
                 </size>
                </property>
-               <property name="font">
-                <font>
-                 <pointsize>8</pointsize>
-                </font>
+               <property name="focusPolicy">
+                <enum>Qt::NoFocus</enum>
                </property>
-               <property name="alignment">
-                <set>Qt::AlignCenter</set>
+               <property name="flat">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
@@ -1043,24 +1054,6 @@
           <number>0</number>
          </property>
          <widget class="QWidget" name="tab_0">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>16777215</width>
-            <height>16777215</height>
-           </size>
-          </property>
           <attribute name="title">
            <string>   ЗАПЧАСТИ   </string>
           </attribute>
@@ -1089,6 +1082,9 @@
               <font>
                <family>MS Shell Dlg 2</family>
               </font>
+             </property>
+             <property name="frameShape">
+              <enum>QFrame::Panel</enum>
              </property>
              <property name="editTriggers">
               <set>QAbstractItemView::NoEditTriggers</set>
@@ -1167,12 +1163,6 @@
              </property>
              <property name="frameShape">
               <enum>QFrame::Panel</enum>
-             </property>
-             <property name="horizontalScrollBarPolicy">
-              <enum>Qt::ScrollBarAsNeeded</enum>
-             </property>
-             <property name="autoScrollMargin">
-              <number>16</number>
              </property>
              <property name="editTriggers">
               <set>QAbstractItemView::NoEditTriggers</set>
