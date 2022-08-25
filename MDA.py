@@ -4,13 +4,13 @@ import traceback
 import os
 
 sys.path.append(os.path.join(os.getcwd(), 'PyQt5'))
-sys.path.append(os.path.join(os.getcwd(), 'PyQt5\\Qt'))
-sys.path.append(os.path.join(os.getcwd(), 'PyQt5\\QtWidgets'))
+# sys.path.append(os.path.join(os.getcwd(), 'PyQt5\\Qt5'))
+# sys.path.append(os.path.join(os.getcwd(), 'PyQt5\\QtWidgets'))
 # print(f'{sys.path=}')
 
-os.add_dll_directory(f'{os.getcwd()}\\PyQt5')
-os.add_dll_directory(f'{os.getcwd()}\\PyQt5\\Qt')
-os.add_dll_directory(f'{os.getcwd()}\\PyQt5\\QtWidgets')
+os.add_dll_directory(os.getcwd())
+# os.add_dll_directory(f'{os.getcwd()}\\PyQt5\\Qt5')
+# os.add_dll_directory(f'{os.getcwd()}\\PyQt5\\QtWidgets')
 # print(f'{os.path=}')
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, QMenu, \
