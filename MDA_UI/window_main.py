@@ -393,7 +393,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_3.setSpacing(2)
         self.horizontalLayout_3.setObjectName("horizontalLayout_3")
         self.tab_widget = QtWidgets.QTabWidget(self.BODY)
-        self.tab_widget.setFocusPolicy(QtCore.Qt.WheelFocus)
+        self.tab_widget.setFocusPolicy(QtCore.Qt.NoFocus)
         self.tab_widget.setTabShape(QtWidgets.QTabWidget.Rounded)
         self.tab_widget.setObjectName("tab_widget")
         self.tab_0 = QtWidgets.QWidget()

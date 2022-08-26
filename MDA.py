@@ -400,13 +400,15 @@ class App(QMainWindow):
             return
 
         _len = len(self.models) - 1
+        if self.model_list_widget.isHidden() or increment == 0:
+            self.curr_manufacturer_idx = int(_len / 2)
         self.curr_manufacturer_idx += increment
         if self.curr_manufacturer_idx > _len:
             self.curr_manufacturer_idx = _len
         if self.curr_manufacturer_idx < 0:
             self.curr_manufacturer_idx = 0
 
-        # print(f'{self.curr_manufacturer_idx=}')
+        # print(f'{self.curr_manufacturer_idx=} {_len=}')
         for m, manufacturer in enumerate(self.models):
             manufs_aside = int((len(self.manufacturer_wheel) - 1) / 2)
             if self.curr_manufacturer_idx + manufs_aside >= m >= self.curr_manufacturer_idx - manufs_aside:
@@ -885,7 +887,7 @@ class App(QMainWindow):
 
     def copy_table_items(self, table: QtCore.QObject, items: int = 0):
         row = table.selectedItems()
-        print(f'{row=}')
+        # print(f'{row=}')
         self.clear_table_items_on_new_copy()
         self.copied_table_items[table] = []
         texts = []
