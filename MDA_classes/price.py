@@ -22,19 +22,12 @@ class Price:
 
     def load_price(self, progress, status, error) -> None:
         status.emit(self.S_READING)
-        price_path_name, name = '', ''
         try:
-            for name in os.listdir(self.C.PRICE_PATH):
-                if name[-4:] == self.C.PRICE_PARTIAL_NAME[1] and self.C.PRICE_PARTIAL_NAME[0] in name:
-                    price_path_name = f'{self.C.PRICE_PATH}{name}'
-                    break
-            if not price_path_name:
-                for name in os.listdir(self.C.PATH):
-                    if name[-4:] == self.C.PRICE_PARTIAL_NAME[1] and self.C.PRICE_PARTIAL_NAME[0] in name:
-                        price_path_name = f'{self.C.PATH}{name}'
-                        break
+            price_path_name, self.NAME = self.search_price_in_path_tuple((self.C.PRICE_PATH,
+                                                                          self.C.PRICE_PATH_ALT,
+                                                                          self.C.PATH))
+
             if price_path_name:
-                self.NAME = name
                 self.DB = xlrd.open_workbook(price_path_name, formatting_info=True)
                 status.emit(self.S_OK)
                 print(f'Price loaded: {price_path_name}')
@@ -55,6 +48,12 @@ class Price:
             error.emit((f'Error while trying to load price:\n'
                         f'{self.NAME}',
                         f'{traceback.format_exc()}'))
+
+    def search_price_in_path_tuple(self, path_list: tuple):
+        for path in path_list:
+            for name in os.listdir(path):
+                if name[-4:] == self.C.PRICE_PARTIAL_NAME[1] and self.C.PRICE_PARTIAL_NAME[0] in name:
+                    return f'{self.C.PRICE_PATH}{name}', name
 
     def approve(self):
         if self.DB:
