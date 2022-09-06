@@ -53,7 +53,7 @@ class Price:
         for path in path_list:
             for name in os.listdir(path):
                 if name[-4:] == self.C.PRICE_PARTIAL_NAME[1] and self.C.PRICE_PARTIAL_NAME[0] in name:
-                    return f'{self.C.PRICE_PATH}{name}', name
+                    return f'{path}{name}', name
 
     def approve(self):
         if self.DB:

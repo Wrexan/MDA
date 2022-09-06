@@ -37,7 +37,7 @@ class Config:
 
         # ====================PRICE====================
         self.PRICE_PATH = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop\\')
-        self.PRICE_PATH_ALT = shell.SHGetFolderPath(0, shellcon.CSIDL_DESKTOP, None, 0)
+        self.PRICE_PATH_ALT = f'{shell.SHGetFolderPath(0, shellcon.CSIDL_DESKTOP, None, 0)}\\'
         self.PRICE_GD_PATH = ''
         self.PRICE_CONFIG = f'{self.CONTENT_PATH}price_config.ini'
         self.NARROW_SEARCH_LEN = 2  # start search from 2 symbols
