@@ -13,7 +13,7 @@ os.add_dll_directory(os.getcwd())
 # os.add_dll_directory(f'{os.getcwd()}\\PyQt5\\QtWidgets')
 # print(f'{os.path=}')
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, QMenu, \
+from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, QMenu, QTableWidget, \
     QHeaderView, qApp, QMessageBox, QListWidget, QSizePolicy, QLineEdit, QSpacerItem, QPushButton, QLabel, QStyleFactory
 from PyQt5 import QtCore, QtGui
 from PyQt5.Qt import Qt, QEvent
@@ -69,6 +69,20 @@ class App(QMainWindow):
         self.freeze_ui_update = True
 
         self.copied_table_items = {}
+        # self.copied_table_item_colors = {}
+
+        self.default_web_table_stylesheet = \
+            "QTableWidget::item:hover" \
+            "{" \
+            f"background-color : rgb{C.DK9_BG_HOVER_COLOR};" \
+            "}" \
+            "QTableWidget::item:selected" \
+            "{" \
+            "background: qlineargradient" \
+            f"(x1: 0, y1: 0, x2: 0, y2: 0.8, stop: 0 rgb{C.DK9_BG_HOVER_COLOR}, stop: 1 rgb{C.DK9_BG_HOVER_COLOR});" \
+            "border-top: 1px solid #6a6ea9;" \
+            "border-bottom: 1px solid #6a6ea9;" \
+            "}"
 
         self.init_ui_statics()
         self.apply_window_size()
@@ -145,6 +159,8 @@ class App(QMainWindow):
 
         self.ui.table_parts.doubleClicked.connect(self.copy_web_table_items_connected)
         self.ui.table_accesory.doubleClicked.connect(self.copy_web_table_items_connected)
+        self.ui.table_parts.itemPressed.connect(self.handle_web_table_item_selection_connected)
+        self.ui.table_accesory.itemPressed.connect(self.handle_web_table_item_selection_connected)
         self.ui.table_parts.installEventFilter(self)
         self.ui.table_accesory.installEventFilter(self)
         self.ui.table_price.clicked.connect(self.cash_table_element)
@@ -173,63 +189,6 @@ class App(QMainWindow):
         self.model_list_widget.setMinimumSize(20, 20)
         self.model_list_widget.itemClicked.connect(self.scheduler)
         self.model_list_widget.hide()
-
-        self.model_list_widget.setStyleSheet(
-            "QListView::item"
-            "{"
-            # "background: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 0, stop: 0 lightgreen, stop: 1 #DCF1DE);"
-            "border: 1px solid #ffffff;"
-            # "background-color : lightgreen;"
-            "}"
-            "QListView::item:hover"
-            "{"
-            "background: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 0, stop: 0 lightgreen, stop: 1 #DCF1DE);"
-            # "border: 1px solid #6a6ea9;"
-            # "background-color : lightgreen;"
-            "}"
-            "QListView::item:selected"
-            "{"
-            "background: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 0, stop: 0 #b5BfF3, stop: 1 #E5E8F9);"
-            "border: 1px solid #6a6ea9;"
-            # "background-color : lightgreen;"
-            "}")
-
-        self.ui.table_price.setStyleSheet(
-            # "QTableWidget::item"
-            # "{"
-            # # "background: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 0, stop: 0 lightgreen, stop: 1 #DCF1DE);"
-            # "border: 1px solid #ffffff;"
-            # # "background-color : lightgreen;"
-            # "}"
-            "QTableWidget::item:hover"
-            "{"
-            # "background: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 0, stop: 0 #DCF1DE, stop: 1 #DCF1DE);"
-            # "background: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 0, stop: 0 lightgreen, stop: 1 #DCF1DE);"
-            # "border-top: 1px solid #6a6ea9;"
-            # "border-bottom: 1px solid #6cde6e;"
-            "background-color : #cCFEcE;"
-            "}"
-            "QTableWidget::item:selected"
-            "{"
-            # "background: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 0, stop: 0 #b5BfF3, stop: 1 #E5E8F9);"
-            "border-top: 1px solid #6a6ea9;"
-            "border-bottom: 1px solid #6a6ea9;"
-            "background-color : #b5BfF3;"
-            "}")
-
-        self.ui.pt_cash_name.setStyleSheet(
-            "QPlainTextEdit"
-            "{selection-background-color: #b5BfF3;"
-            # "selection-color:white;"
-            "}")
-
-        self.ui.pt_cash_price.setStyleSheet(
-            "QPlainTextEdit"
-            "{selection-background-color: #b5BfF3;}")
-
-        self.ui.pt_cash_descr.setStyleSheet(
-            "QPlainTextEdit"
-            "{selection-background-color: #b5BfF3;}")
 
     def apply_window_size(self):
         if C.FULLSCREEN:
@@ -278,6 +237,67 @@ class App(QMainWindow):
 
         self.dk9_request_label.move(self.ui.table_parts.width() - 84, 3)
         self.dk9_request_label.setFont(self.ui_font_bold)
+
+        self.model_list_widget.setStyleSheet(
+            "QListView::item"
+            "{"
+            # "background: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 0, stop: 0 lightgreen, stop: 1 #DCF1DE);"
+            "border: 1px solid #ffffff;"
+            # "background-color : lightgreen;"
+            "}"
+            "QListView::item:hover"
+            "{"
+            "background: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 0, stop: 0 lightgreen, stop: 1 #DCF1DE);"
+            # "border: 1px solid #6a6ea9;"
+            # "background-color : lightgreen;"
+            "}"
+            "QListView::item:selected"
+            "{"
+            "background: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 0, stop: 0 #b5BfF3, stop: 1 #E5E8F9);"
+            "border: 1px solid #6a6ea9;"
+            # "background-color : lightgreen;"
+            "}")
+
+        self.ui.table_price.setStyleSheet(
+            # "QTableWidget::item"
+            # "{"
+            # # "background: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 0, stop: 0 lightgreen, stop: 1 #DCF1DE);"
+            # "border: 1px solid #ffffff;"
+            # # "background-color : lightgreen;"
+            # "}"
+            "QTableWidget::item:hover"
+            "{"
+            # "background: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 0, stop: 0 #DCF1DE, stop: 1 #DCF1DE);"
+            # "background: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 0, stop: 0 lightgreen, stop: 1 #DCF1DE);"
+            # "border-top: 1px solid #6a6ea9;"
+            # "border-bottom: 1px solid #6cde6e;"
+            "background-color : #cCFEcE;"
+            "}"
+            "QTableWidget::item:selected"
+            "{"
+            # "background: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 0, stop: 0 #b5BfF3, stop: 1 #E5E8F9);"
+            "border-top: 1px solid #6a6ea9;"
+            "border-bottom: 1px solid #6a6ea9;"
+            "background-color : #b5BfF3;"
+            "}")
+
+        self.ui.table_parts.setStyleSheet(self.default_web_table_stylesheet)
+
+        self.ui.table_accesory.setStyleSheet(self.default_web_table_stylesheet)
+
+        self.ui.pt_cash_name.setStyleSheet(
+            "QPlainTextEdit"
+            "{selection-background-color: #b5BfF3;"
+            # "selection-color:white;"
+            "}")
+
+        self.ui.pt_cash_price.setStyleSheet(
+            "QPlainTextEdit"
+            "{selection-background-color: #b5BfF3;}")
+
+        self.ui.pt_cash_descr.setStyleSheet(
+            "QPlainTextEdit"
+            "{selection-background-color: #b5BfF3;}")
         # self.dk9_request_label.setText("Redmi AAAA")
 
     # =============================================================================================================
@@ -387,7 +407,7 @@ class App(QMainWindow):
         return in_req
 
     def upd_manufacturer_wheel_connect(self):
-        self.upd_manufacturer_wheel(increment=int(self.sender().objectName()[-1])-4)
+        self.upd_manufacturer_wheel(increment=int(self.sender().objectName()[-1]) - 4)
 
     def upd_manufacturer_wheel(self, increment: int = 0, clear: bool = False, hide_list: bool = False):
         # print(f'upd_manufacturer_wheel({increment=}, {clear=}, {hide_list=}, ')
@@ -879,13 +899,39 @@ class App(QMainWindow):
         tab_widget.setTabText(num, f'{tab_names[num]} {count_2} шт')
         tab_widget.setTabToolTip(num, f'{count_1} позиций/ {count_2} штук')
 
+    # WEB TABLE SELECTION
+    def handle_web_table_item_selection_connected(self):
+        self.change_table_item_colors(table=self.sender())
+
+    # def change_table_item_colors(self, table: QtCore.QObject, items: int = 0):
+    def change_table_item_colors(self, table: QTableWidget):
+        row = table.selectedItems()
+        self.clear_table_items_on_new_copy()
+        last_cell_bg_color = (row[-1].background().color().red(),
+                              row[-1].background().color().green(),
+                              row[-1].background().color().blue())
+        # print(f'{row=} {last_cell_bg_color=}')
+        table.setStyleSheet(
+            "QTableWidget::item:hover"
+            "{"
+            f"background-color : rgb{C.DK9_BG_HOVER_COLOR};"
+            "}"
+            "QTableWidget::item:selected"
+            "{"
+            "background: qlineargradient"
+            f"(x1: 0, y1: 0, x2: 0, y2: 0.8, stop: 0 rgb{C.DK9_BG_HOVER_COLOR}, stop: 1 rgb{last_cell_bg_color});"
+            "border-top: 1px solid #6a6ea9;"
+            "border-bottom: 1px solid #6a6ea9;"
+            "}")
+
+    # TABLE COPY
     def copy_web_table_items_connected(self):
         self.copy_table_items(table=self.sender(), items=4)
 
     def copy_price_table_item_connected(self):
         self.copy_table_items(table=self.sender(), items=1)
 
-    def copy_table_items(self, table: QtCore.QObject, items: int = 0):
+    def copy_table_items(self, table: QTableWidget, items: int = 0):
         row = table.selectedItems()
         # print(f'{row=}')
         self.clear_table_items_on_new_copy()
