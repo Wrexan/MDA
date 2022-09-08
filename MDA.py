@@ -69,6 +69,8 @@ class App(QMainWindow):
         self.freeze_ui_update = True
 
         self.copied_table_items = {}
+        self.selected_work_price = 0
+        self.selected_part_price = 0
         # self.copied_table_item_colors = {}
 
         self.default_web_table_stylesheet = \
@@ -159,11 +161,11 @@ class App(QMainWindow):
 
         self.ui.table_parts.doubleClicked.connect(self.copy_web_table_items_connected)
         self.ui.table_accesory.doubleClicked.connect(self.copy_web_table_items_connected)
-        self.ui.table_parts.itemPressed.connect(self.handle_web_table_item_selection_connected)
-        self.ui.table_accesory.itemPressed.connect(self.handle_web_table_item_selection_connected)
+        self.ui.table_parts.itemSelectionChanged.connect(self.handle_web_table_item_selection_connected)
+        self.ui.table_accesory.itemSelectionChanged.connect(self.handle_web_table_item_selection_connected)
         self.ui.table_parts.installEventFilter(self)
         self.ui.table_accesory.installEventFilter(self)
-        self.ui.table_price.clicked.connect(self.cash_table_element)
+        self.ui.table_price.itemSelectionChanged.connect(self.cash_table_element)
         self.ui.table_price.doubleClicked.connect(self.copy_price_table_item_connected)
         self.ui.table_price.installEventFilter(self)
         self.ui.help.clicked.connect(self.open_help)
