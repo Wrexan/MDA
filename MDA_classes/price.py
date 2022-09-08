@@ -51,9 +51,10 @@ class Price:
 
     def search_price_in_path_tuple(self, path_list: tuple):
         for path in path_list:
-            for name in os.listdir(path):
-                if name[-4:] == self.C.PRICE_PARTIAL_NAME[1] and self.C.PRICE_PARTIAL_NAME[0] in name:
-                    return f'{path}{name}', name
+            if os.path.exists(path):
+                for name in os.listdir(path):
+                    if name[-4:] == self.C.PRICE_PARTIAL_NAME[1] and self.C.PRICE_PARTIAL_NAME[0] in name:
+                        return f'{path}{name}', name
 
     def approve(self):
         if self.DB:
