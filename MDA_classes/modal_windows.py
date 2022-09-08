@@ -45,6 +45,8 @@ class ConfigWindow(QtWidgets.QDialog):
         self.ui.chb_price_name_only.setCheckState(2 if C.SEARCH_BY_PRICE_MODEL else 0)
         self.ui.chb_search_eng.setCheckState(2 if C.LATIN_SEARCH else 0)
         self.ui.chb_search_narrow.setCheckState(2 if C.NARROW_SEARCH else 0)
+
+        self.ui.income_overprice_perc.setValue(C.INCOME_PARTS_MARGIN_PERC)
         # self.ui.wide_monitor.setCheckState(2 if C.WIDE_MONITOR else 0)
         # self.ui.column_width_max.setValue(C.TABLE_COLUMN_SIZE_MAX)
         # self.ui.buttonBox.button()..accept.connect(self.apply_settings())
@@ -69,6 +71,8 @@ class ConfigWindow(QtWidgets.QDialog):
         self.C.SEARCH_BY_PRICE_MODEL = True if self.ui.chb_price_name_only.checkState() == 2 else False
         self.C.LATIN_SEARCH = True if self.ui.chb_search_eng.checkState() == 2 else False
         self.C.NARROW_SEARCH = True if self.ui.chb_search_narrow.checkState() == 2 else False
+
+        self.C.INCOME_PARTS_MARGIN_PERC = self.ui.income_overprice_perc.value()
         # C.WIDE_MONITOR = True if self.ui.wide_monitor.checkState() == 2 else False
         # C.TABLE_COLUMN_SIZE_MAX = self.ui.column_width_max.value()
         self.Parent.init_ui_dynamics()

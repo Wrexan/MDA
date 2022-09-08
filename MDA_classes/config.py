@@ -185,6 +185,8 @@ class Config:
                 self.DK9_COLORED = True if config['SETTINGS']['DK9_COLORED'] == 'True' else False
                 self.DK9_COL_DIFF = int(config['SETTINGS']['DK9_COL_DIFF'])
                 self.TABLE_FONT_SIZE = int(config['SETTINGS']['TABLE_FONT_SIZE'])
+
+                self.INCOME_PARTS_MARGIN_PERC = int(config['SETTINGS']['INCOME_PARTS_MARGIN_PERC'])
                 # self.WIDE_MONITOR = True if config['SETTINGS']['WIDE_MONITOR'] == 'True' else False
                 # self.TABLE_COLUMN_SIZE_MAX = int(config['SETTINGS']['TABLE_COLUMN_SIZE_MAX'])
                 # self.DK9_LOGIN_DATA = self.data()
@@ -233,6 +235,8 @@ class Config:
         config['SETTINGS']['DK9_COLORED'] = str(self.DK9_COLORED)
         config['SETTINGS']['DK9_COL_DIFF'] = str(self.DK9_COL_DIFF)
         config['SETTINGS']['TABLE_FONT_SIZE'] = str(self.TABLE_FONT_SIZE)
+
+        config['SETTINGS']['INCOME_PARTS_MARGIN_PERC'] = str(self.INCOME_PARTS_MARGIN_PERC)
 
         self.DK9_LOGIN_DATA = self.c_data()
         try:
