@@ -35,6 +35,8 @@ class Config:
         self.TABLE_FONT_SIZE = 12
         self.SMALL_FONT_SIZE = 12
 
+        self.INCOME_PARTS_MARGIN_PERC = 4
+
         # ====================PRICE====================
         self.PRICE_PATH = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop\\')
         self.PRICE_PATH_ALT = f'{shell.SHGetFolderPath(0, shellcon.CSIDL_DESKTOP, None, 0)}\\'

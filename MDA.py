@@ -61,6 +61,7 @@ class App(QMainWindow):
         self.ui.setupUi(self)
         self.model_list_widget = QListWidget()
         self.dk9_request_label = QLabel()
+        self.work_cost_label = QLabel()
 
         self.search_input = SearchInput(self)
         self.search_input.setParent(self.ui.frame_3)
@@ -175,6 +176,11 @@ class App(QMainWindow):
         self.dk9_request_label.setFixedWidth(80)
         self.dk9_request_label.setAlignment(Qt.AlignRight)
 
+        self.work_cost_label.setParent(self.ui.tab_widget)
+        self.work_cost_label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.work_cost_label.setFixedWidth(240)
+        self.work_cost_label.setAlignment(Qt.AlignRight)
+
         self.manufacturer_wheel = (self.ui.manufacturer_1,
                                    self.ui.manufacturer_2,
                                    self.ui.manufacturer_3,
@@ -239,6 +245,9 @@ class App(QMainWindow):
 
         self.dk9_request_label.move(self.ui.table_parts.width() - 84, 3)
         self.dk9_request_label.setFont(self.ui_font_bold)
+
+        self.work_cost_label.move(self.ui.table_parts.width() - 340, 3)
+        self.work_cost_label.setFont(self.ui_font_bold)
 
         self.model_list_widget.setStyleSheet(
             "QListView::item"
@@ -901,30 +910,45 @@ class App(QMainWindow):
         tab_widget.setTabText(num, f'{tab_names[num]} {count_2} шт')
         tab_widget.setTabToolTip(num, f'{count_1} позиций/ {count_2} штук')
 
+    def update_work_cost(self):
+        if self.selected_work_price == 0 or self.selected_part_price == 0:
+            # or self.selected_work_price < self.selected_part_price:
+            self.work_cost_label.setText('')
+        else:
+            self.work_cost_label.setText(
+                f'Стоимость работы: '
+                f'{int(self.selected_work_price - self.selected_part_price * (1 + C.INCOME_PARTS_MARGIN_PERC / 100))}'
+                f'грн')
+
     # WEB TABLE SELECTION
     def handle_web_table_item_selection_connected(self):
         self.change_table_item_colors(table=self.sender())
+        self.update_work_cost()
 
     # def change_table_item_colors(self, table: QtCore.QObject, items: int = 0):
     def change_table_item_colors(self, table: QTableWidget):
         row = table.selectedItems()
-        self.clear_table_items_on_new_copy()
-        last_cell_bg_color = (row[-1].background().color().red(),
-                              row[-1].background().color().green(),
-                              row[-1].background().color().blue())
-        # print(f'{row=} {last_cell_bg_color=}')
-        table.setStyleSheet(
-            "QTableWidget::item:hover"
-            "{"
-            f"background-color : rgb{C.DK9_BG_HOVER_COLOR};"
-            "}"
-            "QTableWidget::item:selected"
-            "{"
-            "background: qlineargradient"
-            f"(x1: 0, y1: 0, x2: 0, y2: 0.8, stop: 0 rgb{C.DK9_BG_HOVER_COLOR}, stop: 1 rgb{last_cell_bg_color});"
-            "border-top: 1px solid #6a6ea9;"
-            "border-bottom: 1px solid #6a6ea9;"
-            "}")
+        if row:
+            _cost = row[4].text()
+            self.selected_part_price = (int(_cost) if _cost.isdigit() else 0)
+            last_cell_bg_color = (row[-1].background().color().red(),
+                                  row[-1].background().color().green(),
+                                  row[-1].background().color().blue())
+            # print(f'{row=} {last_cell_bg_color=}')
+            table.setStyleSheet(
+                "QTableWidget::item:hover"
+                "{"
+                f"background-color : rgb{C.DK9_BG_HOVER_COLOR};"
+                "}"
+                "QTableWidget::item:selected"
+                "{"
+                "background: qlineargradient"
+                f"(x1: 0, y1: 0, x2: 0, y2: 0.8, stop: 0 rgb{C.DK9_BG_HOVER_COLOR}, stop: 1 rgb{last_cell_bg_color});"
+                "border-top: 1px solid #6a6ea9;"
+                "border-bottom: 1px solid #6a6ea9;"
+                "}")
+        else:
+            self.selected_part_price = 0
 
     # TABLE COPY
     def copy_web_table_items_connected(self):
@@ -967,8 +991,11 @@ class App(QMainWindow):
         selected_row = self.sender().selectedItems()
         selected_row_len = len(selected_row)
         self.ui.pt_cash_name.setPlainText(selected_row[0].text() if selected_row_len > 0 else '')
-        self.ui.pt_cash_price.setPlainText(selected_row[1].text() if selected_row_len > 1 else '')
+        _price = selected_row[1].text() if selected_row_len > 1 else ''
+        self.ui.pt_cash_price.setPlainText(_price)
         self.ui.pt_cash_descr.setPlainText(selected_row[2].text() if selected_row_len > 2 else '')
+        self.selected_work_price = (int(_price) if _price.isdigit() else 0)
+        self.update_work_cost()
         # clipboard.setText(text)
 
     @staticmethod
