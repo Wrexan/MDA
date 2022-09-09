@@ -514,5 +514,6 @@ class Ui_MainWindow(object):
         self.chb_price_name_only.setText(_translate("MainWindow", "Модель прайса"))
         self.chb_search_eng.setText(_translate("MainWindow", "Латиница"))
         self.chb_search_narrow.setText(_translate("MainWindow", "Минимум 2"))
+        self.table_parts.setSortingEnabled(True)
         self.tab_widget.setTabText(self.tab_widget.indexOf(self.tab_0), _translate("MainWindow", "   ЗАПЧАСТИ   "))
         self.tab_widget.setTabText(self.tab_widget.indexOf(self.tab_1), _translate("MainWindow", "  АКСЕССУАРЫ  "))

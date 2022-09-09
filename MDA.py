@@ -634,13 +634,20 @@ class App(QMainWindow):
 
         if self.web_status == 2:
             self.load_progress(70)
+            self.ui.table_parts.sortByColumn(0, Qt.SortOrder(0))
+            self.ui.table_parts.setSortingEnabled(False)
             self.fill_table_from_soup(self.soup, self.ui.table_parts, 0,
                                       C.DK9_TABLE_NAMES, C.DK9_BG_P_COLOR1, C.DK9_BG_P_COLOR2, 5,
                                       align={4: Qt.AlignRight})
+            self.ui.table_parts.setSortingEnabled(True)
+
+            self.ui.table_accesory.sortByColumn(0, Qt.SortOrder(0))
+            self.ui.table_accesory.setSortingEnabled(False)
             self.load_progress(85)
             self.fill_table_from_soup(self.soup, self.ui.table_accesory, 1,
                                       C.DK9_TABLE_NAMES, C.DK9_BG_A_COLOR1, C.DK9_BG_A_COLOR2, 5,
                                       align={4: Qt.AlignRight})
+            self.ui.table_accesory.setSortingEnabled(True)
         else:
             self.login_dk9()
         self.load_progress(0) if use_old_soup else self.load_progress(100)
