@@ -78,6 +78,8 @@ class App(QMainWindow):
             "QTableWidget::item:hover" \
             "{" \
             f"background-color : rgb{C.DK9_BG_HOVER_COLOR};" \
+            "border-top: 1px solid #6a6ea9;" \
+            "border-bottom: 1px solid #6a6ea9;" \
             "}" \
             "QTableWidget::item:selected" \
             "{" \
@@ -634,19 +636,23 @@ class App(QMainWindow):
 
         if self.web_status == 2:
             self.load_progress(70)
-            self.ui.table_parts.sortByColumn(0, Qt.SortOrder(0))
             self.ui.table_parts.setSortingEnabled(False)
             self.fill_table_from_soup(self.soup, self.ui.table_parts, 0,
                                       C.DK9_TABLE_NAMES, C.DK9_BG_P_COLOR1, C.DK9_BG_P_COLOR2, 5,
                                       align={4: Qt.AlignRight})
+            self.ui.table_parts.sortByColumn(3, Qt.SortOrder(0))
+            self.ui.table_parts.sortByColumn(2, Qt.SortOrder(0))
+            self.ui.table_parts.sortByColumn(0, Qt.SortOrder(0))
             self.ui.table_parts.setSortingEnabled(True)
 
-            self.ui.table_accesory.sortByColumn(0, Qt.SortOrder(0))
             self.ui.table_accesory.setSortingEnabled(False)
             self.load_progress(85)
             self.fill_table_from_soup(self.soup, self.ui.table_accesory, 1,
                                       C.DK9_TABLE_NAMES, C.DK9_BG_A_COLOR1, C.DK9_BG_A_COLOR2, 5,
                                       align={4: Qt.AlignRight})
+            self.ui.table_accesory.sortByColumn(3, Qt.SortOrder(0))
+            self.ui.table_accesory.sortByColumn(2, Qt.SortOrder(0))
+            self.ui.table_accesory.sortByColumn(0, Qt.SortOrder(0))
             self.ui.table_accesory.setSortingEnabled(True)
         else:
             self.login_dk9()
@@ -841,6 +847,9 @@ class App(QMainWindow):
         try:
             item_counter = 0
             r = 0
+            zebra_colors = (def_bg_color1, def_bg_color2)
+            current_zebra_color = 0
+            first_cell_previous_text = ''
             self.clear_table(table)
             if not soup[num]:
                 if count_column is not None:
@@ -883,11 +892,12 @@ class App(QMainWindow):
                     table.insertRow(r)
                     for dk9_td in row:
                         # print(f'{dk9_td.string} {self.curr_model=}')
-                        table.setItem(r, c, QTableWidgetItem(dk9_td.string))
-                        table.item(r, c).setToolTip(dk9_td.string)
+                        current_cell_text = dk9_td.string
+                        table.setItem(r, c, QTableWidgetItem(current_cell_text))
+                        table.item(r, c).setToolTip(current_cell_text)
                         if align and c in align:
                             table.item(r, c).setTextAlignment(align[c])
-                        if 'ориг' in table.item(r, c).text() and 'вк ' not in table.item(r, c).text():
+                        if 'ориг' in current_cell_text and 'вк ' not in current_cell_text:
                             table.item(r, c).setFont(self.tab_font_bold)
                         if C.DK9_COLORED:
                             if row_palette:
@@ -899,7 +909,14 @@ class App(QMainWindow):
                                 table.item(r, c). \
                                     setBackground(QtGui.QColor(td_palette[0], td_palette[1], td_palette[2]))
                             else:
-                                dbgc = def_bg_color1 if r % 2 else def_bg_color2
+                                if c == 0:
+                                    _text = current_cell_text.lower()
+                                    if _text != first_cell_previous_text:
+                                        first_cell_previous_text = _text
+                                        current_zebra_color = abs(current_zebra_color - 1)
+                                        dbgc = zebra_colors[current_zebra_color]
+
+                                # dbgc = def_bg_color1 if r % 2 else def_bg_color2
                                 table.item(r, c).setBackground(QtGui.QColor(dbgc[0], dbgc[1], dbgc[2]))
                         c += 1
                 r += 1
@@ -946,6 +963,8 @@ class App(QMainWindow):
                 "QTableWidget::item:hover"
                 "{"
                 f"background-color : rgb{C.DK9_BG_HOVER_COLOR};"
+                "border-top: 1px solid #6a6ea9;"
+                "border-bottom: 1px solid #6a6ea9;"
                 "}"
                 "QTableWidget::item:selected"
                 "{"
