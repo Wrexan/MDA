@@ -964,9 +964,12 @@ class App(QMainWindow):
         if row:
             _cost = row[4].text()
             self.selected_part_price = (int(_cost) if _cost.isdigit() else 0)
-            last_cell_bg_color = (row[-1].background().color().red(),
-                                  row[-1].background().color().green(),
-                                  row[-1].background().color().blue())
+            if C.DK9_COLORED:
+                last_cell_bg_color = (row[-1].background().color().red(),
+                                      row[-1].background().color().green(),
+                                      row[-1].background().color().blue())
+            else:
+                last_cell_bg_color = (200, 200, 200)
             # print(f'{row=} {last_cell_bg_color=}')
             table.setStyleSheet(f"{self.web_table_stylesheet_template[0]}"
                                 f"{last_cell_bg_color}"
@@ -1059,18 +1062,6 @@ class App(QMainWindow):
 
             self._upd_bg_clr_sel_by_price(_cells, 0, 4, True)
 
-            # # Prepare table and dict
-            # for row_num in range(self.ui.table_parts.rowCount()):
-            #     _cell_0_text = self.ui.table_parts.item(row_num, 0).text().lower()
-            #     _cell_3_text = self.ui.table_parts.item(row_num, 3).text().lower()
-            #     for column in range(0, 3):
-            #         self.ui.table_parts.item(row_num, column).setForeground(fg_clr_default)
-            #         if column == 0:
-            #             if 'ориг' in _cell_0_text and 'вк ' not in _cell_0_text:
-            #                 self.ui.table_parts.item(row_num, column).setFont(self.tab_font_bold)
-            #                 continue
-            #         self.ui.table_parts.item(row_num, column).setFont(self.tab_font)
-
             # Search for first4 letters
             if _cell_0_text.startswith(_first_search_letters):
                 _cell_0_len = len(_cell_0_text)
@@ -1128,7 +1119,10 @@ class App(QMainWindow):
                     self._upd_bg_clr_sel_by_price(founded_cell_first_letters[row_num]['cells'], 0, 4)
 
     def _upd_bg_clr_sel_by_price(self, cells_to_change: tuple, first_cell: int, to_cell: int, default: bool = False):
-        default_cell_bg_color = cells_to_change[to_cell].background().color()
+        if C.DK9_COLORED:
+            default_cell_bg_color = cells_to_change[to_cell].background().color()
+        else:
+            default_cell_bg_color = QtGui.QColor(250, 250, 250)
 
         if default:
             if cells_to_change[first_cell].background().color() != default_cell_bg_color:
