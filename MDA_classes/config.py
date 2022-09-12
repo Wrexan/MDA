@@ -103,6 +103,7 @@ class Config:
         self.DK9_BG_A_COLOR2 = (0, 0, 0)
         self.precalculate_color_diffs()
 
+        self.DK9_BG_COLOR_SEL_BY_PRICE = (240, 200, 240)
         self.DK9_BG_HOVER_COLOR = (250, 250, 250)
 
         self.DK9_BG_COLORS = {'GreenYellow': (173, 255, 47),

@@ -52,6 +52,12 @@ class App(QMainWindow):
         self.ui_font_bold = QtGui.QFont()
         self.ui_font_bold.setBold(True)
 
+        self.DK9_BG_COLOR_SEL_BY_PRICE = QtGui.QColor(*C.DK9_BG_COLOR_SEL_BY_PRICE)
+        self.DK9_BG_COLOR_SEL_BY_PRICE_GRAD = QtGui.QLinearGradient(0, 0, 120, 0)
+        # self.DK9_BG_COLOR_SEL_BY_PRICE_GRAD.setColorAt(0, Qt.red)
+        self.DK9_BG_COLOR_SEL_BY_PRICE_GRAD.setColorAt(0.03,
+                                                       self.DK9_BG_COLOR_SEL_BY_PRICE)  # QtGui.QColor(255, 255, 210))
+
         self.models = {}
         self.model_buttons = {}
         self.manufacturer_wheel = None
@@ -74,20 +80,19 @@ class App(QMainWindow):
         self.selected_part_price = 0
         # self.copied_table_item_colors = {}
 
-        self.default_web_table_stylesheet = \
-            "QTableWidget::item:hover" \
-            "{" \
-            f"background-color : rgb{C.DK9_BG_HOVER_COLOR};" \
-            "border-top: 1px solid #6a6ea9;" \
-            "border-bottom: 1px solid #6a6ea9;" \
-            "}" \
-            "QTableWidget::item:selected" \
-            "{" \
-            "background: qlineargradient" \
-            f"(x1: 0, y1: 0, x2: 0, y2: 0.8, stop: 0 rgb{C.DK9_BG_HOVER_COLOR}, stop: 1 rgb{C.DK9_BG_HOVER_COLOR});" \
-            "border-top: 1px solid #6a6ea9;" \
-            "border-bottom: 1px solid #6a6ea9;" \
-            "}"
+        self.web_table_stylesheet_template = (
+            "QTableWidget::item:hover{"
+            f"background-color : rgb{C.DK9_BG_HOVER_COLOR};"
+            "border-top: 1px solid #6a6ea9;border-bottom: 1px solid #6a6ea9;}"
+            "QTableWidget::item:selected{"
+            "background: qlineargradient"
+            f"(x1: 0, y1: 0, x2: 0, y2: 0.8, stop: 0 rgb{C.DK9_BG_HOVER_COLOR}, stop: 1 rgb", ");"
+                                                                                              "border-top: 1px solid #6a6ea9;border-bottom: 1px solid #6a6ea9;}"
+        )
+
+        self.default_web_table_stylesheet = f"{self.web_table_stylesheet_template[0]}" \
+                                            f"{C.DK9_BG_HOVER_COLOR});" \
+                                            f"{self.web_table_stylesheet_template[1]}"
 
         self.init_ui_statics()
         self.apply_window_size()
@@ -963,20 +968,9 @@ class App(QMainWindow):
                                   row[-1].background().color().green(),
                                   row[-1].background().color().blue())
             # print(f'{row=} {last_cell_bg_color=}')
-            table.setStyleSheet(
-                "QTableWidget::item:hover"
-                "{"
-                f"background-color : rgb{C.DK9_BG_HOVER_COLOR};"
-                "border-top: 1px solid #6a6ea9;"
-                "border-bottom: 1px solid #6a6ea9;"
-                "}"
-                "QTableWidget::item:selected"
-                "{"
-                "background: qlineargradient"
-                f"(x1: 0, y1: 0, x2: 0, y2: 0.8, stop: 0 rgb{C.DK9_BG_HOVER_COLOR}, stop: 1 rgb{last_cell_bg_color});"
-                "border-top: 1px solid #6a6ea9;"
-                "border-bottom: 1px solid #6a6ea9;"
-                "}")
+            table.setStyleSheet(f"{self.web_table_stylesheet_template[0]}"
+                                f"{last_cell_bg_color}"
+                                f"{self.web_table_stylesheet_template[1]}")
         else:
             self.selected_part_price = 0
 
@@ -1034,16 +1028,6 @@ class App(QMainWindow):
     def highlight_web_parts_by_part_name(self, name: str):
         if not name:
             return
-        # fg_clr_selected = QtGui.QColor(60, 30, 0)
-        bg_clr_selected = QtGui.QLinearGradient(0, 0, 120, 0)
-        bg_clr_selected.setColorAt(0, Qt.red)
-        bg_clr_selected.setColorAt(0.03, Qt.white)  # QtGui.QColor(255, 255, 210))
-        # bg_clr_selected2 = QtGui.QLinearGradient(400, 0, 0, 0)
-        # bg_clr_selected2.setColorAt(0.03, QtGui.QColor(255, 255, 230))
-        # bg_clr_selected = QtGui.QLinearGradient(0, 20, 0, 0)
-        # bg_clr_selected.setColorAt(0, Qt.red)
-        # bg_clr_selected.setColorAt(0.2, Qt.white)
-        # fg_clr_default = QtGui.QColor(0, 0, 0)
         founded_cell_first_letters = {}
         plus_pos = name.find('+')
         part_name = name[:plus_pos] if plus_pos >= 0 else name
@@ -1069,29 +1053,23 @@ class App(QMainWindow):
 
         # Prepare table and dict
         for row_num in range(self.ui.table_parts.rowCount()):
-            _cell_0 = self.ui.table_parts.item(row_num, 0)
-            _cell_1 = self.ui.table_parts.item(row_num, 1)
-            _cell_3 = self.ui.table_parts.item(row_num, 3)
+            _cells = (*(self.ui.table_parts.item(row_num, i) for i in range(5)),)
             _cell_0_text = self.ui.table_parts.item(row_num, 0).text().lower()
             _cell_3_text = self.ui.table_parts.item(row_num, 3).text().lower()
-            self._set_items_fg_clr_font(_cell_0,
-                                        _cell_1,
-                                        _cell_3,
-                                        bg_clr_selected,
-                                        # bg_clr_selected2,
-                                        True)
 
-        # # Prepare table and dict
-        # for row_num in range(self.ui.table_parts.rowCount()):
-        #     _cell_0_text = self.ui.table_parts.item(row_num, 0).text().lower()
-        #     _cell_3_text = self.ui.table_parts.item(row_num, 3).text().lower()
-        #     for column in range(0, 3):
-        #         self.ui.table_parts.item(row_num, column).setForeground(fg_clr_default)
-        #         if column == 0:
-        #             if 'ориг' in _cell_0_text and 'вк ' not in _cell_0_text:
-        #                 self.ui.table_parts.item(row_num, column).setFont(self.tab_font_bold)
-        #                 continue
-        #         self.ui.table_parts.item(row_num, column).setFont(self.tab_font)
+            self._upd_bg_clr_sel_by_price(_cells, 0, 4, True)
+
+            # # Prepare table and dict
+            # for row_num in range(self.ui.table_parts.rowCount()):
+            #     _cell_0_text = self.ui.table_parts.item(row_num, 0).text().lower()
+            #     _cell_3_text = self.ui.table_parts.item(row_num, 3).text().lower()
+            #     for column in range(0, 3):
+            #         self.ui.table_parts.item(row_num, column).setForeground(fg_clr_default)
+            #         if column == 0:
+            #             if 'ориг' in _cell_0_text and 'вк ' not in _cell_0_text:
+            #                 self.ui.table_parts.item(row_num, column).setFont(self.tab_font_bold)
+            #                 continue
+            #         self.ui.table_parts.item(row_num, column).setFont(self.tab_font)
 
             # Search for first4 letters
             if _cell_0_text.startswith(_first_search_letters):
@@ -1111,10 +1089,12 @@ class App(QMainWindow):
                     if 'ориг' in _cell_0_text or 'ориг' in _cell_3_text and 'вк' not in _cell_3_text:
                         continue
 
-                founded_cell_first_letters[row_num] = (_cell_0_len, _cell_0_text, _cell_3_text,
-                                                       _cell_0,
-                                                       _cell_1,
-                                                       _cell_3)
+                founded_cell_first_letters[row_num] = {
+                    'len': _cell_0_len,
+                    'text0': _cell_0_text,
+                    'text3': _cell_3_text,
+                    'cells': _cells
+                }
                 # print(f'{_found_exact_len=} {_exact_price_words=} '
                 #       f'{len(_cell_0_text)=} {_exact_first_word_len=}')
 
@@ -1123,11 +1103,8 @@ class App(QMainWindow):
             if _found_exact_len:
                 # print(f'Exact: {_exact_price_words=} {orig=} ')
                 for row_num, _cell_params in founded_cell_first_letters.items():
-                    if _cell_params[0] == _found_exact_len:
-                        self._set_items_fg_clr_font(founded_cell_first_letters[row_num][3],
-                                                    founded_cell_first_letters[row_num][4],
-                                                    founded_cell_first_letters[row_num][5],
-                                                    bg_clr_selected)
+                    if _cell_params['len'] == _found_exact_len:
+                        self._upd_bg_clr_sel_by_price(founded_cell_first_letters[row_num]['cells'], 0, 4)
                         # _found_big = True
             else:
                 for row_num, _cell_params in founded_cell_first_letters.items():
@@ -1138,39 +1115,35 @@ class App(QMainWindow):
                         if not _price_word_num or (_exact_price_words[_price_word_num] in ('вк', 'ориг', 'с')):
                             continue
                         # print(f'+++')
-                        if _exact_price_words[_price_word_num] in _cell_params[1] \
-                                or _exact_price_words[_price_word_num] in _cell_params[2].split():
+                        if _exact_price_words[_price_word_num] in _cell_params['text0'] \
+                                or _exact_price_words[_price_word_num] in _cell_params['text3'].split():
                             # print(f'FOUND BIG: {_exact_price_words[_price_word_num]=} {_exact_price_words=} '
                             #       f'{_cell_params[1]=} {_cell_params[2].split()=}')
-                            self._set_items_fg_clr_font(founded_cell_first_letters[row_num][3],
-                                                        founded_cell_first_letters[row_num][4],
-                                                        founded_cell_first_letters[row_num][5],
-                                                        bg_clr_selected)
+                            self._upd_bg_clr_sel_by_price(founded_cell_first_letters[row_num]['cells'], 0, 4)
                             _found_big = True
                             break
                 if _found_big:
                     return
                 for row_num, _cell_params in founded_cell_first_letters.items():
-                    self._set_items_fg_clr_font(founded_cell_first_letters[row_num][3],
-                                                founded_cell_first_letters[row_num][4],
-                                                founded_cell_first_letters[row_num][5],
-                                                bg_clr_selected)
+                    self._upd_bg_clr_sel_by_price(founded_cell_first_letters[row_num]['cells'], 0, 4)
 
-    @staticmethod
-    def _set_items_fg_clr_font(cell_to_change, cell_color_example, cell_to_change2, color, default=False):
-        second_cell_bg_color = cell_color_example.background().color()
-        # for column in range(3, 6):
-        # linearGrad = QtGui.QLinearGradient(0, 0, 80, 0)
-        # linearGrad.setColorAt(0, Qt.red)
-        # linearGrad.setColorAt(0.1, Qt.white)
+    def _upd_bg_clr_sel_by_price(self, cells_to_change: tuple, first_cell: int, to_cell: int, default: bool = False):
+        default_cell_bg_color = cells_to_change[to_cell].background().color()
+
         if default:
-            cell_to_change.setBackground(second_cell_bg_color)
-            # cell_to_change2.setBackground(second_cell_bg_color)
+            if cells_to_change[first_cell].background().color() != default_cell_bg_color:
+                for column in range(first_cell, to_cell):
+                    cells_to_change[column].setBackground(default_cell_bg_color)
             return
+        for column in range(first_cell, to_cell):
+            if column < to_cell - 1:
+                cells_to_change[column].setBackground(self.DK9_BG_COLOR_SEL_BY_PRICE)
+            else:
+                self.DK9_BG_COLOR_SEL_BY_PRICE_GRAD.setColorAt(1, QtGui.QColor(default_cell_bg_color))
+                cells_to_change[column].setBackground(self.DK9_BG_COLOR_SEL_BY_PRICE_GRAD)
 
-        color.setColorAt(1, QtGui.QColor(second_cell_bg_color))
         # color2.setColorAt(1, QtGui.QColor(second_cell_bg_color))
-        cell_to_change.setBackground(color)
+
         # cell_to_change2.setBackground(color2)
         # for column in range(start, start + amt):
         #     cells_params[column].setForeground(color)
