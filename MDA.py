@@ -941,17 +941,20 @@ class App(QMainWindow):
             self.work_cost_label.setText('')
         else:
             self.work_cost_label.setText(
-                f'Стоимость работы: '
+                f'Работа: '
                 f'{int(self.selected_work_price - self.selected_part_price * (1 + C.INCOME_PARTS_MARGIN_PERC / 100))}'
+                f'грн  '
+                f'Б/Н: '                
+                f'{int(self.selected_work_price - self.selected_part_price)}'
                 f'грн')
 
     # WEB TABLE SELECTION
     def handle_web_table_item_selection_connected(self):
-        self.change_table_item_colors(table=self.sender())
+        self.change_table_item_bg_color_on_selection(table=self.sender())
         self.update_work_cost()
 
     # def change_table_item_colors(self, table: QtCore.QObject, items: int = 0):
-    def change_table_item_colors(self, table: QTableWidget):
+    def change_table_item_bg_color_on_selection(self, table: QTableWidget):
         row = table.selectedItems()
         if row:
             _cost = row[4].text()
