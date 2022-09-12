@@ -944,7 +944,7 @@ class App(QMainWindow):
                 f'Работа: '
                 f'{int(self.selected_work_price - self.selected_part_price * (1 + C.INCOME_PARTS_MARGIN_PERC / 100))}'
                 f'грн  '
-                f'Б/Н: '                
+                f'Б/Н: '
                 f'{int(self.selected_work_price - self.selected_part_price)}'
                 f'грн')
 
@@ -1034,6 +1034,16 @@ class App(QMainWindow):
     def highlight_web_parts_by_part_name(self, name: str):
         if not name:
             return
+        # fg_clr_selected = QtGui.QColor(60, 30, 0)
+        bg_clr_selected = QtGui.QLinearGradient(0, 0, 120, 0)
+        bg_clr_selected.setColorAt(0, Qt.red)
+        bg_clr_selected.setColorAt(0.03, Qt.white)  # QtGui.QColor(255, 255, 210))
+        # bg_clr_selected2 = QtGui.QLinearGradient(400, 0, 0, 0)
+        # bg_clr_selected2.setColorAt(0.03, QtGui.QColor(255, 255, 230))
+        # bg_clr_selected = QtGui.QLinearGradient(0, 20, 0, 0)
+        # bg_clr_selected.setColorAt(0, Qt.red)
+        # bg_clr_selected.setColorAt(0.2, Qt.white)
+        # fg_clr_default = QtGui.QColor(0, 0, 0)
         founded_cell_first_letters = {}
         plus_pos = name.find('+')
         part_name = name[:plus_pos] if plus_pos >= 0 else name
@@ -1059,17 +1069,29 @@ class App(QMainWindow):
 
         # Prepare table and dict
         for row_num in range(self.ui.table_parts.rowCount()):
+            _cell_0 = self.ui.table_parts.item(row_num, 0)
+            _cell_1 = self.ui.table_parts.item(row_num, 1)
+            _cell_3 = self.ui.table_parts.item(row_num, 3)
             _cell_0_text = self.ui.table_parts.item(row_num, 0).text().lower()
             _cell_3_text = self.ui.table_parts.item(row_num, 3).text().lower()
-            for column in range(0, 3):
-                self.ui.table_parts.item(row_num, column).setForeground(QtGui.QColor(0, 0, 0))
-                if column == 0:
-                    if 'ориг' in _cell_0_text and 'вк ' not in _cell_0_text:
-                        self.ui.table_parts.item(row_num, column).setFont(self.tab_font_bold)
-                    else:
-                        self.ui.table_parts.item(row_num, column).setFont(self.tab_font)
-                else:
-                    self.ui.table_parts.item(row_num, column).setFont(self.tab_font)
+            self._set_items_fg_clr_font(_cell_0,
+                                        _cell_1,
+                                        _cell_3,
+                                        bg_clr_selected,
+                                        # bg_clr_selected2,
+                                        True)
+
+        # # Prepare table and dict
+        # for row_num in range(self.ui.table_parts.rowCount()):
+        #     _cell_0_text = self.ui.table_parts.item(row_num, 0).text().lower()
+        #     _cell_3_text = self.ui.table_parts.item(row_num, 3).text().lower()
+        #     for column in range(0, 3):
+        #         self.ui.table_parts.item(row_num, column).setForeground(fg_clr_default)
+        #         if column == 0:
+        #             if 'ориг' in _cell_0_text and 'вк ' not in _cell_0_text:
+        #                 self.ui.table_parts.item(row_num, column).setFont(self.tab_font_bold)
+        #                 continue
+        #         self.ui.table_parts.item(row_num, column).setFont(self.tab_font)
 
             # Search for first4 letters
             if _cell_0_text.startswith(_first_search_letters):
@@ -1077,8 +1099,8 @@ class App(QMainWindow):
                 if _found_exact_len:
                     if abs(_cell_0_len - _found_exact_len) > 3:
                         continue
-                elif (not _exact_price_words[1] and _cell_0_len == _exact_first_word_len)\
-                        or _exact_price_words[1] in ('вк', 'ориг')\
+                elif (not _exact_price_words[1] and _cell_0_len == _exact_first_word_len) \
+                        or _exact_price_words[1] in ('вк', 'ориг') \
                         or _exact_price_words[1] in _cell_0_text:
                     _found_exact_len = _cell_0_len
 
@@ -1090,9 +1112,9 @@ class App(QMainWindow):
                         continue
 
                 founded_cell_first_letters[row_num] = (_cell_0_len, _cell_0_text, _cell_3_text,
-                                                       self.ui.table_parts.item(row_num, 0),
-                                                       self.ui.table_parts.item(row_num, 1),
-                                                       self.ui.table_parts.item(row_num, 2))
+                                                       _cell_0,
+                                                       _cell_1,
+                                                       _cell_3)
                 # print(f'{_found_exact_len=} {_exact_price_words=} '
                 #       f'{len(_cell_0_text)=} {_exact_first_word_len=}')
 
@@ -1102,9 +1124,10 @@ class App(QMainWindow):
                 # print(f'Exact: {_exact_price_words=} {orig=} ')
                 for row_num, _cell_params in founded_cell_first_letters.items():
                     if _cell_params[0] == _found_exact_len:
-                        for column in range(3, 6):
-                            _cell_params[column].setForeground(QtGui.QColor(60, 20, 0))
-                            _cell_params[column].setFont(self.tab_font_bold_under)
+                        self._set_items_fg_clr_font(founded_cell_first_letters[row_num][3],
+                                                    founded_cell_first_letters[row_num][4],
+                                                    founded_cell_first_letters[row_num][5],
+                                                    bg_clr_selected)
                         # _found_big = True
             else:
                 for row_num, _cell_params in founded_cell_first_letters.items():
@@ -1115,21 +1138,43 @@ class App(QMainWindow):
                         if not _price_word_num or (_exact_price_words[_price_word_num] in ('вк', 'ориг', 'с')):
                             continue
                         # print(f'+++')
-                        if _exact_price_words[_price_word_num] in _cell_params[1]\
+                        if _exact_price_words[_price_word_num] in _cell_params[1] \
                                 or _exact_price_words[_price_word_num] in _cell_params[2].split():
                             # print(f'FOUND BIG: {_exact_price_words[_price_word_num]=} {_exact_price_words=} '
                             #       f'{_cell_params[1]=} {_cell_params[2].split()=}')
-                            for column in range(3, 6):
-                                _cell_params[column].setForeground(QtGui.QColor(60, 20, 0))
-                                _cell_params[column].setFont(self.tab_font_bold_under)
+                            self._set_items_fg_clr_font(founded_cell_first_letters[row_num][3],
+                                                        founded_cell_first_letters[row_num][4],
+                                                        founded_cell_first_letters[row_num][5],
+                                                        bg_clr_selected)
                             _found_big = True
                             break
                 if _found_big:
                     return
                 for row_num, _cell_params in founded_cell_first_letters.items():
-                    for column in range(3, 6):
-                        _cell_params[column].setForeground(QtGui.QColor(60, 20, 0))
-                        _cell_params[column].setFont(self.tab_font_bold_under)
+                    self._set_items_fg_clr_font(founded_cell_first_letters[row_num][3],
+                                                founded_cell_first_letters[row_num][4],
+                                                founded_cell_first_letters[row_num][5],
+                                                bg_clr_selected)
+
+    @staticmethod
+    def _set_items_fg_clr_font(cell_to_change, cell_color_example, cell_to_change2, color, default=False):
+        second_cell_bg_color = cell_color_example.background().color()
+        # for column in range(3, 6):
+        # linearGrad = QtGui.QLinearGradient(0, 0, 80, 0)
+        # linearGrad.setColorAt(0, Qt.red)
+        # linearGrad.setColorAt(0.1, Qt.white)
+        if default:
+            cell_to_change.setBackground(second_cell_bg_color)
+            # cell_to_change2.setBackground(second_cell_bg_color)
+            return
+
+        color.setColorAt(1, QtGui.QColor(second_cell_bg_color))
+        # color2.setColorAt(1, QtGui.QColor(second_cell_bg_color))
+        cell_to_change.setBackground(color)
+        # cell_to_change2.setBackground(color2)
+        # for column in range(start, start + amt):
+        #     cells_params[column].setForeground(color)
+        #     cells_params[column].setFont(font)
 
     @staticmethod
     def clear_layout(layout):
