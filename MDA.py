@@ -2,6 +2,7 @@ import sys
 import bs4
 import traceback
 import os
+import re
 
 sys.path.append(os.path.join(os.getcwd(), 'PyQt5'))
 # sys.path.append(os.path.join(os.getcwd(), 'PyQt5\\Qt5'))
@@ -1024,7 +1025,7 @@ class App(QMainWindow):
         self.ui.pt_cash_descr.setPlainText(selected_row[2].text() if selected_row_len > 2 else '')
         self.selected_work_price = (int(_price) if _price.isdigit() else 0)
         if selected_row:
-            self.highlight_web_parts_by_part_name(selected_row[0].text().lower())
+            self.highlight_web_parts_by_part_name(selected_row[0].text())
         self.update_work_cost()
         # clipboard.setText(text)
 
@@ -1032,92 +1033,88 @@ class App(QMainWindow):
         if not name:
             return
         founded_cell_first_letters = {}
-        plus_pos = name.find('+')
-        part_name = name[:plus_pos] if plus_pos >= 0 else name
-        if 'вкл' in part_name:
-            part_name = part_name[:plus_pos].replace('-', ' ').replace('(', ' ').strip()
-            vk = False
-        else:
-            part_name = part_name.replace('-', ' ').replace('(', ' ').strip()
-            vk = True if 'вк' in name else False
-        orig = True if 'ориг' in name else False
-
-        if len(part_name.split()) >= 2:
-            _exact_price_words = part_name.split(maxsplit=4)
-        else:
-            _exact_price_words = [part_name, '']
+        founded_cell_appropriation = {}
+        _exact_price_words = list(map(str.strip, re.split(' |-|\\+|\\(|\\)', name.lower(), maxsplit=7)))
+        if len(_exact_price_words) == 1:
+            _exact_price_words.append('')
+        vk = True if 'вк' in _exact_price_words else False
+        orig = True if 'ориг' in _exact_price_words else False
         _exact_first_word_len = len(_exact_price_words[0])
-        _exact_words_len = len(_exact_price_words)
+        _exact_price_words_len = len(_exact_price_words)
         _first_search_letters = _exact_price_words[0][:4] if _exact_first_word_len >= 4 else _exact_price_words[0]
         _found_exact_len = 0
         _found_big = False
-        # print(f'{_exact_price_words=} {part_name=} {_first_search_letters=}')
-        # print(f'{vk=} {orig=} {_exact_price_words=} ')
 
-        # Prepare table and dict
+        # Prepare table data
         for row_num in range(self.ui.table_parts.rowCount()):
             _cells = (*(self.ui.table_parts.item(row_num, i) for i in range(5)),)
-            _cell_0_text = self.ui.table_parts.item(row_num, 0).text().lower()
-            _cell_3_text = self.ui.table_parts.item(row_num, 3).text().lower()
+            _cell_0_lst = \
+                list(map(str.strip, re.split(' |-|\\+|\\(|\\)',
+                                             self.ui.table_parts.item(row_num, 0).text().lower(), maxsplit=5)))
+            _cell_3_lst = \
+                list(map(str.strip, re.split(' |-|\\+|\\(|\\)',
+                                             self.ui.table_parts.item(row_num, 3).text().lower(), maxsplit=5)))
 
             self._upd_bg_clr_sel_by_price(_cells, 0, 4, True)
 
-            # Search for first4 letters
-            if _cell_0_text.startswith(_first_search_letters):
-                _cell_0_len = len(_cell_0_text)
-                if _found_exact_len:
-                    if abs(_cell_0_len - _found_exact_len) > 3:
-                        continue
-                elif (not _exact_price_words[1] and _cell_0_len == _exact_first_word_len) \
-                        or _exact_price_words[1] in ('вк', 'ориг') \
-                        or _exact_price_words[1] in _cell_0_text:
-                    _found_exact_len = _cell_0_len
+            # Search for first 4 letters
+            if _cell_0_lst[0].startswith(_first_search_letters):
+                if len(_cell_0_lst) > 1 and _exact_price_words[1] in ('вк', 'ориг') \
+                        and 'экран' not in _cell_0_lst:
+                    continue
 
-                if orig:
-                    if 'ориг' not in _cell_0_text and 'ориг' not in _cell_3_text:
-                        continue
-                if vk:
-                    if 'ориг' in _cell_0_text or 'ориг' in _cell_3_text and 'вк' not in _cell_3_text:
-                        continue
+                vk_part = True if 'вк' in _cell_0_lst \
+                                  or 'вк' in _cell_3_lst else False
+                orig_part = True if 'ориг' in _cell_0_lst \
+                                    or 'ориг' in _cell_3_lst \
+                                    or 'ор' in _cell_3_lst else False
+                vk_orig_part = True if vk_part and orig_part else False
+
+                if orig and not vk and vk_part:
+                    continue
+                elif vk and not orig and orig_part and not vk_part:
+                    continue
+                elif vk and orig and not vk_orig_part:
+                    continue
+                # print(f'{_exact_price_words=} {_cell_0_lst=} {_cell_3_lst=} {row_num=}')
+
+                _appropriation_of_part_row = 0
+
+                for _price_word in _exact_price_words:
+                    if _price_word not in ('', 'вк', 'ориг') \
+                            and (_price_word in _cell_0_lst or _price_word in _cell_3_lst):
+                        _appropriation_of_part_row += 1
+
+                if _appropriation_of_part_row not in founded_cell_appropriation:
+                    founded_cell_appropriation[_appropriation_of_part_row] = []
+                founded_cell_appropriation[_appropriation_of_part_row].append(row_num)
 
                 founded_cell_first_letters[row_num] = {
-                    'len': _cell_0_len,
-                    'text0': _cell_0_text,
-                    'text3': _cell_3_text,
+                    # 'len': _cell_0_len,
+                    'text0': _cell_0_lst,
+                    'text3': _cell_3_lst,
                     'cells': _cells
                 }
-                # print(f'{_found_exact_len=} {_exact_price_words=} '
-                #       f'{len(_cell_0_text)=} {_exact_first_word_len=}')
-
+        # print(f'{founded_cell_first_letters=}')
+        # print(f'{founded_cell_appropriation=}')
         # Search for second word
         if founded_cell_first_letters:
-            if _found_exact_len:
-                # print(f'Exact: {_exact_price_words=} {orig=} ')
-                for row_num, _cell_params in founded_cell_first_letters.items():
-                    if _cell_params['len'] == _found_exact_len:
+            _max_appropriated_row = max(founded_cell_appropriation.keys())
+            for row_num in founded_cell_appropriation[max(founded_cell_appropriation.keys())]:
+                for _price_word_num in range(_exact_price_words_len):
+                    if not _price_word_num or (_exact_price_words[_price_word_num] in ('', 'вк', 'ориг', 'с')):
+                        continue
+                    if _exact_price_words[_price_word_num] in founded_cell_first_letters[row_num]['text0'] \
+                            or _exact_price_words[_price_word_num] in founded_cell_first_letters[row_num]['text3']:
                         self._upd_bg_clr_sel_by_price(founded_cell_first_letters[row_num]['cells'], 0, 4)
-                        # _found_big = True
-            else:
-                for row_num, _cell_params in founded_cell_first_letters.items():
-                    # print(f'Not exact: {_exact_price_words=} {orig=} ')
+                        _found_big = True
+                        break
+            if _found_big:
+                return
+            for row_num, _cell_params in founded_cell_first_letters.items():
+                self._upd_bg_clr_sel_by_price(founded_cell_first_letters[row_num]['cells'], 0, 4)
 
-                    for _price_word_num in range(_exact_words_len):
-                        # print(f'{_exact_price_words[_price_word_num]=} {_cell_params[1]=} {_cell_params[2].split()=}')
-                        if not _price_word_num or (_exact_price_words[_price_word_num] in ('вк', 'ориг', 'с')):
-                            continue
-                        # print(f'+++')
-                        if _exact_price_words[_price_word_num] in _cell_params['text0'] \
-                                or _exact_price_words[_price_word_num] in _cell_params['text3'].split():
-                            # print(f'FOUND BIG: {_exact_price_words[_price_word_num]=} {_exact_price_words=} '
-                            #       f'{_cell_params[1]=} {_cell_params[2].split()=}')
-                            self._upd_bg_clr_sel_by_price(founded_cell_first_letters[row_num]['cells'], 0, 4)
-                            _found_big = True
-                            break
-                if _found_big:
-                    return
-                for row_num, _cell_params in founded_cell_first_letters.items():
-                    self._upd_bg_clr_sel_by_price(founded_cell_first_letters[row_num]['cells'], 0, 4)
-
+    # Highlighting parts that most fit to selected price position
     def _upd_bg_clr_sel_by_price(self, cells_to_change: tuple, first_cell: int, to_cell: int, default: bool = False):
         if C.DK9_COLORED:
             default_cell_bg_color = cells_to_change[to_cell].background().color()
