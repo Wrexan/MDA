@@ -176,8 +176,9 @@ class Config:
                 self.DK9_LOGIN = config['WEB DATABASE']['DK9_LOGIN']
                 self.DK9_PASSWORD = config['WEB DATABASE']['DK9_PASSWORD']
                 self.FULLSCREEN = True if config['SETTINGS']['FULLSCREEN'] == 'True' else False
-
-                self.FILTER_SEARCH_RESULT = True if config['SETTINGS']['FILTER_SEARCH_RESULT'] == 'True' else False
+                # ALWAYS FALSE
+                self.FILTER_SEARCH_RESULT = False
+                # True if config['SETTINGS']['FILTER_SEARCH_RESULT'] == 'True' else False
                 self.SEARCH_BY_PRICE_MODEL = True if config['SETTINGS']['SEARCH_BY_PRICE_MODEL'] == 'True' else False
                 self.LATIN_SEARCH = True if config['SETTINGS']['LATIN_SEARCH'] == 'True' else False
                 self.NARROW_SEARCH = True if config['SETTINGS']['NARROW_SEARCH'] == 'True' else False

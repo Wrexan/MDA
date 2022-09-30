@@ -587,6 +587,10 @@ class App(QMainWindow):
         self.search_dk9()
 
     def search_dk9(self, advanced: dict = None):
+        # Auto reset filter on search
+        C.FILTER_SEARCH_RESULT = False
+        self.ui.chb_show_exact.setCheckState(2 if C.FILTER_SEARCH_RESULT else 0)
+
         if advanced:
             self.worker = Worker(DK9.adv_search,
                                  advanced['_type'],
