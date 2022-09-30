@@ -887,15 +887,29 @@ class App(QMainWindow):
                         description_cell_len = len(description_cell)
                         model_idx_in_desc = description_cell.find(self.curr_model)
                         # print(f'{description_cell=} {description_cell[model_idx_in_desc + curr_model_len]=} ')
-                        if self.curr_model not in model_cell \
-                                or (4 > model_cell_len > curr_model_len) \
-                                or curr_model_len + 1 < model_cell_len:
-                            if self.curr_model not in description_cell \
-                                    or (model_idx_in_desc > 0
-                                        and description_cell[model_idx_in_desc - 1].isalpha()) \
-                                    or (model_idx_in_desc + curr_model_len < description_cell_len - 1
-                                        and (description_cell[model_idx_in_desc + curr_model_len] not in '/,.')):
+                        if self.curr_model not in model_cell\
+                                or model_cell_len > curr_model_len + 1\
+                                or 4 > model_cell_len > curr_model_len:
+                            if model_idx_in_desc == -1:
                                 continue
+                            if model_idx_in_desc > 0 and description_cell[model_idx_in_desc - 1].isalpha():
+                                continue
+                            if model_idx_in_desc + curr_model_len < description_cell_len - 1:
+                                _right_symbol = description_cell[model_idx_in_desc + curr_model_len]
+                                if _right_symbol not in ' /,.)':
+                                    continue
+                        # elif model_cell_len > curr_model_len + 1:
+                        #     continue
+
+                        # if self.curr_model not in model_cell \
+                        #         or (4 > model_cell_len > curr_model_len) \
+                        #         or curr_model_len + 1 < model_cell_len:
+                        #     if model_idx_in_desc == -1 \
+                        #             or (model_idx_in_desc > 0
+                        #                 and description_cell[model_idx_in_desc - 1].isalpha()) \
+                        #             or (model_idx_in_desc + curr_model_len < description_cell_len - 1
+                        #                 and (description_cell[model_idx_in_desc + curr_model_len] not in '/,.')):
+                        #         continue
                     amt = row[count_column].string
                     if count_column is not None and amt.isdigit():
                         item_counter += int(amt)
