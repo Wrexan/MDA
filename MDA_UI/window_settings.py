@@ -165,7 +165,7 @@ class Ui_settings_window(object):
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setObjectName("horizontalLayout")
         self.chb_show_exact = QtWidgets.QCheckBox(self.frame_2)
-        self.chb_show_exact.setEnabled(True)
+        self.chb_show_exact.setEnabled(False)
         self.chb_show_exact.setMinimumSize(QtCore.QSize(130, 0))
         self.chb_show_exact.setMaximumSize(QtCore.QSize(160, 16777215))
         self.chb_show_exact.setObjectName("chb_show_exact")
