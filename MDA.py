@@ -87,8 +87,8 @@ class App(QMainWindow):
             "border-top: 1px solid #6a6ea9;border-bottom: 1px solid #6a6ea9;}"
             "QTableWidget::item:selected{"
             "background: qlineargradient"
-            f"(x1: 0, y1: 0, x2: 0, y2: 0.8, stop: 0 rgb{C.DK9_BG_HOVER_COLOR}, stop: 1 rgb);"
-            "border-top: 1px solid #6a6ea9;border-bottom: 1px solid #6a6ea9;}"
+            f"(x1: 0, y1: 0, x2: 0, y2: 0.8, stop: 0 rgb{C.DK9_BG_HOVER_COLOR}, stop: 1 rgb",
+            ");border-top: 1px solid #6a6ea9;border-bottom: 1px solid #6a6ea9;}"
         )
 
         self.default_web_table_stylesheet = f"{self.web_table_stylesheet_template[0]}" \
