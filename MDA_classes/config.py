@@ -34,6 +34,8 @@ class Config:
         self.DK9_COL_DIFF = 16  # difference of odd/even bg
         self.TABLE_FONT_SIZE = 12
         self.SMALL_FONT_SIZE = 12
+        self.WORD_WRAP_DK9 = False
+        self.WORD_WRAP_PRICE = True
 
         self.INCOME_PARTS_MARGIN_PERC = 4
 
@@ -187,6 +189,8 @@ class Config:
                 self.DK9_COLORED = True if config['SETTINGS']['DK9_COLORED'] == 'True' else False
                 self.DK9_COL_DIFF = int(config['SETTINGS']['DK9_COL_DIFF'])
                 self.TABLE_FONT_SIZE = int(config['SETTINGS']['TABLE_FONT_SIZE'])
+                self.WORD_WRAP_DK9 = True if config['SETTINGS']['WORD_WRAP_DK9'] == 'True' else False
+                self.WORD_WRAP_PRICE = True if config['SETTINGS']['WORD_WRAP_PRICE'] == 'True' else False
 
                 self.INCOME_PARTS_MARGIN_PERC = int(config['SETTINGS']['INCOME_PARTS_MARGIN_PERC'])
                 # self.WIDE_MONITOR = True if config['SETTINGS']['WIDE_MONITOR'] == 'True' else False
@@ -237,6 +241,8 @@ class Config:
         config['SETTINGS']['DK9_COLORED'] = str(self.DK9_COLORED)
         config['SETTINGS']['DK9_COL_DIFF'] = str(self.DK9_COL_DIFF)
         config['SETTINGS']['TABLE_FONT_SIZE'] = str(self.TABLE_FONT_SIZE)
+        config['SETTINGS']['WORD_WRAP_DK9'] = str(self.WORD_WRAP_DK9)
+        config['SETTINGS']['WORD_WRAP_PRICE'] = str(self.WORD_WRAP_PRICE)
 
         config['SETTINGS']['INCOME_PARTS_MARGIN_PERC'] = str(self.INCOME_PARTS_MARGIN_PERC)
 

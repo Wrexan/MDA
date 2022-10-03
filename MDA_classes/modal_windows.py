@@ -40,6 +40,8 @@ class ConfigWindow(QtWidgets.QDialog):
         self.ui.tables_font_size.setValue(C.TABLE_FONT_SIZE)
         self.ui.colored_web_table.setCheckState(2 if C.DK9_COLORED else 0)
         self.ui.colored_price_table.setCheckState(2 if C.PRICE_COLORED else 0)
+        self.ui.word_wrap_web_table.setCheckState(2 if C.WORD_WRAP_DK9 else 0)
+        self.ui.word_wrap_price_table.setCheckState(2 if C.WORD_WRAP_PRICE else 0)
 
         self.ui.chb_show_exact.setCheckState(2 if C.FILTER_SEARCH_RESULT else 0)
         self.ui.chb_price_name_only.setCheckState(2 if C.SEARCH_BY_PRICE_MODEL else 0)
@@ -66,6 +68,8 @@ class ConfigWindow(QtWidgets.QDialog):
         self.C.TABLE_FONT_SIZE = self.ui.tables_font_size.value()
         self.C.DK9_COLORED = True if self.ui.colored_web_table.checkState() == 2 else False
         self.C.PRICE_COLORED = True if self.ui.colored_price_table.checkState() == 2 else False
+        self.C.WORD_WRAP_DK9 = True if self.ui.word_wrap_web_table.checkState() == 2 else False
+        self.C.WORD_WRAP_PRICE = True if self.ui.word_wrap_price_table.checkState() == 2 else False
 
         self.C.FILTER_SEARCH_RESULT = True if self.ui.chb_show_exact.checkState() == 2 else False
         self.C.SEARCH_BY_PRICE_MODEL = True if self.ui.chb_price_name_only.checkState() == 2 else False

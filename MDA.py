@@ -87,8 +87,8 @@ class App(QMainWindow):
             "border-top: 1px solid #6a6ea9;border-bottom: 1px solid #6a6ea9;}"
             "QTableWidget::item:selected{"
             "background: qlineargradient"
-            f"(x1: 0, y1: 0, x2: 0, y2: 0.8, stop: 0 rgb{C.DK9_BG_HOVER_COLOR}, stop: 1 rgb", ");"
-                                                                                              "border-top: 1px solid #6a6ea9;border-bottom: 1px solid #6a6ea9;}"
+            f"(x1: 0, y1: 0, x2: 0, y2: 0.8, stop: 0 rgb{C.DK9_BG_HOVER_COLOR}, stop: 1 rgb);"
+            "border-top: 1px solid #6a6ea9;border-bottom: 1px solid #6a6ea9;}"
         )
 
         self.default_web_table_stylesheet = f"{self.web_table_stylesheet_template[0]}" \
@@ -219,9 +219,6 @@ class App(QMainWindow):
         self.tab_font_bold_under.setPixelSize(C.TABLE_FONT_SIZE)
         self.ui_font.setPixelSize(C.SMALL_FONT_SIZE)
         self.ui_font_bold.setPixelSize(C.SMALL_FONT_SIZE)
-        self.ui.table_price.verticalHeader().setDefaultSectionSize(C.TABLE_FONT_SIZE + 4)
-        self.ui.table_parts.verticalHeader().setDefaultSectionSize(C.TABLE_FONT_SIZE + 4)
-        self.ui.table_accesory.verticalHeader().setDefaultSectionSize(C.TABLE_FONT_SIZE + 4)
         self.ui.table_price.setFont(self.tab_font)
         self.ui.table_parts.setFont(self.tab_font)
         self.ui.table_accesory.setFont(self.tab_font)
@@ -237,9 +234,10 @@ class App(QMainWindow):
         self.fix_models_list_position()
 
         self.upd_dk9_tables_grid()
+        self.upd_tables_row_heights(force=True)
 
         table_width = self.ui.table_price.width()
-        table_width_n_percent = int(table_width / 3.5 + (table_width - 640) / 4)
+        table_width_n_percent = int(table_width / 2.5 + (table_width - 640) / 4)
         self.ui.table_price.horizontalHeader().setDefaultSectionSize(table_width_n_percent)
         self.ui.table_price.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         self.ui.table_price.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
@@ -317,7 +315,6 @@ class App(QMainWindow):
         self.ui.pt_cash_descr.setStyleSheet(
             "QPlainTextEdit"
             "{selection-background-color: #b5BfF3;}")
-        # self.dk9_request_label.setText("Redmi AAAA")
 
     # =============================================================================================================
 
@@ -361,6 +358,28 @@ class App(QMainWindow):
                 else:
                     self.ui.table_parts.horizontalHeader().setSectionResizeMode(i, QHeaderView.Fixed)
                     self.ui.table_accesory.horizontalHeader().setSectionResizeMode(i, QHeaderView.Fixed)
+
+    def upd_tables_row_heights(self, force: bool = False, dk9: bool = False, price: bool = False):
+        if dk9 and C.WORD_WRAP_DK9:
+            self.ui.table_parts.resizeRowsToContents()
+            self.ui.table_accesory.resizeRowsToContents()
+            return
+
+        if price and C.WORD_WRAP_PRICE:
+            self.ui.table_price.resizeRowsToContents()
+            return
+
+        if force:
+            if C.WORD_WRAP_DK9:
+                self.ui.table_parts.resizeRowsToContents()
+                self.ui.table_accesory.resizeRowsToContents()
+            else:
+                self.ui.table_parts.verticalHeader().setDefaultSectionSize(C.TABLE_FONT_SIZE + 4)
+                self.ui.table_accesory.verticalHeader().setDefaultSectionSize(C.TABLE_FONT_SIZE + 4)
+            if C.WORD_WRAP_PRICE:
+                self.ui.table_price.resizeRowsToContents()
+            else:
+                self.ui.table_price.verticalHeader().setDefaultSectionSize(C.TABLE_FONT_SIZE + 4)
 
     def on_ui_loaded(self):
         print('Loading Price')
@@ -561,6 +580,7 @@ class App(QMainWindow):
         self.upd_models_list(clear=True)
         self.upd_model_buttons(models_for_buttons)
         self.update_price_table(text_lower_orig, recursive_model)
+        self.upd_tables_row_heights(price=True)
 
     def update_web_status(self, status: int):
         if status in C.WEB_STATUSES:
@@ -647,9 +667,9 @@ class App(QMainWindow):
         if self.web_status == 2:
             self.load_progress(70)
             self.ui.table_parts.setSortingEnabled(False)
-            self.fill_table_from_soup(self.soup, self.ui.table_parts, 0,
-                                      C.DK9_TABLE_NAMES, C.DK9_BG_P_COLOR1, C.DK9_BG_P_COLOR2, 5,
-                                      align={4: Qt.AlignRight})
+            self.fill_dk9_table_from_soup(self.soup, self.ui.table_parts, 0,
+                                          C.DK9_TABLE_NAMES, C.DK9_BG_P_COLOR1, C.DK9_BG_P_COLOR2, 5,
+                                          align={4: Qt.AlignRight})
             self.ui.table_parts.sortByColumn(3, Qt.SortOrder(0))
             self.ui.table_parts.sortByColumn(2, Qt.SortOrder(0))
             self.ui.table_parts.sortByColumn(0, Qt.SortOrder(0))
@@ -657,13 +677,15 @@ class App(QMainWindow):
 
             self.ui.table_accesory.setSortingEnabled(False)
             self.load_progress(85)
-            self.fill_table_from_soup(self.soup, self.ui.table_accesory, 1,
-                                      C.DK9_TABLE_NAMES, C.DK9_BG_A_COLOR1, C.DK9_BG_A_COLOR2, 5,
-                                      align={4: Qt.AlignRight})
+            self.fill_dk9_table_from_soup(self.soup, self.ui.table_accesory, 1,
+                                          C.DK9_TABLE_NAMES, C.DK9_BG_A_COLOR1, C.DK9_BG_A_COLOR2, 5,
+                                          align={4: Qt.AlignRight})
             self.ui.table_accesory.sortByColumn(3, Qt.SortOrder(0))
             self.ui.table_accesory.sortByColumn(2, Qt.SortOrder(0))
             self.ui.table_accesory.sortByColumn(0, Qt.SortOrder(0))
             self.ui.table_accesory.setSortingEnabled(True)
+
+            self.upd_tables_row_heights(dk9=True)
         else:
             self.login_dk9()
         self.load_progress(0) if use_old_soup else self.load_progress(100)
@@ -851,9 +873,9 @@ class App(QMainWindow):
         else:
             self.ui.web_load_progress_bar.setValue(0)
 
-    def fill_table_from_soup(self, soup, table, num: int, tab_names: tuple,
-                             def_bg_color1: tuple, def_bg_color2: tuple,
-                             count_column: int = None, align: dict = None):
+    def fill_dk9_table_from_soup(self, soup, table, num: int, tab_names: tuple,
+                                 def_bg_color1: tuple, def_bg_color2: tuple,
+                                 count_column: int = None, align: dict = None):
         try:
             item_counter = 0
             r = 0
@@ -887,8 +909,8 @@ class App(QMainWindow):
                         description_cell_len = len(description_cell)
                         model_idx_in_desc = description_cell.find(self.curr_model)
                         # print(f'{description_cell=} {description_cell[model_idx_in_desc + curr_model_len]=} ')
-                        if self.curr_model not in model_cell\
-                                or model_cell_len > curr_model_len + 1\
+                        if self.curr_model not in model_cell \
+                                or model_cell_len > curr_model_len + 1 \
                                 or 4 > model_cell_len > curr_model_len:
                             if model_idx_in_desc == -1:
                                 continue
@@ -1003,7 +1025,7 @@ class App(QMainWindow):
     def copy_price_table_item_connected(self):
         self.copy_table_items(table=self.sender(), items=1)
 
-    def copy_table_items(self, table: QTableWidget, items: int = 0):
+    def copy_table_items(self, table, items: int = 0):
         row = table.selectedItems()
         # print(f'{row=}')
         self.clear_table_items_on_new_copy()
@@ -1052,7 +1074,7 @@ class App(QMainWindow):
             return
         founded_cell_first_letters = {}
         founded_cell_appropriation = {}
-        _exact_price_words = list(map(str.strip, re.split(' |-|\\+|\\(|\\)', name.lower(), maxsplit=7)))
+        _exact_price_words = list(map(str.strip, re.split(r'[ \-+()]', name.lower(), maxsplit=7)))
         if len(_exact_price_words) == 1:
             _exact_price_words.append('')
         vk = True if 'вк' in _exact_price_words else False
@@ -1067,10 +1089,10 @@ class App(QMainWindow):
         for row_num in range(self.ui.table_parts.rowCount()):
             _cells = (*(self.ui.table_parts.item(row_num, i) for i in range(5)),)
             _cell_0_lst = \
-                list(map(str.strip, re.split(' |-|\\+|\\(|\\)',
+                list(map(str.strip, re.split(r'[ \-+()]',
                                              self.ui.table_parts.item(row_num, 0).text().lower(), maxsplit=5)))
             _cell_3_lst = \
-                list(map(str.strip, re.split(' |-|\\+|\\(|\\)',
+                list(map(str.strip, re.split(r'[ \-+()]',
                                              self.ui.table_parts.item(row_num, 3).text().lower(), maxsplit=5)))
 
             self._upd_bg_clr_sel_by_price(_cells, 0, 4, True)
