@@ -669,7 +669,7 @@ class App(QMainWindow):
             self.ui.table_parts.setSortingEnabled(False)
             self.fill_dk9_table_from_soup(self.soup, self.ui.table_parts, 0,
                                           C.DK9_TABLE_NAMES, C.DK9_BG_P_COLOR1, C.DK9_BG_P_COLOR2, 5,
-                                          align={4: Qt.AlignRight})
+                                          align={4: Qt.AlignRight | Qt.AlignVCenter})
             self.ui.table_parts.sortByColumn(3, Qt.SortOrder(0))
             self.ui.table_parts.sortByColumn(2, Qt.SortOrder(0))
             self.ui.table_parts.sortByColumn(0, Qt.SortOrder(0))
@@ -679,7 +679,7 @@ class App(QMainWindow):
             self.load_progress(85)
             self.fill_dk9_table_from_soup(self.soup, self.ui.table_accesory, 1,
                                           C.DK9_TABLE_NAMES, C.DK9_BG_A_COLOR1, C.DK9_BG_A_COLOR2, 5,
-                                          align={4: Qt.AlignRight})
+                                          align={4: Qt.AlignRight | Qt.AlignVCenter})
             self.ui.table_accesory.sortByColumn(3, Qt.SortOrder(0))
             self.ui.table_accesory.sortByColumn(2, Qt.SortOrder(0))
             self.ui.table_accesory.sortByColumn(0, Qt.SortOrder(0))
@@ -791,7 +791,8 @@ class App(QMainWindow):
                     self._add_price_table_row(table=self.ui.table_price, sheet=position[0],
                                               columns=columns, cells_texts=cells_texts,
                                               t_row_num=new_row_num, p_row_num=position[1],
-                                              align={1: Qt.AlignRight}, colored=C.PRICE_COLORED, bold=True)
+                                              align={1: Qt.AlignRight | Qt.AlignVCenter},
+                                              colored=C.PRICE_COLORED, bold=True)
                     new_row_num += 1
 
                 for i in range(position[1], position[0].nrows - 1):
@@ -816,7 +817,8 @@ class App(QMainWindow):
                             self._add_price_table_row(table=self.ui.table_price, sheet=position[0],
                                                       columns=columns, cells_texts=cells_texts,
                                                       t_row_num=new_row_num, p_row_num=i,
-                                                      align={1: Qt.AlignRight}, colored=C.PRICE_COLORED)
+                                                      align={1: Qt.AlignRight | Qt.AlignVCenter},
+                                                      colored=C.PRICE_COLORED)
 
                             new_row_num += 1
                         if i < position[0].nrows:
@@ -850,6 +852,7 @@ class App(QMainWindow):
             table.item(t_row_num, c).setToolTip(txt)
             if align and c in align:
                 table.item(t_row_num, c).setTextAlignment(align[c])
+                # table.item(t_row_num, c).setTextAlignment(Qt.AlignVCenter)
             if colored and columns[c] < sheet.row_len(p_row_num):  # c < len(columns):
                 # print(f' colour: {p_row_num=}  {columns=}  {txt=}\n'
                 #       f'{sheet.cell(p_row_num, columns[c]).xf_index=}\n'
