@@ -1077,7 +1077,9 @@ class App(QMainWindow):
             return
         founded_cell_first_letters = {}
         founded_cell_appropriation = {}
-        _exact_price_words = list(map(str.strip, re.split(r'[ \-+()]', name.lower(), maxsplit=7)))
+        # _exact_price_words = list(map(str.strip, re.split(r'[ \-+()]', name.lower(), maxsplit=7)))
+        _exact_price_words = re.split(r'[ \-+()]', name.lower(), maxsplit=7)
+        # print(f'{_exact_price_words=}')
         if len(_exact_price_words) == 1:
             _exact_price_words.append('')
         vk = True if 'вк' in _exact_price_words else False
@@ -1091,12 +1093,11 @@ class App(QMainWindow):
         # Prepare table data
         for row_num in range(self.ui.table_parts.rowCount()):
             _cells = (*(self.ui.table_parts.item(row_num, i) for i in range(5)),)
-            _cell_0_lst = \
-                list(map(str.strip, re.split(r'[ \-+()]',
-                                             self.ui.table_parts.item(row_num, 0).text().lower(), maxsplit=5)))
-            _cell_3_lst = \
-                list(map(str.strip, re.split(r'[ \-+()]',
-                                             self.ui.table_parts.item(row_num, 3).text().lower(), maxsplit=5)))
+            # _cell_0_lst = \
+            #     list(map(str.strip, re.split(r'[ \-+()]',
+            #                                  self.ui.table_parts.item(row_num, 0).text().lower(), maxsplit=5)))
+            _cell_0_lst = re.split(r'[ \-+()]', self.ui.table_parts.item(row_num, 0).text().lower(), maxsplit=5)
+            _cell_3_lst = re.split(r'[ \-+()]', self.ui.table_parts.item(row_num, 3).text().lower(), maxsplit=5)
 
             self._upd_bg_clr_sel_by_price(_cells, 0, 4, True)
 
