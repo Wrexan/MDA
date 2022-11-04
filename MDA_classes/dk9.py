@@ -45,7 +45,7 @@ class DK9Parser:
             status.emit(self.S_PROCESS)
             # =============================================== LOGIN PAGE ==============================================
             r = self._get_response(self.LOGIN_URL, status)
-            if r:
+            if r and r.__dict__['url'] == self.LOGIN_URL:
                 progress.emit(20)
                 soup = BeautifulSoup(r.content, 'html.parser')
                 progress.emit(40)
@@ -60,7 +60,7 @@ class DK9Parser:
                 progress.emit(60)
                 # ============================================== READY =================================================
                 r = self._get_response(self.SEARCH_URL, status)
-                if r:
+                if r and r.__dict__['url'] == self.SEARCH_URL:
                     progress.emit(80)
                     if self.addiction():
                         print('LOGIN OK')
@@ -75,14 +75,18 @@ class DK9Parser:
                         self.LOGIN_SUCCESS = False
                         status.emit(self.S_NO_LOGIN)
                     progress.emit(100)
+                else:
+                    self._error_handler(progress, status, err=f'Cannot connect to: {str(self.SEARCH_URL)}')
+                    return
+            else:
+                self._error_handler(progress, status, err=f'Cannot connect to: {str(self.LOGIN_URL)}')
+                return
         except requests.exceptions.Timeout as err:
-            status.emit(self.S_NO_CONN)
-            progress.emit(100)
-            print(f'Error: (Timeout) on CONNECT Message:\n{str(err)}')
+            self._error_handler(progress, status, err=f'Timeout on CONNECT Message:\n{str(err)}', emit=self.S_NO_CONN)
             return
         except Exception as err:
             if '[Errno 110' in err.__str__():
-                self._110xx_error_handler(err, progress, status)
+                self._error_handler(progress, status, err)
                 return
             error.emit((f'Error while trying to login',
                         f'{traceback.format_exc()}'))
@@ -133,13 +137,11 @@ class DK9Parser:
             # <input name="ctl00$ContentPlaceHolder1$TextBoxDescription_new" type="text"
             # id="ctl00_ContentPlaceHolder1_TextBoxDescription_new" style="width:64%;">
         except requests.exceptions.Timeout as err:
-            status.emit(self.S_NO_CONN)
-            progress.emit(100)
-            print(f'Error: on CONNECT (Timeout) Message:\n{str(err)}')
+            self._error_handler(progress, status, err=f'Timeout on CONNECT Message:\n{str(err)}', emit=self.S_NO_CONN)
             return ()
         except Exception as err:
             if '[Errno 110' in err.__str__():
-                self._110xx_error_handler(err, progress, status)
+                self._error_handler(progress, status, err)
                 return ()
             error.emit((f'Error while trying to search:\n'
                         f'{model_}',
@@ -150,7 +152,7 @@ class DK9Parser:
 
     def _get_response(self, url, status):
         response = self.SESSION.get(url, headers=self.HEADERS, timeout=self.TIMEOUT)
-        print(f'{response=}')
+        # print(f'{response.__dict__=}')
         if 100 <= response.status_code < 200:
             status.emit(self.S_PROCESS)
             return response
@@ -164,11 +166,11 @@ class DK9Parser:
         elif 500 <= response.status_code < 600:
             status.emit(self.S_SERV_ERR)
 
-    def _110xx_error_handler(self, err, progress, status):
-        if '[Errno 11001]' in err.__str__():
+    def _error_handler(self, progress, status, err=None, emit=None):
+        if err and '[Errno 11001]' in err.__str__():
             status.emit(self.S_NO_CONN)
-            print(f'Error: (No connection) Message :\n{str(err)}')
+            print(f'Error: (No connection) Message :\n - {str(err)}')
         else:
-            status.emit(self.S_CONN_ERROR)
-            print(f'Error: (Connection error) Message :\n{str(err)}')
+            status.emit(emit or self.S_CONN_ERROR)
+            print(f'Error: (Connection error) Message :\n - {str(err)}')
         progress.emit(100)
