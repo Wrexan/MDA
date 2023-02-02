@@ -646,10 +646,10 @@ class App(QMainWindow):
                     self.stat_send_timer.stop()
                     if not self.MDAS.send_statistic_cache():
                         # if not sent, start timer
-                        self.stat_send_timer.start(self.stat_cache_delay)
+                        self.stat_send_timer.start(self.stat_resend_delay)
                 else:
                     # if cache not full, start timer
-                    self.stat_send_timer.start(self.stat_resend_delay)
+                    self.stat_send_timer.start(self.stat_cache_delay)
 
             # ===========================  search in dk9  ==============================
             self.dk9_request_label.setText(self.curr_model)
