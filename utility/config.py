@@ -2,6 +2,8 @@ import os
 import configparser
 from win32comext.shell import shell, shellcon
 
+from config.confidential_data import *
+
 
 class Config:
     FILTER_SEARCH_RESULT = None
@@ -16,9 +18,18 @@ class Config:
         self.USER_CONFIG = f'{self.CONFIG_PATH}user_config.ini'
         self.HELP = f'{self.CONTENT_PATH}Инструкция.txt'
 
-        # ============================================
-        # =============APP SETTINGS====================
-        # ====================UI====================
+        # ===============================================================
+        # =============  CONFIDENTIAL, SECURED DATA  ====================
+        # ===============================================================
+        self.MDAS_URL = MDAS_URL
+        self.MDAS_KEY = MDAS_KEY
+        self.DK9_LOGIN_URL = DK9_LOGIN_URL
+        self.DK9_LOGGED_IN_URL = DK9_LOGGED_IN_URL
+        self.DK9_SEARCH_URL = DK9_SEARCH_URL
+
+        # =================================================
+        # ===============  APP SETTINGS  ==================
+        # ====================  UI  =======================
         self.FULLSCREEN = False
         self.MODEL_LIST_MAX_SIZE = 20
 
@@ -121,9 +132,6 @@ class Config:
         self.DK9_PASSWORD, self.PASSWORD = '', ''
         self.DK9_LOGIN_DATA = {}
 
-        self.DK9_LOGIN_URL = "http://dimkak9-001-site1.htempurl.com/Login.aspx"
-        self.DK9_LOGGED_IN_URL = "http://dimkak9-001-site1.htempurl.com/Default.aspx"
-        self.DK9_SEARCH_URL = "http://dimkak9-001-site1.htempurl.com/AllInOne.aspx"
         self.DK9_HEADERS = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
                           '(KHTML, like Gecko) Chrome/93.0.4577.82 Safari/537.36 Firefox/10.0'}
