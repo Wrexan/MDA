@@ -22,6 +22,7 @@ from PyQt5.Qt import Qt, QEvent
 from utility.config import Config
 from utility.dk9 import DK9Parser
 from utility.price import Price
+from utility.statistic import MDAS
 from utility.modal_windows import ConfigWindow, HelpWindow, AdvancedSearchWindow
 from utility.thread_worker import Worker
 from UI.window_main import Ui_MainWindow
@@ -98,6 +99,12 @@ class App(QMainWindow):
         self.init_ui_statics()
         self.apply_window_size()
         self.init_ui_dynamics()
+
+        self.stat_send_timer = QtCore.QTimer()
+        self.MDAS = MDAS(C, self.stat_send_timer)
+        self.stat_send_timer.timeout.connect(self.MDAS.send_statistic_cache)
+        self.stat_cache_delay = 180_000  # 3 min
+        self.stat_resend_delay = 300_000  # 5 min
 
         self.curr_manufacturer_idx: int = 0
         self.curr_manufacturer: str = ''
@@ -628,6 +635,23 @@ class App(QMainWindow):
             if self.search_again:
                 print(f'SEARCH AGAIN: {self.curr_model}')
                 self.search_again = False
+            elif C.BRANCH > 0 and manufacturer and self.curr_model:
+                # ===========================  statistic  ==============================
+                print(f'SCHEDULE TO SEND: {C.BRANCH} {manufacturer} {self.curr_model}')
+
+                self.stat_send_timer.stop()
+                cache_full = self.MDAS.cache_item(branch=C.BRANCH, brand=manufacturer, model=self.curr_model)
+                if cache_full:
+                    # try sending
+                    self.stat_send_timer.stop()
+                    if not self.MDAS.send_statistic_cache():
+                        # if not sent, start timer
+                        self.stat_send_timer.start(self.stat_cache_delay)
+                else:
+                    # if cache not full, start timer
+                    self.stat_send_timer.start(self.stat_resend_delay)
+
+            # ===========================  search in dk9  ==============================
             self.dk9_request_label.setText(self.curr_model)
             self.worker = Worker(DK9.adv_search,
                                  self.curr_type,

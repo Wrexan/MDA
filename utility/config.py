@@ -23,9 +23,22 @@ class Config:
         # ===============================================================
         self.MDAS_URL = MDAS_URL
         self.MDAS_KEY = MDAS_KEY
+        self.MDAS_HEADER = MDAS_HEADER
         self.DK9_LOGIN_URL = DK9_LOGIN_URL
         self.DK9_LOGGED_IN_URL = DK9_LOGGED_IN_URL
         self.DK9_SEARCH_URL = DK9_SEARCH_URL
+
+        # =================================================
+        # ==================  CLIENT  =====================
+        # =================================================
+        self.BRANCH: int = 0
+        self.BRANCHES = \
+            {
+                0: '---',
+                1: 'ДРН',
+                2: 'ПЛТ',
+                3: 'ПЗН',
+            }
 
         # =================================================
         # ===============  APP SETTINGS  ==================
@@ -186,6 +199,7 @@ class Config:
             try:
                 self.DK9_LOGIN = config['WEB DATABASE']['DK9_LOGIN']
                 self.DK9_PASSWORD = config['WEB DATABASE']['DK9_PASSWORD']
+                self.BRANCH = int(config['CLIENT']['BRANCH'])
                 self.FULLSCREEN = True if config['SETTINGS']['FULLSCREEN'] == 'True' else False
                 # ALWAYS FALSE
                 self.FILTER_SEARCH_RESULT = False
@@ -238,6 +252,10 @@ class Config:
         config['WEB DATABASE'] = {}
         config['WEB DATABASE']['DK9_LOGIN'] = str(self.DK9_LOGIN)
         config['WEB DATABASE']['DK9_PASSWORD'] = str(self.DK9_PASSWORD)
+
+        config['CLIENT'] = {}
+        config['CLIENT']['BRANCH'] = str(self.BRANCH)
+
         config['SETTINGS'] = {}
         config['SETTINGS']['FULLSCREEN'] = str(self.FULLSCREEN)
 
