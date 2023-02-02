@@ -19,12 +19,12 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, QMenu, 
 from PyQt5 import QtCore, QtGui
 from PyQt5.Qt import Qt, QEvent
 
-from MDA_classes.config import Config
-from MDA_classes.dk9 import DK9Parser
-from MDA_classes.price import Price
-from MDA_classes.modal_windows import ConfigWindow, HelpWindow, AdvancedSearchWindow
-from MDA_classes.thread_worker import Worker
-from MDA_UI.window_main import Ui_MainWindow
+from utility.config import Config
+from utility.dk9 import DK9Parser
+from utility.price import Price
+from utility.modal_windows import ConfigWindow, HelpWindow, AdvancedSearchWindow
+from utility.thread_worker import Worker
+from UI.window_main import Ui_MainWindow
 
 C = Config()
 DK9 = DK9Parser(C)

@@ -9,10 +9,11 @@ class Config:
     def __init__(self):
         self.error = None
         self.PATH = f'{os.path.dirname(os.path.dirname(os.path.realpath(__file__)))}\\'
-        self.CONTENT_PATH = f'{self.PATH}MDA_content\\'
+        self.CONFIG_PATH = f'{self.PATH}config\\'
+        self.CONTENT_PATH = f'{self.PATH}content\\'
 
         self.LOGO = f'{self.CONTENT_PATH}MDA.ico'
-        self.USER_CONFIG = f'{self.CONTENT_PATH}user_config.ini'
+        self.USER_CONFIG = f'{self.CONFIG_PATH}user_config.ini'
         self.HELP = f'{self.CONTENT_PATH}Инструкция.txt'
 
         # ============================================
@@ -43,7 +44,7 @@ class Config:
         self.PRICE_PATH = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop\\')
         self.PRICE_PATH_ALT = f'{shell.SHGetFolderPath(0, shellcon.CSIDL_DESKTOP, None, 0)}\\'
         self.PRICE_GD_PATH = ''
-        self.PRICE_CONFIG = f'{self.CONTENT_PATH}price_config.ini'
+        # self.PRICE_CONFIG = f'{self.CONTENT_PATH}price_config.ini'
         self.NARROW_SEARCH_LEN = 2  # start search from 2 symbols
         self.APPROVED = False
         self.PRICE_SEARCH_COLUMN_SYMBOLS = {'+': 'BFG',

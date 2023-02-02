@@ -1,8 +1,8 @@
 from PyQt5 import QtCore, QtWidgets
 
-from MDA_UI.window_settings import Ui_settings_window
-from MDA_UI.window_simple import Ui_Dialog
-from MDA_UI.adv_search import Ui_Dialog as AdvSearchDialog
+from UI.window_settings import Ui_settings_window
+from UI.window_simple import Ui_Dialog
+from UI.adv_search import Ui_Dialog as AdvSearchDialog
 
 
 class HelpWindow(QtWidgets.QDialog):
