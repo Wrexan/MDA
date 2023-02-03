@@ -1,8 +1,12 @@
 import sys
+import time
+
 import bs4
 import traceback
 import os
 import re
+
+from PyQt5.QtCore import QThread
 
 sys.path.append(os.path.join(os.getcwd(), 'PyQt5'))
 # sys.path.append(os.path.join(os.getcwd(), 'PyQt5\\Qt5'))
@@ -29,6 +33,7 @@ from UI.window_main import Ui_MainWindow
 
 C = Config()
 DK9 = DK9Parser(C)
+MDAS = MDAS(C)
 
 
 class App(QMainWindow):
@@ -101,10 +106,7 @@ class App(QMainWindow):
         self.init_ui_dynamics()
 
         self.stat_send_timer = QtCore.QTimer()
-        self.MDAS = MDAS(C, self.stat_send_timer)
-        self.stat_send_timer.timeout.connect(self.MDAS.send_statistic_cache)
-        self.stat_cache_delay = 180_000  # 3 min
-        self.stat_resend_delay = 300_000  # 5 min
+        self.stat_send_timer.timeout.connect(self.send_statistic)
 
         self.curr_manufacturer_idx: int = 0
         self.curr_manufacturer: str = ''
@@ -624,6 +626,12 @@ class App(QMainWindow):
                                  advanced['_manufacturer'],
                                  advanced['_model'],
                                  advanced['_description'])
+            self.worker.signals.result.connect(self.update_dk9_data)
+            self.worker.signals.progress.connect(self.load_progress)
+            self.worker.signals.finished.connect(self.finished)
+            self.worker.signals.error.connect(self.error)
+            self.worker.signals.status.connect(self.update_web_status)
+            self.thread.start(self.worker)
         else:
             if not DK9.LOGIN_SUCCESS or self.web_status != 2:
                 return
@@ -635,21 +643,20 @@ class App(QMainWindow):
             if self.search_again:
                 print(f'SEARCH AGAIN: {self.curr_model}')
                 self.search_again = False
+
+            # ===========================  statistic  ==============================
             elif C.BRANCH > 0 and manufacturer and self.curr_model:
-                # ===========================  statistic  ==============================
                 print(f'SCHEDULE TO SEND: {C.BRANCH} {manufacturer} {self.curr_model}')
 
                 self.stat_send_timer.stop()
-                cache_full = self.MDAS.cache_item(branch=C.BRANCH, brand=manufacturer, model=self.curr_model)
-                if cache_full:
-                    # try sending
+                cache_full = MDAS.cache_item(branch=C.BRANCH, brand=manufacturer, model=self.curr_model)
+                if cache_full == 0:  # Not full - standard delay
+                    self.stat_send_timer.start(C.STAT_CACHE_DELAY)
+                elif cache_full == 1:  # Full+ - time to send
                     self.stat_send_timer.stop()
-                    if not self.MDAS.send_statistic_cache():
-                        # if not sent, start timer
-                        self.stat_send_timer.start(self.stat_resend_delay)
-                else:
-                    # if cache not full, start timer
-                    self.stat_send_timer.start(self.stat_cache_delay)
+                    self.send_statistic()
+                else:  # Overflowing or STOPPED Overflow - no connection to stat server, longer delay
+                    self.stat_send_timer.start(C.STAT_RESEND_DELAY)
 
             # ===========================  search in dk9  ==============================
             self.dk9_request_label.setText(self.curr_model)
@@ -658,13 +665,40 @@ class App(QMainWindow):
                                  manufacturer,
                                  self.curr_model,
                                  self.curr_description)
-        self.worker.signals.result.connect(self.update_dk9_data)
-        self.worker.signals.progress.connect(self.load_progress)
-        self.worker.signals.finished.connect(self.finished)
-        self.worker.signals.error.connect(self.error)
-        self.worker.signals.status.connect(self.update_web_status)
+            self.worker.signals.result.connect(self.update_dk9_data)
+            self.worker.signals.progress.connect(self.load_progress)
+            self.worker.signals.finished.connect(self.finished)
+            self.worker.signals.error.connect(self.error)
+            self.worker.signals.status.connect(self.update_web_status)
+            self.thread.start(self.worker)
 
-        self.thread.start(self.worker)
+    def send_statistic(self):
+        # print('Preparing thread to send stats')
+        # worker = Worker(MDAS.send_test)
+        # worker_thread = QThread()
+        # worker.moveToThread(worker_thread)
+        # worker.signals.finished.connect(self.send_finished)
+        # worker.deleteLater()
+        # worker_thread.deleteLater()
+
+        # worker.signals.progress.connect(self.load_progress)
+        # worker.signals.status.connect(self.update_web_status)
+        # worker.signals.error.connect(self.error)
+        # print('Starting thread to send stats')
+        # worker_thread.start()
+
+        # self.thread.start(worker)
+        MDAS.send_statistic_cache()
+
+    def send_finished(self):
+        if MDAS.cache_to_send:
+            C.stat_delay = C.STAT_RESEND_DELAY
+        else:
+            self.reset_stat_timer()
+
+    def reset_stat_timer(self):
+        C.stat_delay = C.STAT_CACHE_DELAY
+        self.stat_send_timer.stop()
 
     def login_dk9(self):
         self.worker = Worker(DK9.login)

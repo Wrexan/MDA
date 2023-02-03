@@ -39,6 +39,10 @@ class Config:
                 2: 'ПЛТ',
                 3: 'ПЗН',
             }
+        self.STAT_CACHE_DELAY = 180_000  # 3 min
+        self.STAT_RESEND_DELAY = 300_000  # 5 min
+        self.stat_delay = 180_000  # 3 min by default, more on delivery fail
+        self.STAT_CACHE_SIZE = 5
 
         # =================================================
         # ===============  APP SETTINGS  ==================

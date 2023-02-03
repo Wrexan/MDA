@@ -35,6 +35,10 @@ class ConfigWindow(QtWidgets.QDialog):
         self.ui.setupUi(self)
         self.ui.web_login.setText(C.DK9_LOGIN)
         self.ui.web_password.setText(C.DK9_PASSWORD)
+
+        self.ui.cb_branch.addItems(self.C.BRANCHES.values())
+        self.ui.cb_branch.setCurrentIndex(self.C.BRANCH)
+
         self.ui.chk_fullscreen.setCheckState(2 if C.FULLSCREEN else 0)
         self.ui.zebra_contrast.setValue(C.DK9_COL_DIFF)
         self.ui.tables_font_size.setValue(C.TABLE_FONT_SIZE)
@@ -61,6 +65,8 @@ class ConfigWindow(QtWidgets.QDialog):
             login = True
         self.C.DK9_LOGIN = self.ui.web_login.text()
         self.C.DK9_PASSWORD = self.ui.web_password.text()
+        cbi = self.ui.cb_branch.currentIndex()
+        self.C.BRANCH = cbi if self.C.BRANCHES.get(cbi) else 0
 
         self.C.FULLSCREEN = True if self.ui.chk_fullscreen.checkState() == 2 else False
 
@@ -79,6 +85,8 @@ class ConfigWindow(QtWidgets.QDialog):
         self.C.INCOME_PARTS_MARGIN_PERC = self.ui.income_overprice_perc.value()
         # C.WIDE_MONITOR = True if self.ui.wide_monitor.checkState() == 2 else False
         # C.TABLE_COLUMN_SIZE_MAX = self.ui.column_width_max.value()
+        if self.C.BRANCH == 0:
+            self.Parent.reset_stat_timer()
         self.Parent.init_ui_dynamics()
         self.C.precalculate_color_diffs()
         try:

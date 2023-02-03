@@ -8,11 +8,8 @@ from datetime import date, datetime, timezone, timedelta
 
 
 class MDAS:
-    def __init__(self, c, send_event_timer):
-        self.MDAS_URL = c.MDAS_URL
-        self.MDAS_KEY = c.MDAS_KEY
-        self.MDAS_HEADER = c.MDAS_HEADER
-        self.send_event_timer = send_event_timer
+    def __init__(self, config):
+        self.C = config
 
         self.cache_to_send = []
 
@@ -37,7 +34,7 @@ class MDAS:
 
     def get_mdas_token(self):
         token = hmac.new(
-            key=self.MDAS_KEY.encode(encoding="utf-8"),
+            key=self.C.MDAS_KEY.encode(encoding="utf-8"),
             msg=self.get_current_date().isoformat().encode(encoding="utf-8"),
             digestmod=hashlib.md5
         ).hexdigest()
@@ -50,16 +47,26 @@ class MDAS:
 
     def cache_item(self, branch: int, brand: str, model: str):
         # '1#Samsung#A500'
-        self.cache_to_send.append(f'{branch}#{brand}#{model}')
-        if len(self.cache_to_send) >= 6:
-            return True
+        cash_len = len(self.cache_to_send)
+        if cash_len < 100:
+            self.cache_to_send.append(f'{branch}#{brand}#{model}')
+            # Not full
+            if cash_len < self.C.STAT_CACHE_SIZE:
+                return 0
+            # Full+
+            if cash_len < (self.C.STAT_CACHE_SIZE + 3):
+                return 1
+            # Overflowing
+            return 2
+        # STOPPED Overflow
+        return 3
 
     # =======================================================================
     # ===========================  GET by MONTH  ============================
     # =======================================================================
     def get_statistic_for_month(self, year: int, month: int):
-        request = requests.get(url=f'{self.MDAS_URL}year-month/{year}-{month}',
-                               headers={self.MDAS_HEADER: self.get_mdas_token()})
+        request = requests.get(url=f'{self.C.MDAS_URL}year-month/{year}-{month}',
+                               headers={self.C.MDAS_HEADER: self.get_mdas_token()})
         print(request.status_code)
         if request.status_code == 200:
             raw_data: dict = json.loads(request.content)
@@ -79,19 +86,19 @@ class MDAS:
     # =======================================================================
     # ===============================  PUT  =================================
     # =======================================================================
+    @staticmethod
+    def send_test():
+        print(f'SENDING: TEST OK!!')
+
     def send_statistic_cache(self):
         print(f'SENDING: {self.cache_to_send}')
         # data = {'data': ['1#Samsung#A500', '2#Xiaomi#mi8', '1#Xiaomi#mi11']}
         cache_to_send = self.cache_to_send[:]
         self.cache_to_send = []
-        print(f'{cache_to_send=}')
-        request = requests.post(url=self.MDAS_URL,
+        # print(f'{cache_to_send=}')
+        request = requests.post(url=self.C.MDAS_URL,
                                 json={'data': cache_to_send},
-                                headers={self.MDAS_HEADER: self.get_mdas_token()})
+                                headers={self.C.MDAS_HEADER: self.get_mdas_token()})
         print(f'{json.loads(request.content)=}')
-        if request.status_code == 200 and json.loads(request.content).get('statusCode') == 200:
-            self.send_event_timer.stop()
-            return True
-        else:
+        if request.status_code != 200 or json.loads(request.content).get('statusCode') != 200:
             self.cache_to_send.extend(cache_to_send)
-            return False

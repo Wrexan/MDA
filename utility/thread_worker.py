@@ -18,7 +18,9 @@ class Worker(QThread):
     @pyqtSlot()
     def run(self):
         try:
+            print(f'-> thread: "{self.func.__name__}" running')
             result = self.func(*self.args, **self.kwargs)
+            print(f'<- thread: "{self.func.__name__}" finishing')
         except Exception as _err:
             print(_err)
             # traceback.print_exc()
