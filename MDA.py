@@ -1,5 +1,4 @@
 import sys
-import time
 
 import bs4
 import traceback
@@ -105,7 +104,6 @@ class App(QMainWindow):
 
         self.stat_send_timer = QtCore.QTimer()
         self.stat_send_timer.timeout.connect(self.send_statistic)
-        self.stat_send_scheduled = False
 
         self.curr_manufacturer_idx: int = 0
         self.curr_manufacturer: str = ''
@@ -642,18 +640,16 @@ class App(QMainWindow):
 
             # ===========================  statistic  ==============================
             elif C.BRANCH > 0 and manufacturer and self.curr_model:
-                print(f'SCHEDULE TO SEND: {C.BRANCH} {manufacturer} {self.curr_model}')
-
+                # print(f'SCHEDULE TO SEND: {C.BRANCH} {manufacturer} {self.curr_model}')
                 self.stat_send_timer.stop()
                 cache_full = MDAS.cache_item(branch=C.BRANCH, brand=manufacturer, model=self.curr_model)
-                print(f'++: {cache_full=}')
+                # self.stat_send_scheduled = True
                 if cache_full == 0:  # Not full - standard delay
                     self.stat_send_timer.start(C.STAT_CACHE_DELAY)
                 elif cache_full == 1:  # Full+ - time to send
                     self.stat_send_timer.stop()
-                    self.stat_send_scheduled = True
                     signals = WorkerSignals()
-                    signals.finished.connect(self.stat_send_post_processing)
+                    signals.finished.connect(self.stat_send_finished)
                     self.request_worker.add_task(MDAS.send_statistic_cache, signals, 1)
                 else:  # Overflowing or STOPPED Overflow - no connection to stat server, longer delay
                     self.stat_send_timer.start(C.STAT_RESEND_DELAY)
@@ -668,40 +664,17 @@ class App(QMainWindow):
                                          manufacturer,
                                          self.curr_model,
                                          self.curr_description)
-            # self.worker = Worker(DK9.adv_search,
-            #                      self.curr_type,
-            #                      manufacturer,
-            #                      self.curr_model,
-            #                      self.curr_description)
-            # self.worker.signals.result.connect(self.update_dk9_data)
-            # self.worker.signals.progress.connect(self.load_progress)
-            # self.worker.signals.finished.connect(self.finished)
-            # self.worker.signals.error.connect(self.error)
-            # self.worker.signals.status.connect(self.update_web_status)
-            # self.thread.start(self.worker)
         self.thread.start(self.request_worker)
 
     def send_statistic(self):
-        print('Preparing thread to send stats')
-        # print(f'{self.worker=}')
-        # worker = Worker(MDAS.send_test)
-        # worker_thread = QThread()
-        # worker.moveToThread(worker_thread)
-        # worker.signals.finished.connect(self.stat_send_post_processing)
-        # worker.deleteLater()
-        # worker_thread.deleteLater()
+        print('Starting thread to send stats')
+        self.request_worker = Worker()
+        signals = WorkerSignals()
+        signals.finished.connect(self.stat_send_finished)
+        self.request_worker.add_task(MDAS.send_statistic_cache, signals, 1)
+        self.thread.start(self.request_worker)
 
-        # worker.signals.progress.connect(self.load_progress)
-        # worker.signals.status.connect(self.update_web_status)
-        # worker.signals.error.connect(self.error)
-        # print('Starting thread to send stats')
-        # worker_thread.start()
-        # self.thread.start(worker)
-
-        # MDAS.send_statistic_cache()
-        # self.stat_send_scheduled = False
-
-    def stat_send_post_processing(self):
+    def stat_send_finished(self):
         if MDAS.cache_to_send:
             C.stat_delay = C.STAT_RESEND_DELAY
         else:
@@ -710,22 +683,17 @@ class App(QMainWindow):
     def reset_stat_timer(self):
         C.stat_delay = C.STAT_CACHE_DELAY
         self.stat_send_timer.stop()
-        self.stat_send_scheduled = False
 
     def get_dk9_search_signals(self):
         signals = WorkerSignals()
         signals.result.connect(self.update_dk9_data)
         signals.progress.connect(self.load_progress)
-        signals.finished.connect(self.finished)
+        signals.finished.connect(self.thread_finished)
         signals.error.connect(self.error)
         signals.status.connect(self.update_web_status)
         return signals
 
     def login_dk9(self):
-        # self.worker = Worker(DK9.login)
-        # self.worker.signals.progress.connect(self.load_progress)
-        # self.worker.signals.status.connect(self.update_web_status)
-        # self.worker.signals.error.connect(self.error)
         self.request_worker = Worker()
         signals = WorkerSignals()
         signals.progress.connect(self.load_progress)
@@ -735,7 +703,7 @@ class App(QMainWindow):
             self.search_again = True
             signals.finished.connect(self.search_dk9)
         else:
-            signals.finished.connect(self.finished)
+            signals.finished.connect(self.thread_finished)
         print('Starting thread to login')
         self.request_worker.add_task(DK9.login, signals, 0)
         self.thread.start(self.request_worker)
@@ -954,13 +922,11 @@ class App(QMainWindow):
     def load_progress(self, progress):
         self.ui.web_load_progress_bar.setValue(progress)
 
-    def finished(self):
+    def thread_finished(self):
         if self.web_status not in (1, 2):
             self.ui.web_load_progress_bar.setValue(100)
         else:
             self.ui.web_load_progress_bar.setValue(0)
-        # if self.stat_send_scheduled:
-        #     self.send_statistic()
 
     def fill_dk9_table_from_soup(self, soup, table, num: int, tab_names: tuple,
                                  def_bg_color1: tuple, def_bg_color2: tuple,
