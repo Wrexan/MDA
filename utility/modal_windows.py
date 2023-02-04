@@ -3,6 +3,7 @@ from PyQt5 import QtCore, QtWidgets
 from UI.window_settings import Ui_settings_window
 from UI.window_simple import Ui_Dialog
 from UI.adv_search import Ui_Dialog as AdvSearchDialog
+from UI.window_graphs import Ui_Dialog as GraphDialog
 
 
 class HelpWindow(QtWidgets.QDialog):
@@ -118,3 +119,16 @@ class AdvancedSearchWindow(QtWidgets.QDialog):
                   '_model': self.ui.inp_model.text(),
                   '_description': self.ui.inp_descr.text()}
         self.Parent.search_dk9(advanced=search)
+
+
+class GraphWindow(QtWidgets.QDialog):
+    def __init__(self, C, Parent):
+        super().__init__(None,
+                         # QtCore.Qt.WindowSystemMenuHint |
+                         # QtCore.Qt.WindowTitleHint |
+                         QtCore.Qt.WindowCloseButtonHint
+                         )
+        self.Parent = Parent
+        self.ui = GraphDialog()
+        self.ui.setupUi(self)
+

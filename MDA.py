@@ -18,13 +18,13 @@ os.add_dll_directory(os.getcwd())
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, QMenu, QTableWidget, \
     QHeaderView, qApp, QMessageBox, QListWidget, QSizePolicy, QLineEdit, QSpacerItem, QPushButton, QLabel, QStyleFactory
 from PyQt5 import QtCore, QtGui
-from PyQt5.Qt import Qt, QEvent
+from PyQt5.QtCore import Qt, QEvent
 
 from utility.config import Config
 from utility.dk9 import DK9Parser
 from utility.price import Price
 from utility.statistic import MDAS
-from utility.modal_windows import ConfigWindow, HelpWindow, AdvancedSearchWindow
+from utility.modal_windows import ConfigWindow, HelpWindow, AdvancedSearchWindow, GraphWindow
 from utility.thread_worker import Worker, WorkerSignals
 from UI.window_main import Ui_MainWindow
 
@@ -168,6 +168,7 @@ class App(QMainWindow):
 
         self.ui.pb_adv_search.clicked.connect(self.open_adv_search)
         self.ui.settings_button.clicked.connect(self.open_settings)
+        self.ui.graph_button.clicked.connect(self.open_graphs)
 
         self.ui.table_price.setHorizontalHeaderLabels(('Виды работ', 'Цена', 'Прим'))
         self.ui.table_parts.setHorizontalHeaderLabels(('Тип', 'Фирма', 'Модель', 'Примечание',
@@ -1334,6 +1335,12 @@ class App(QMainWindow):
         help_ui.setWindowIcon(QtGui.QIcon(C.LOGO))
         help_ui.exec_()
         help_ui.show()
+
+    def open_graphs(self):
+        graphs_ui = GraphWindow(C, self)
+        graphs_ui.setWindowIcon(QtGui.QIcon(C.LOGO))
+        graphs_ui.exec_()
+        graphs_ui.show()
 
     @staticmethod
     def error(errors: tuple):
