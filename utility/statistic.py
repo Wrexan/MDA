@@ -90,7 +90,7 @@ class MDAS:
     def send_test():
         print(f'SENDING: TEST OK!!')
 
-    def send_statistic_cache(self):
+    def send_statistic_cache(self, progress, status, error):
         print(f'SENDING: {self.cache_to_send}')
         # data = {'data': ['1#Samsung#A500', '2#Xiaomi#mi8', '1#Xiaomi#mi11']}
         cache_to_send = self.cache_to_send[:]
