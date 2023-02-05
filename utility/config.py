@@ -31,18 +31,19 @@ class Config:
         # =================================================
         # ==================  CLIENT  =====================
         # =================================================
+        self.FIRST_START: bool = False
         self.BRANCH: int = 0
-        self.BRANCHES = \
+        self.BRANCHES: dict = \
             {
                 0: '---',
                 1: 'ДРН',
                 2: 'ПЛТ',
                 3: 'ПЗН',
             }
-        self.STAT_CACHE_DELAY = 180_000  # 3 min
-        self.STAT_RESEND_DELAY = 300_000  # 5 min
-        self.stat_delay = 180_000  # 3 min by default, more on delivery fail
-        self.STAT_CACHE_SIZE = 5
+        self.STAT_CACHE_DELAY: int = 180_000  # 3 min
+        self.STAT_RESEND_DELAY: int = 300_000  # 5 min
+        self.stat_delay: int = 180_000  # 3 min by default, more on delivery fail
+        self.STAT_CACHE_SIZE: int = 5
 
         # =================================================
         # ===============  APP SETTINGS  ==================
@@ -228,6 +229,7 @@ class Config:
                 os.remove(self.USER_CONFIG)
                 self.save_user_config()
         else:
+            self.FIRST_START = True
             self.save_user_config()
 
     def c_data(self):

@@ -24,7 +24,8 @@ from utility.config import Config
 from utility.dk9 import DK9Parser
 from utility.price import Price
 from utility.statistic import MDAS
-from utility.modal_windows import ConfigWindow, HelpWindow, AdvancedSearchWindow, GraphWindow
+from utility.modal_windows import ConfigWindow, HelpWindow, AdvancedSearchWindow, FirstStartWindow
+from utility.modal_graph_win import GraphWindow
 from utility.thread_worker import Worker, WorkerSignals
 from UI.window_main import Ui_MainWindow
 
@@ -132,6 +133,9 @@ class App(QMainWindow):
         self.update_web_status(0)
         # self.update_price_status()
         self.show()
+        if C.FIRST_START:
+            C.FIRST_START = False
+            self.open_first_start()
 
     def init_ui_statics(self):
 
@@ -1326,6 +1330,12 @@ class App(QMainWindow):
 
     def open_settings(self):
         settings_ui = ConfigWindow(C, self, DK9)
+        settings_ui.setWindowIcon(QtGui.QIcon(C.LOGO))
+        settings_ui.exec_()
+        settings_ui.show()
+
+    def open_first_start(self):
+        settings_ui = FirstStartWindow(C, self, DK9)
         settings_ui.setWindowIcon(QtGui.QIcon(C.LOGO))
         settings_ui.exec_()
         settings_ui.show()
