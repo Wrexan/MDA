@@ -2,7 +2,7 @@ import os
 import configparser
 from win32comext.shell import shell, shellcon
 
-from config.confidential_data import *
+from secured.confidential_data import *
 
 
 class Config:

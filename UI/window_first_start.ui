@@ -123,14 +123,13 @@
           <widget class="QLabel" name="label_5">
            <property name="font">
             <font>
-             <pointsize>10</pointsize>
+             <pointsize>12</pointsize>
             </font>
            </property>
            <property name="text">
             <string>Добро пожаловать.
 Введите данные для доступа к &quot;Димке&quot; и выберите свое расположение.
-Расположение влияет только на сбор статистики, позже его можно изменить в настройках.
-Не забудьте ввести в настройках данные для подключения к веб базе (димке).</string>
+Расположение влияет только на сбор статистики, позже его можно изменить в настройках.</string>
            </property>
            <property name="alignment">
             <set>Qt::AlignCenter</set>

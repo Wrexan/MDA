@@ -49,7 +49,7 @@ class Ui_start_window(object):
         self.verticalLayout_5.addWidget(self.label_6)
         self.label_5 = QtWidgets.QLabel(self.frame_10)
         font = QtGui.QFont()
-        font.setPointSize(10)
+        font.setPointSize(12)
         self.label_5.setFont(font)
         self.label_5.setAlignment(QtCore.Qt.AlignCenter)
         self.label_5.setObjectName("label_5")
@@ -259,8 +259,7 @@ class Ui_start_window(object):
         self.label_6.setText(_translate("start_window", "Masterfon Data Aggregator"))
         self.label_5.setText(_translate("start_window", "Добро пожаловать.\n"
 "Введите данные для доступа к \"Димке\" и выберите свое расположение.\n"
-"Расположение влияет только на сбор статистики, позже его можно изменить в настройках.\n"
-"Не забудьте ввести в настройках данные для подключения к веб базе (димке)."))
+"Расположение влияет только на сбор статистики, позже его можно изменить в настройках."))
         self.frame_11.setToolTip(_translate("start_window", "Данные для входа в \"димку\""))
         self.frame_11.setStatusTip(_translate("start_window", "2"))
         self.frame_11.setWhatsThis(_translate("start_window", "1"))
