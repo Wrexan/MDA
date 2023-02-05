@@ -16,20 +16,20 @@ class MDAS:
     @staticmethod
     def unpack_statistic_data(raw_list: list):
         # ('1#31#1#Samsung#A500', 1)
-        data = {'year': raw_list[0], 'month': raw_list[1]}
+        data = {'year': raw_list[0], 'month': raw_list[1], 'days': {}}
         for raw_item in raw_list[2]:
             item = raw_item[0].split('#')
             day = int(item[1])
             branch = int(item[2])
             brand = item[3]
             model = item[4]
-            if data.get(day) is None:
-                data[day] = {}
-            if data[day].get(brand) is None:
-                data[day][brand] = {}
-            if data[day][brand].get(model) is None:
-                data[day][brand][model] = [0, 0, 0]
-            data[day][brand][model][branch - 1] += raw_item[1]
+            if data['days'].get(day) is None:
+                data['days'][day] = {}
+            if data['days'][day].get(brand) is None:
+                data['days'][day][brand] = {}
+            if data['days'][day][brand].get(model) is None:
+                data['days'][day][brand][model] = [0, 0, 0]
+            data['days'][day][brand][model][branch - 1] += raw_item[1]
         return data
 
     def get_mdas_token(self):
