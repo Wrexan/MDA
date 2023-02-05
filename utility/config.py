@@ -11,11 +11,10 @@ class Config:
     def __init__(self):
         self.error = None
         self.PATH = f'{os.path.dirname(os.path.dirname(os.path.realpath(__file__)))}\\'
-        self.CONFIG_PATH = f'{self.PATH}config\\'
         self.CONTENT_PATH = f'{self.PATH}content\\'
 
         self.LOGO = f'{self.CONTENT_PATH}MDA.ico'
-        self.USER_CONFIG = f'{self.CONFIG_PATH}user_config.ini'
+        self.USER_CONFIG = f'{self.CONTENT_PATH}user_config.ini'
         self.HELP = f'{self.CONTENT_PATH}Инструкция.txt'
 
         # ===============================================================
