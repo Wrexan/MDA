@@ -4,7 +4,7 @@ from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtChart import QLineSeries, QChart, QChartView, QSplineSeries, QPieSeries, \
     QPieSlice
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPainter, QColor, QFont
+from PyQt5.QtGui import QPainter, QColor, QFont, QPen
 from UI.window_graphs import Ui_Dialog as GraphDialog
 
 
@@ -20,8 +20,8 @@ class GraphWindow(QtWidgets.QDialog):
         self.ui.setupUi(self)
 
         self.graphs_menu = {
-            0: 'График запросов',
-            1: 'Топ запросов'
+            0: 'Топ запросов',
+            1: 'График запросов'
         }
 
         self.smooth_graph = True
@@ -133,9 +133,9 @@ class GraphWindow(QtWidgets.QDialog):
                 {model: sum(sum(v) for v in quantity.values()) for model, quantity in brand_stat.items()}
 
         if self.current_graph == 0:
-            self.draw_line_chart()
-        if self.current_graph == 1:
             self.draw_donut_breakdown(stat_data)
+        if self.current_graph == 1:
+            self.draw_line_chart()
 
     def change_graph(self):
         graph = self.GRAPH_SELECTOR.currentIndex()
@@ -149,11 +149,17 @@ class GraphWindow(QtWidgets.QDialog):
     @staticmethod
     def get_rgb_by_name(name):
         brand_lower = name.lower()
-        g = 2 if len(name) >= 3 else -1
-        return \
-            int((ord(brand_lower[1]) - 97) * 9.8), \
-            int((ord(brand_lower[g]) - 97) * 9.8), \
-            int((ord(brand_lower[0]) - 97) * 9.8)
+        red = int((ord(brand_lower[0]) - 97) * 9.8)
+        # g = 2 if len(name) >= 3 else -1
+        # print(f'{red=}')
+        # blue = 255 - red
+        # green = int((ord(brand_lower[g]) - 97) * 9.8)
+        # b = 1 if len(name) >= 3 else -1
+        blue = int((ord(brand_lower[1]) - 97) * 9.8)
+        green = int((ord(brand_lower[-1]) - 97) * 9.8)
+        # green = int((ord(brand_lower[-1]) - 87) * 7.08)
+        # print(f'{red=} {green=} {blue=} ')
+        return red, green, blue
 
     def draw_line_chart(self):
 
@@ -169,6 +175,9 @@ class GraphWindow(QtWidgets.QDialog):
 
         max_requests = 0
 
+        pen = QPen()
+        pen.setWidth(2)
+
         # print(f'{brand_quantity_by_days=}')
 
         brand_series = {}
@@ -182,7 +191,10 @@ class GraphWindow(QtWidgets.QDialog):
                     else:
                         brand_series[brand] = QLineSeries()
                     brand_series[brand].setName(brand)
-                    brand_series[brand].setPen(QColor(*self.get_rgb_by_name(brand)))
+                    pen.setColor(QColor(*self.get_rgb_by_name(brand)))
+                    brand_series[brand].setPen(pen)
+                    # brand_series[brand].setPen(QColor(*self.get_rgb_by_name(brand)))
+                    # brand_series[brand].setPointsVisible(True)
 
         for day, brand_stat in self.brand_quantity_by_days.items():
             for brand, series in brand_series.items():
@@ -211,6 +223,13 @@ class GraphWindow(QtWidgets.QDialog):
         axis_y = self.chart.axisY()
         axis_y.setRange(0, axis_y_length)
         axis_y.setTickCount(axis_y_length + 1)
+        axis_y.setLabelFormat("%i")
+
+        axis_x_length = 31
+        axis_x = self.chart.axisX()
+        axis_x.setRange(0, axis_x_length)
+        axis_x.setTickCount(axis_x_length + 1)
+        axis_x.setLabelFormat("%i")
 
         # categories = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
         # cat_axis = QBarCategoryAxis()
