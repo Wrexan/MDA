@@ -232,13 +232,90 @@
          </widget>
         </item>
         <item>
-         <widget class="QCheckBox" name="cb_smooth">
-          <property name="text">
-           <string>Сгладить</string>
+         <widget class="QFrame" name="frame">
+          <property name="minimumSize">
+           <size>
+            <width>160</width>
+            <height>0</height>
+           </size>
           </property>
-          <property name="checked">
-           <bool>true</bool>
+          <property name="maximumSize">
+           <size>
+            <width>160</width>
+            <height>16777215</height>
+           </size>
           </property>
+          <layout class="QHBoxLayout" name="horizontalLayout_4">
+           <property name="leftMargin">
+            <number>0</number>
+           </property>
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <property name="rightMargin">
+            <number>0</number>
+           </property>
+           <property name="bottomMargin">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QCheckBox" name="cb_smooth">
+             <property name="font">
+              <font>
+               <pointsize>10</pointsize>
+              </font>
+             </property>
+             <property name="text">
+              <string>Сгладить</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSpinBox" name="sb_min">
+             <property name="minimumSize">
+              <size>
+               <width>32</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>32</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="font">
+              <font>
+               <pointsize>10</pointsize>
+              </font>
+             </property>
+             <property name="minimum">
+              <number>1</number>
+             </property>
+             <property name="maximum">
+              <number>5</number>
+             </property>
+             <property name="value">
+              <number>3</number>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="lbl_min">
+             <property name="font">
+              <font>
+               <pointsize>10</pointsize>
+              </font>
+             </property>
+             <property name="text">
+              <string>Нижний порог</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </widget>
         </item>
        </layout>

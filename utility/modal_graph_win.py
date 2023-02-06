@@ -9,142 +9,111 @@ from UI.window_graphs import Ui_Dialog as GraphDialog
 
 
 class GraphWindow(QtWidgets.QDialog):
-    def __init__(self, C, Parent):
+    def __init__(self, C, Parent, MDAS):
         super().__init__(None,
                          # QtCore.Qt.WindowSystemMenuHint |
                          # QtCore.Qt.WindowTitleHint |
                          QtCore.Qt.WindowCloseButtonHint
                          )
         self.Parent = Parent
+        self.MDAS = MDAS
         self.ui = GraphDialog()
         self.ui.setupUi(self)
+
+        self.year_current = datetime.now().year
+        self.month_current = datetime.now().month
+        self.year_to_show = self.year_current
+        self.month_to_show = self.month_current
+        self.available_years = {str(year): year for year in range(2023, self.year_to_show + 1)}
+        self.available_months = {month + 1: str(month_name) for month, month_name in
+                                 enumerate(['январь', 'февраль', 'март',
+                                            'апрель', 'май', 'июнь',
+                                            'июль', 'август', 'сентябрь',
+                                            'октябрь', 'ноябрь', 'декабрь'])}
 
         self.graphs_menu = {
             0: 'Топ запросов',
             1: 'График запросов'
         }
 
+        self.min_req_limit = 3
         self.smooth_graph = True
         self.current_graph = 0
-        self.current_year = datetime.now().year
-        self.current_month = datetime.now().month
 
         self.GRAPH_SELECTOR = self.ui.cb_graph
         self.GRAPH_LAYOUT = self.ui.graph_layout
         self.brand_quantity_by_days = {}
+        self.stat_data = None
 
         self.configurate_on_load()
 
         self.draw_graph()
 
     def configurate_on_load(self):
-        available_years = {str(year): year for year in range(2023, self.current_year + 1)}
-        available_months = {str(month_name): month + 1 for month, month_name in
-                            enumerate(['январь', 'февраль', 'март',
-                                       'апрель', 'май', 'июнь',
-                                       'июль', 'август', 'сентябрь',
-                                       'октябрь', 'ноябрь', 'декабрь'])}
+        self.ui.cb_year.addItems(self.available_years.keys())
+        self.ui.cb_year.setCurrentText(str(self.year_to_show))
+        self.ui.cb_year.currentIndexChanged.connect(self.reload_draw_graph)
 
-        self.ui.cb_year.addItems(available_years.keys())
-        self.ui.cb_year.setCurrentText(str(self.current_year))
-        self.ui.cb_year.currentIndexChanged.connect(self.draw_graph)
-
-        self.ui.cb_month.addItems(available_months.keys())
-        self.ui.cb_month.setCurrentText([k for k, v in available_months.items() if v == self.current_month][0])
-        self.ui.cb_month.currentIndexChanged.connect(self.draw_graph)
+        self.ui.cb_month.addItems(self.available_months.values())
+        self.ui.cb_month.setCurrentText(self.available_months[self.month_to_show])
+        self.ui.cb_month.currentIndexChanged.connect(self.reload_draw_graph)
 
         self.ui.cb_graph.addItems(self.graphs_menu.values())
         self.ui.cb_graph.setCurrentText(self.graphs_menu[0])
-        self.ui.cb_graph.currentIndexChanged.connect(self.change_graph)
+        self.ui.cb_graph.currentIndexChanged.connect(self.update_graph)
 
-        self.ui.cb_smooth.stateChanged.connect(self.change_smooth)
+        self.ui.cb_smooth.stateChanged.connect(self.update_graph)
 
         self.ui.rb_year.setChecked(False)
         self.ui.rb_month.setChecked(True)
+
+        self.ui.sb_min.setValue(self.min_req_limit)
+        self.ui.sb_min.valueChanged.connect(self.update_graph)
         # self.ui.cb_by_branches.setDisabled(True)
 
+    def reload_draw_graph(self):
+        self.year_to_show = int(self.ui.cb_year.currentText())
+        self.month_to_show = self.ui.cb_month.currentIndex() + 1
+        # go back from future to now
+        if self.year_to_show > self.year_current \
+                or self.year_to_show == self.year_current and self.month_to_show > self.month_current:
+            self.year_to_show = self.year_current
+            self.month_to_show = self.month_current
+            # self.ui.cb_year.setCurrentText(str(self.year_to_show))
+            # self.ui.cb_month.setCurrentText([k for k, v in self.available_months.items() if v == self.month_to_show][0])
+
+        self.stat_data = self.MDAS.load_statistic(self.year_to_show, self.month_to_show)
+        self.update_graph()
+
+    def update_graph(self):
+        graph = self.GRAPH_SELECTOR.currentIndex()
+        self.current_graph = graph
+        self.smooth_graph = True if self.ui.cb_smooth.checkState() == 2 else False
+        self.min_req_limit = self.ui.sb_min.value()
+        self.draw_graph()
+
     def draw_graph(self):
-        stat_data = {'year': 2023, 'month': 2, 'days': {
-            1: {
-                'Xiaomi': {'mi8': [1, 2, 3], 'mi11': [5, 0, 1]},
-                'Samsung': {'A500': [1, 1, 0], 'M215': [1, 0, 3]},
-                'Huawei': {'Y5 2020': [1, 0, 0], 'Nova': [1, 2, 0]}
-            },
-            2: {
-                'Xiaomi': {'mi8': [1, 0, 3], 'mi11': [5, 2, 1]},
-                'Samsung': {'A500': [1, 0, 0], 'M215': [1, 0, 0]},
-                'Huawei': {'Y5 2020': [1, 0, 3], 'Nova': [1, 2, 0]}
-            },
-            3: {
-                'Xiaomi': {'mi8': [0, 1, 1], 'mi11': [1, 3, 1]},
-                'Samsung': {'A500': [1, 0, 4], 'M215': [1, 0, 0]}
-            },
-            4: {
-                'Xiaomi': {'mi8': [1, 2, 3], 'mi11': [5, 0, 1]},
-                'Samsung': {'A500': [1, 1, 0], 'M215': [1, 0, 3]},
-                'Huawei': {'Y5 2020': [1, 0, 1], 'Nova': [1, 2, 0]}
-            },
-            5: {
-                'LG': {'V700': [1, 0, 2], 'M320': [2, 0, 1]},
-                'Xiaomi': {'mi8': [1, 0, 3], 'mi11': [2, 2, 1]},
-                'Samsung': {'A500': [1, 0, 0], 'M215': [1, 0, 0]},
-                'Huawei': {'Y5 2020': [1, 0, 0], 'Nova': [1, 2, 0]},
-                'iPhone': {'X': [1, 0, 3]}
-            },
-            6: {
-                'Xiaomi': {'mi8': [0, 1, 4], 'mi11': [1, 3, 1]},
-                'Samsung': {'A500': [1, 2, 0], 'M215': [1, 0, 0]},
-                'Huawei': {'Y5 2020': [1, 0, 3], 'Nova': [1, 2, 0]}
-            },
-            7: {
-                'Xiaomi': {'mi8': [1, 2, 3], 'mi11': [5, 0, 1]},
-                'Samsung': {'A500': [1, 1, 0], 'M215': [1, 0, 3]},
-                'Huawei': {'Y5 2020': [1, 0, 0], 'Nova': [1, 2, 0], 'Nova 2': [1, 2, 5], 'Nova 3c': [1, 2, 0]}
-            },
-            8: {
-                'Xiaomi': {'mi8': [1, 0, 3], 'mi11': [5, 2, 1], 'Redmi Note 11 Pro Plus': [3, 0, 1]},
-                'Samsung': {'A500': [1, 0, 0], 'M215': [1, 2, 0]},
-                'Huawei': {'Y5 2020': [1, 0, 3], 'Nova': [0, 2, 0], 'Nova 5t': [0, 2, 0]}
-            },
-            9: {
-                'Xiaomi': {'mi8': [0, 1, 1], 'mi11': [1, 3, 1]},
-                'Samsung': {'A500': [1, 0, 4], 'M215': [3, 0, 0]},
-                'OnePlus': {'Nord N200 5G': [1, 0, 2], 'OnePlus 9 Pro': [3, 0, 0]}
-            },
-            10: {
-                'Xiaomi': {'mi8': [1, 2, 3], 'mi11': [5, 0, 1]},
-                'Samsung': {'A500': [1, 1, 0], 'M215': [1, 1, 3]},
-                'Huawei': {'Y5 2020': [1, 0, 1], 'Nova': [1, 5, 0]}
-            },
-            11: {
-                'Xiaomi': {'mi8': [1, 0, 3], 'mi11': [2, 2, 1]},
-                'Samsung': {'A500': [1, 0, 0], 'M215': [1, 0, 0]},
-                'Huawei': {'Y5 2020': [1, 0, 0], 'Nova': [1, 2, 0]}
-            },
-            12: {
-                'Xiaomi': {'mi8': [0, 1, 4], 'mi11': [1, 3, 1]},
-                'Samsung': {'A500': [1, 2, 0], 'M215': [1, 0, 3]},
-                'Huawei': {'Y5 2020': [1, 0, 3], 'Nova': [1, 2, 0]}
-            }}}
+        if not self.stat_data:
+            self.stat_data = self.MDAS.load_statistic(self.year_to_show, self.month_to_show)
+
+        if not self.stat_data['days']:
+            return
 
         self.brand_quantity_by_days = {}
-        for day, brand_stat in stat_data['days'].items():
-            self.brand_quantity_by_days[day] = \
+        for day, brand_stat in self.stat_data['days'].items():
+            self.brand_quantity_by_days[int(day)] = \
                 {model: sum(sum(v) for v in quantity.values()) for model, quantity in brand_stat.items()}
 
         if self.current_graph == 0:
-            self.draw_donut_breakdown(stat_data)
+            self.ui.sb_min.setVisible(True)
+            self.ui.lbl_min.setVisible(True)
+            self.ui.cb_smooth.setVisible(False)
+            self.draw_donut_breakdown(self.stat_data)
         if self.current_graph == 1:
+            self.ui.sb_min.setVisible(False)
+            self.ui.lbl_min.setVisible(False)
+            self.ui.cb_smooth.setVisible(True)
             self.draw_line_chart()
-
-    def change_graph(self):
-        graph = self.GRAPH_SELECTOR.currentIndex()
-        self.current_graph = graph
-        self.draw_graph()
-
-    def change_smooth(self):
-        self.smooth_graph = True if self.ui.cb_smooth.checkState() == 2 else False
-        self.draw_graph()
 
     @staticmethod
     def get_rgb_by_name(name):
@@ -199,9 +168,12 @@ class GraphWindow(QtWidgets.QDialog):
         for day, brand_stat in self.brand_quantity_by_days.items():
             for brand, series in brand_series.items():
                 if brand in brand_stat.keys():
-                    brand_series[brand].append(day, brand_stat[brand])
+                    reqs = brand_stat[brand]
                 else:
-                    brand_series[brand].append(day, 0)
+                    reqs = 0
+                brand_series[brand].append(day, reqs)
+                if not self.smooth_graph:
+                    brand_series[brand].setPointsVisible(True)
 
         # self.series = QLineSeries()
         # # self.series.setPen(QPen(Qt.darkGreen, 2))
@@ -215,7 +187,9 @@ class GraphWindow(QtWidgets.QDialog):
         for series in brand_series.values():
             self.chart.addSeries(series)
         self.chart.createDefaultAxes()
-        self.chart.setTitle("Количество запросов по бренду в день")
+        self.chart.setTitle(f"Количество запросов по бренду за "
+                            f"{self.available_months[self.month_to_show]} "
+                            f"{self.year_to_show}")
         self.chart.setAnimationOptions(QChart.SeriesAnimations)
         self.chart.setAnimationDuration(200)
 
@@ -227,7 +201,7 @@ class GraphWindow(QtWidgets.QDialog):
 
         axis_x_length = 31
         axis_x = self.chart.axisX()
-        axis_x.setRange(0, axis_x_length)
+        axis_x.setRange(1, axis_x_length)
         axis_x.setTickCount(axis_x_length + 1)
         axis_x.setLabelFormat("%i")
 
@@ -253,12 +227,12 @@ class GraphWindow(QtWidgets.QDialog):
         self._chart_view.resize(width, height)
 
     def draw_donut_breakdown(self, stat_data):
-        min_requests = 3
-
         donut_breakdown = DonutBreakdownChart()
-        donut_breakdown.setAnimationOptions(QChart.AllAnimations)
-        donut_breakdown.setAnimationDuration(100)
-        donut_breakdown.setTitle("Соотношение запросов за месяц")
+        # donut_breakdown.setAnimationOptions(QChart.AllAnimations)
+        # donut_breakdown.setAnimationDuration(100)
+        donut_breakdown.setTitle(f"Соотношение кол-ва запросов за "
+                                 f"{self.available_months[self.month_to_show]} "
+                                 f"{self.year_to_show}")
         donut_breakdown.legend().setAlignment(Qt.AlignRight)
 
         brands_models_stats = {}
@@ -278,7 +252,7 @@ class GraphWindow(QtWidgets.QDialog):
             brands_models_series[brand].setName(brand)
             # brands_models_series[brand].setPen(QColor(*self.get_rgb_by_name(brand)))
             for model, stat in models_stat.items():
-                if stat < min_requests:
+                if stat < self.min_req_limit:
                     continue
                 brands_models_series[brand].append(model, stat)
             donut_breakdown.add_breakdown_series(brands_models_series[brand], QColor(*self.get_rgb_by_name(brand)))
@@ -325,7 +299,7 @@ class DonutBreakdownChart(QChart):
             color = QColor(color).lighter(115)
             pie_slice.setBrush(color)
             pie_slice.setLabelFont(font)
-            label_arm_len = -0.10 + len(pie_slice.label())/20
+            label_arm_len = -0.10 + len(pie_slice.label()) / 20
             if label_arm_len > 0.6:
                 label_arm_len = 0.6
             pie_slice.setLabelArmLengthFactor(label_arm_len)
