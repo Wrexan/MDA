@@ -96,7 +96,7 @@ class GraphWindow(QtWidgets.QDialog):
         if not self.stat_data:
             self.stat_data = self.MDAS.load_statistic(self.year_to_show, self.month_to_show)
 
-        if not self.stat_data['days']:
+        if not self.stat_data or not self.stat_data['days']:
             return
 
         self.brand_quantity_by_days = {}

@@ -70,7 +70,7 @@ class MDAS:
         print(request.status_code)
         if request.status_code == 200:
             raw_data: dict = json.loads(request.content)
-            if raw_data.get('body'):
+            if raw_data.get('statusCode') == 200 and raw_data.get('body'):
                 unpacked_data = self.unpack_statistic_data(raw_data['body'])
                 # print(unpacked_data)
                 return unpacked_data
@@ -94,8 +94,9 @@ class MDAS:
         request = requests.post(url=self.C.MDAS_URL,
                                 json={'data': cache_to_send},
                                 headers={self.C.MDAS_HEADER: self.get_mdas_token()})
-        print(f'stat answer: {json.loads(request.content)=}')
-        if request.status_code != 200 or json.loads(request.content).get('statusCode') != 200:
+        raw_data: dict = json.loads(request.content)
+        print(f'stat answer: {raw_data=}')
+        if request.status_code != 200 or raw_data.get('statusCode') != 200:
             self.cache_to_send.extend(cache_to_send)
 
     def load_statistic(self, year: int, month: int = 0):
@@ -128,6 +129,9 @@ class MDAS:
             # requesting and saving file
             print(f'requesting stats for: {year}-{month}')
             stat_data = self.request_statistic_for_month(year=year, month=month)
+            if not stat_data:
+                return {}
+
             if year == current_date.year and month == current_date.month:
                 print(f'saving stats in: {file_name_tmp}')
                 with open(f'{self.C.MDAS_PATH}{file_name_tmp}', 'w') as cache_file:
