@@ -5,6 +5,7 @@ from PyQt5.QtChart import QLineSeries, QChart, QChartView, QSplineSeries, QPieSe
     QPieSlice
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPainter, QColor, QFont, QPen
+
 from UI.window_graphs import Ui_Dialog as GraphDialog
 
 
@@ -250,6 +251,8 @@ class GraphWindow(QtWidgets.QDialog):
         for brand, models_stat in brands_models_stats.items():
             brands_models_series[brand] = QPieSeries()
             brands_models_series[brand].setName(brand)
+            # brands_models_series[brand].hovered.connect(donut_breakdown.show_tip)
+            brands_models_series[brand].hovered.connect(self.show_tip)
             # brands_models_series[brand].setPen(QColor(*self.get_rgb_by_name(brand)))
             for model, stat in models_stat.items():
                 if stat < self.min_req_limit:
@@ -266,13 +269,30 @@ class GraphWindow(QtWidgets.QDialog):
         height = 656
         chart_view.resize(width, height)
 
+    def show_tip(self, part, state):
+        if state:
+            self.setToolTip(f'{part.label()} {(part.percentage() * 100):.1f}%')
+            part.setBrush(part.color().darker(150))
+        else:
+            self.setToolTip('')
+            part.setBrush(part.color().lighter(150))
+
 
 class DonutBreakdownChart(QChart):
     def __init__(self, parent=None):
         super().__init__(parent, Qt.WindowFlags())
         self.main_series = QPieSeries()
         self.main_series.setPieSize(0.5)
+        self.main_series.hovered.connect(self.show_tip)
         self.addSeries(self.main_series)
+
+    def show_tip(self, part, state):
+        if state:
+            self.setToolTip(part.label())
+            part.setBrush(part.color.darker(150))
+        else:
+            self.setToolTip('')
+            part.setBrush(part.color)
 
     def add_breakdown_series(self, breakdown_series, color):
         font = QFont("Arial", 8)
@@ -284,6 +304,7 @@ class DonutBreakdownChart(QChart):
         self.main_series.append(main_slice)
 
         # customize the slice
+        main_slice.color = color
         main_slice.setBrush(color)
         main_slice.setLabelVisible()
         main_slice.setLabelColor(Qt.white)
@@ -296,7 +317,10 @@ class DonutBreakdownChart(QChart):
         breakdown_series.setLabelsVisible()
 
         for pie_slice in breakdown_series.slices():
-            color = QColor(color).lighter(115)
+            # pie_slice.setLabel(f'{pie_slice.label()} {pie_slice.percentage()}')
+            # pie_slice.setLabel(f'{pie_slice.label()} {pie_slice.percentage():.1f}%')
+            color = QColor(color).lighter(105)
+            pie_slice.color = color
             pie_slice.setBrush(color)
             pie_slice.setLabelFont(font)
             label_arm_len = -0.10 + len(pie_slice.label()) / 20
@@ -334,7 +358,7 @@ class DonutBreakdownChart(QChart):
                     # modify markers from breakdown series
                     label = marker.slice().label()
                     p = marker.slice().percentage() * 100
-                    marker.setLabel(f"{label} {p:.2f}%")
+                    marker.setLabel(f"{label} {p:.1f}%")
                     marker.setFont(QFont("Arial", 8))
 
 
@@ -344,6 +368,7 @@ class MainSlice(QPieSlice):
 
         self.breakdown_series = breakdown_series
         self.name = None
+        self.color = None
 
         self.percentageChanged.connect(self.update_label)
 
@@ -358,4 +383,4 @@ class MainSlice(QPieSlice):
 
     def update_label(self):
         p = self.percentage() * 100
-        self.setLabel(f"{self.name} {p:.2f}%")
+        self.setLabel(f"{self.name} {p:.1f}%")
