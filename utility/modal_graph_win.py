@@ -2,9 +2,9 @@ from datetime import datetime
 from PyQt5 import QtCore, QtWidgets
 
 from PyQt5.QtChart import QLineSeries, QChart, QChartView, QSplineSeries, QPieSeries, \
-    QPieSlice
+    QPieSlice, QBarSet, QPercentBarSeries, QBarCategoryAxis, QAbstractAxis, QValueAxis
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPainter, QColor, QFont, QPen
+from PyQt5.QtGui import QPainter, QColor, QFont, QPen, QBrush
 
 from UI.window_graphs import Ui_Dialog as GraphDialog
 
@@ -33,8 +33,9 @@ class GraphWindow(QtWidgets.QDialog):
                                             'октябрь', 'ноябрь', 'декабрь'])}
 
         self.graphs_menu = {
-            0: 'Топ запросов',
-            1: 'График запросов'
+            0: 'Топ за весь период',
+            1: 'График по количеству',
+            2: 'График в процентах'
         }
 
         self.min_req_limit = 3
@@ -43,8 +44,15 @@ class GraphWindow(QtWidgets.QDialog):
 
         self.GRAPH_SELECTOR = self.ui.cb_graph
         self.GRAPH_LAYOUT = self.ui.graph_layout
-        self.brand_quantity_by_days = {}
+        self.brand_quantity_by_points = {}
         self.stat_data = None
+        self.current_chart_view = None
+
+        self.graph_loaders = {
+            'month': self.MDAS.load_month_statistic,
+            'year': self.MDAS.load_year_statistic,
+        }
+        self.current_graph_loader = self.graph_loaders['month']
 
         self.configurate_on_load()
 
@@ -68,9 +76,22 @@ class GraphWindow(QtWidgets.QDialog):
         self.ui.rb_year.setChecked(False)
         self.ui.rb_month.setChecked(True)
 
+        self.ui.rb_year.clicked.connect(self.load_year_graph)
+        self.ui.rb_month.clicked.connect(self.load_month_graph)
+
         self.ui.sb_min.setValue(self.min_req_limit)
         self.ui.sb_min.valueChanged.connect(self.update_graph)
         # self.ui.cb_by_branches.setDisabled(True)
+
+    def load_month_graph(self):
+        if self.current_graph_loader != self.graph_loaders['month']:
+            self.current_graph_loader = self.graph_loaders['month']
+            self.reload_draw_graph()
+
+    def load_year_graph(self):
+        if self.current_graph_loader != self.graph_loaders['year']:
+            self.current_graph_loader = self.graph_loaders['year']
+            self.reload_draw_graph()
 
     def reload_draw_graph(self):
         self.year_to_show = int(self.ui.cb_year.currentText())
@@ -83,7 +104,7 @@ class GraphWindow(QtWidgets.QDialog):
             # self.ui.cb_year.setCurrentText(str(self.year_to_show))
             # self.ui.cb_month.setCurrentText([k for k, v in self.available_months.items() if v == self.month_to_show][0])
 
-        self.stat_data = self.MDAS.load_statistic(self.year_to_show, self.month_to_show)
+        self.stat_data = self.current_graph_loader(self.year_to_show, self.month_to_show)
         self.update_graph()
 
     def update_graph(self):
@@ -95,15 +116,18 @@ class GraphWindow(QtWidgets.QDialog):
 
     def draw_graph(self):
         if not self.stat_data:
-            self.stat_data = self.MDAS.load_statistic(self.year_to_show, self.month_to_show)
+            self.stat_data = self.current_graph_loader(self.year_to_show, self.month_to_show)
 
-        if not self.stat_data or not self.stat_data['days']:
+        if not self.stat_data or not self.stat_data['points']:
             return
 
-        self.brand_quantity_by_days = {}
-        for day, brand_stat in self.stat_data['days'].items():
-            self.brand_quantity_by_days[int(day)] = \
+        self.brand_quantity_by_points = {}
+        for point, brand_stat in self.stat_data['points'].items():
+            self.brand_quantity_by_points[int(point)] = \
                 {model: sum(sum(v) for v in quantity.values()) for model, quantity in brand_stat.items()}
+
+        if self.current_chart_view:
+            self.GRAPH_LAYOUT.removeWidget(self.current_chart_view)
 
         if self.current_graph == 0:
             self.ui.sb_min.setVisible(True)
@@ -115,6 +139,11 @@ class GraphWindow(QtWidgets.QDialog):
             self.ui.lbl_min.setVisible(False)
             self.ui.cb_smooth.setVisible(True)
             self.draw_line_chart()
+        if self.current_graph == 2:
+            self.ui.sb_min.setVisible(False)
+            self.ui.lbl_min.setVisible(False)
+            self.ui.cb_smooth.setVisible(False)
+            self.draw_percent_bar_chart()
 
     @staticmethod
     def get_rgb_by_name(name):
@@ -148,10 +177,10 @@ class GraphWindow(QtWidgets.QDialog):
         pen = QPen()
         pen.setWidth(2)
 
-        # print(f'{brand_quantity_by_days=}')
+        # print(f'{brand_quantity_by_points=}')
 
         brand_series = {}
-        for day, brands in self.brand_quantity_by_days.items():
+        for point, brands in self.brand_quantity_by_points.items():
             for brand in brands.keys():
                 if brands[brand] > max_requests:
                     max_requests = brands[brand]
@@ -166,13 +195,13 @@ class GraphWindow(QtWidgets.QDialog):
                     # brand_series[brand].setPen(QColor(*self.get_rgb_by_name(brand)))
                     # brand_series[brand].setPointsVisible(True)
 
-        for day, brand_stat in self.brand_quantity_by_days.items():
+        for point, brand_stat in self.brand_quantity_by_points.items():
             for brand, series in brand_series.items():
                 if brand in brand_stat.keys():
                     reqs = brand_stat[brand]
                 else:
                     reqs = 0
-                brand_series[brand].append(day, reqs)
+                brand_series[brand].append(point, reqs)
                 if not self.smooth_graph:
                     brand_series[brand].setPointsVisible(True)
 
@@ -183,25 +212,25 @@ class GraphWindow(QtWidgets.QDialog):
         # self.series.setName('123')
         # self.series.setPointsVisible(True)
 
-        self.chart = QChart()
+        chart = QChart()
         # self.chart.legend().hide()
         for series in brand_series.values():
-            self.chart.addSeries(series)
-        self.chart.createDefaultAxes()
-        self.chart.setTitle(f"Количество запросов по бренду за "
-                            f"{self.available_months[self.month_to_show]} "
-                            f"{self.year_to_show}")
-        self.chart.setAnimationOptions(QChart.SeriesAnimations)
-        self.chart.setAnimationDuration(200)
+            chart.addSeries(series)
+        chart.createDefaultAxes()
+        chart.setTitle(f"Количество запросов по бренду за "
+                       f"{self.available_months[self.month_to_show]} "
+                       f"{self.year_to_show}")
+        chart.setAnimationOptions(QChart.SeriesAnimations)
+        chart.setAnimationDuration(200)
 
         axis_y_length = (max_requests // 5) * 5 + 5
-        axis_y = self.chart.axisY()
+        axis_y = chart.axisY()
         axis_y.setRange(0, axis_y_length)
         axis_y.setTickCount(axis_y_length + 1)
         axis_y.setLabelFormat("%i")
 
-        axis_x_length = 31
-        axis_x = self.chart.axisX()
+        axis_x_length = self.stat_data['period_length']
+        axis_x = chart.axisX()
         axis_x.setRange(1, axis_x_length)
         axis_x.setTickCount(axis_x_length + 1)
         axis_x.setLabelFormat("%i")
@@ -215,29 +244,29 @@ class GraphWindow(QtWidgets.QDialog):
         # # self.chart.addAxis(cat_axis, Qt.AlignBottom)
         # # self.series.attachAxis(axis)
 
-        self.chart.legend().setVisible(True)
-        self.chart.legend().setAlignment(Qt.AlignBottom)
+        chart.legend().setVisible(True)
+        chart.legend().setAlignment(Qt.AlignBottom)
 
-        self._chart_view = QChartView(self.chart)
-        self._chart_view.setRenderHint(QPainter.Antialiasing)
+        self.current_chart_view = QChartView(chart)
+        self.current_chart_view.setRenderHint(QPainter.Antialiasing)
 
         # self.setCentralWidget(self._chart_view)
-        self.GRAPH_LAYOUT.addChildWidget(self._chart_view)
+        self.GRAPH_LAYOUT.addChildWidget(self.current_chart_view)
         width = 1236
         height = 656
-        self._chart_view.resize(width, height)
+        self.current_chart_view.resize(width, height)
 
     def draw_donut_breakdown(self, stat_data):
         donut_breakdown = DonutBreakdownChart()
         # donut_breakdown.setAnimationOptions(QChart.AllAnimations)
         # donut_breakdown.setAnimationDuration(100)
-        donut_breakdown.setTitle(f"Соотношение кол-ва запросов за "
+        donut_breakdown.setTitle(f"Соотношение кол-ва запросов за весь "
                                  f"{self.available_months[self.month_to_show]} "
                                  f"{self.year_to_show}")
         donut_breakdown.legend().setAlignment(Qt.AlignRight)
 
         brands_models_stats = {}
-        for day, brands in stat_data['days'].items():
+        for point, brands in stat_data['points'].items():
             for brand, models in brands.items():
                 if not brands_models_stats.get(brand):
                     brands_models_stats[brand] = {}
@@ -260,14 +289,87 @@ class GraphWindow(QtWidgets.QDialog):
                 brands_models_series[brand].append(model, stat)
             donut_breakdown.add_breakdown_series(brands_models_series[brand], QColor(*self.get_rgb_by_name(brand)))
 
-        chart_view = QChartView(donut_breakdown)
-        chart_view.setRenderHint(QPainter.Antialiasing)
+        self.current_chart_view = QChartView(donut_breakdown)
+        self.current_chart_view.setRenderHint(QPainter.Antialiasing)
 
         # self.setCentralWidget(self._chart_view)
-        self.GRAPH_LAYOUT.addChildWidget(chart_view)
+        self.GRAPH_LAYOUT.addChildWidget(self.current_chart_view)
         width = 1236
         height = 656
-        chart_view.resize(width, height)
+        self.current_chart_view.resize(width, height)
+
+    def draw_percent_bar_chart(self):
+        brand_series = {}
+        # brush = QBrush()
+        for point in range(1, self.stat_data['period_length'] + 1):
+            brands = self.brand_quantity_by_points.get(point)
+            if brands:
+                # for point, brands in self.brand_quantity_by_points.items():
+                for brand in brands.keys():
+                    if not brand_series.get(brand):
+                        brand_series[brand] = QBarSet(brand)
+                        # brand_series[brand].setName(brand)
+                        # brush.setColor(QColor(*self.get_rgb_by_name(brand)))
+                        brand_series[brand].setBrush(QColor(*self.get_rgb_by_name(brand)))
+            else:
+                self.brand_quantity_by_points[point] = {}
+
+        for point in range(1, self.stat_data['period_length'] + 1):
+            brand_stat = self.brand_quantity_by_points.get(point)
+        #     if brand_stat:
+        # for point, brand_stat in self.brand_quantity_by_points.items():
+            # if brand_stat:
+            for brand, series in brand_series.items():
+                if brand in brand_stat.keys():
+                    reqs = brand_stat[brand]
+                else:
+                    reqs = 0
+                brand_series[brand].append(float(reqs))
+
+        series = QPercentBarSeries()
+        print(f'{len(brand_series.values())=}')
+        for series_set in brand_series.values():
+            series.append(series_set)
+
+        chart = QChart()
+        chart.addSeries(series)
+        # chart.createDefaultAxes()
+        chart.setTitle(f"Соотношение запросов по бренду за "
+                       f"{self.available_months[self.month_to_show]} "
+                       f"{self.year_to_show}")
+        chart.setAnimationOptions(QChart.SeriesAnimations)
+        chart.setAnimationDuration(200)
+
+        # axis_y_length = 100
+        # axis_y = chart.axisY()
+        # axis_y.setRange(0, axis_y_length)
+        # axis_y.setTickCount(axis_y_length + 1)
+        # axis_y.setLabelFormat("%i")
+
+        axis_x_length = 31
+        axis_x = QValueAxis()
+        axis_x.setRange(1, axis_x_length)
+        axis_x.setTickCount(axis_x_length + 1)
+        axis_x.setLabelFormat("%i")
+        chart.setAxisX(axis_x)
+
+        # categories = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
+        # axis = QBarCategoryAxis()
+        # axis.append(categories)
+        # chart.createDefaultAxes()
+        # chart.addAxis(axis, Qt.AlignBottom)
+        # series.attachAxis(axis)
+
+        chart.legend().setVisible(True)
+        chart.legend().setAlignment(Qt.AlignBottom)
+
+        self.current_chart_view = QChartView(chart)
+        self.current_chart_view.setRenderHint(QPainter.Antialiasing)
+
+        self.GRAPH_LAYOUT.addChildWidget(self.current_chart_view)
+        width = 1236
+        height = 656
+        self.current_chart_view.resize(width, height)
 
     def show_tip(self, part, state):
         if state:
@@ -355,9 +457,27 @@ class DonutBreakdownChart(QChart):
                     # hide markers from main series
                     marker.setVisible(False)
                 else:
+                    p = marker.slice().percentage() * 100
+                    if p < 10:
+                        marker.setVisible(False)
+                        continue
                     # modify markers from breakdown series
                     label = marker.slice().label()
-                    p = marker.slice().percentage() * 100
+                    # print(f'{self.main_series.children()[0].name=}')
+
+                    # brand_name = series.name()
+                    # brand_percent = 0
+                    # for child_series in self.main_series.children():
+                    #     if child_series.name == brand_name:
+                    #         brand_percent = child_series.percentage()
+                    #         # print(f'{brand_percent=}')
+                    #         continue
+                    # # print(f'{series.name()=}')
+                    # # print(f'{series.percentage()=}')
+                    # p = marker.slice().percentage() * brand_percent * 100
+                    # if p < 5:
+                    #     marker.setVisible(False)
+                    #     continue
                     marker.setLabel(f"{label} {p:.1f}%")
                     marker.setFont(QFont("Arial", 8))
 
