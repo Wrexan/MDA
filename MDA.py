@@ -1,4 +1,5 @@
 import sys
+
 import bs4
 import traceback
 import os
@@ -17,17 +18,20 @@ os.add_dll_directory(os.getcwd())
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, QMenu, QTableWidget, \
     QHeaderView, qApp, QMessageBox, QListWidget, QSizePolicy, QLineEdit, QSpacerItem, QPushButton, QLabel, QStyleFactory
 from PyQt5 import QtCore, QtGui
-from PyQt5.Qt import Qt, QEvent
+from PyQt5.QtCore import Qt, QEvent
 
-from MDA_classes.config import Config
-from MDA_classes.dk9 import DK9Parser
-from MDA_classes.price import Price
-from MDA_classes.modal_windows import ConfigWindow, HelpWindow, AdvancedSearchWindow
-from MDA_classes.thread_worker import Worker
-from MDA_UI.window_main import Ui_MainWindow
+from utility.config import Config
+from utility.dk9 import DK9Parser
+from utility.price import Price
+from utility.statistic import MDAS
+from utility.modal_windows import ConfigWindow, HelpWindow, AdvancedSearchWindow, FirstStartWindow
+from utility.modal_graph_win import GraphWindow
+from utility.thread_worker import Worker, WorkerSignals
+from UI.window_main import Ui_MainWindow
 
 C = Config()
 DK9 = DK9Parser(C)
+MDAS = MDAS(C)
 
 
 class App(QMainWindow):
@@ -99,6 +103,9 @@ class App(QMainWindow):
         self.apply_window_size()
         self.init_ui_dynamics()
 
+        self.stat_send_timer = QtCore.QTimer()
+        self.stat_send_timer.timeout.connect(self.send_statistic)
+
         self.curr_manufacturer_idx: int = 0
         self.curr_manufacturer: str = ''
         # self.curr_manufacturers: tuple = ()
@@ -112,7 +119,8 @@ class App(QMainWindow):
         self.search_again = False
         # self.old_search = ''
         self.thread = QtCore.QThread
-        self.worker = None  # Worker(self.update_dk9_data, 'mi8 lite')
+        self.request_worker = None  # Worker(self.update_dk9_data, 'mi8 lite')
+        self.file_io_worker = None  # Worker(self.update_dk9_data, 'mi8 lite')
         self.Price = Price(C)
         self.soup = None
         self.web_status = 0
@@ -125,6 +133,9 @@ class App(QMainWindow):
         self.update_web_status(0)
         # self.update_price_status()
         self.show()
+        if C.FIRST_START:
+            C.FIRST_START = False
+            self.open_first_start()
 
     def init_ui_statics(self):
 
@@ -161,6 +172,7 @@ class App(QMainWindow):
 
         self.ui.pb_adv_search.clicked.connect(self.open_adv_search)
         self.ui.settings_button.clicked.connect(self.open_settings)
+        self.ui.graph_button.clicked.connect(self.open_graphs)
 
         self.ui.table_price.setHorizontalHeaderLabels(('Виды работ', 'Цена', 'Прим'))
         self.ui.table_parts.setHorizontalHeaderLabels(('Тип', 'Фирма', 'Модель', 'Примечание',
@@ -384,8 +396,6 @@ class App(QMainWindow):
     def on_ui_loaded(self):
         print('Loading Price')
         self.read_price()
-        print('Login to DK9')
-        # self.login_dk9()
 
     def prepare_and_search(self, search_req: str, force_search: bool = False):
         # print(f'{search_req=} {self.search_input.isModified()=}')
@@ -592,14 +602,14 @@ class App(QMainWindow):
             print(f'Error: status code {status} not present {C.WEB_STATUSES=}')
 
     def read_price(self):
-        self.worker = Worker(self.Price.load_price)
-        # self.worker.signals.result.connect(self.update_dk9_data)
-        # self.worker.signals.progress.connect(self.load_progress)
-        self.worker.signals.finished.connect(self.login_dk9)
-        self.worker.signals.error.connect(self.error)
-        self.worker.signals.status.connect(self.update_price_status)
+        self.file_io_worker = Worker()
+        signals = WorkerSignals()
+        signals.finished.connect(self.login_dk9)
+        signals.error.connect(self.error)
+        signals.status.connect(self.update_price_status)
+        self.file_io_worker.add_task(self.Price.load_price, signals, 1)
         print('Starting thread to read price')
-        self.thread.start(self.worker, priority=QtCore.QThread.Priority.HighestPriority)
+        self.thread.start(self.file_io_worker, priority=QtCore.QThread.Priority.HighestPriority)
 
     def search_dk9_by_button(self):
         self.curr_model = self.sender().text()
@@ -610,13 +620,17 @@ class App(QMainWindow):
         # Auto reset filter on search
         C.FILTER_SEARCH_RESULT = False
         self.ui.chb_show_exact.setCheckState(2 if C.FILTER_SEARCH_RESULT else 0)
+        self.request_worker = Worker()
 
         if advanced:
-            self.worker = Worker(DK9.adv_search,
-                                 advanced['_type'],
-                                 advanced['_manufacturer'],
-                                 advanced['_model'],
-                                 advanced['_description'])
+            signals = self.get_dk9_search_signals()
+            self.request_worker.add_task(DK9.adv_search,
+                                         signals,
+                                         0,
+                                         advanced['_type'],
+                                         advanced['_manufacturer'],
+                                         advanced['_model'],
+                                         advanced['_description'])
         else:
             if not DK9.LOGIN_SUCCESS or self.web_status != 2:
                 return
@@ -628,33 +642,76 @@ class App(QMainWindow):
             if self.search_again:
                 print(f'SEARCH AGAIN: {self.curr_model}')
                 self.search_again = False
-            self.dk9_request_label.setText(self.curr_model)
-            self.worker = Worker(DK9.adv_search,
-                                 self.curr_type,
-                                 manufacturer,
-                                 self.curr_model,
-                                 self.curr_description)
-        self.worker.signals.result.connect(self.update_dk9_data)
-        self.worker.signals.progress.connect(self.load_progress)
-        self.worker.signals.finished.connect(self.finished)
-        self.worker.signals.error.connect(self.error)
-        self.worker.signals.status.connect(self.update_web_status)
 
-        self.thread.start(self.worker)
+            # ===========================  statistic  ==============================
+            elif C.BRANCH > 0 and manufacturer and self.curr_model:
+                # print(f'SCHEDULE TO SEND: {C.BRANCH} {manufacturer} {self.curr_model}')
+                self.stat_send_timer.stop()
+                cache_full = MDAS.cache_item(branch=C.BRANCH, brand=manufacturer, model=self.curr_model)
+                # self.stat_send_scheduled = True
+                if cache_full == 0:  # Not full - standard delay
+                    self.stat_send_timer.start(C.STAT_CACHE_DELAY)
+                elif cache_full == 1:  # Full+ - time to send
+                    self.stat_send_timer.stop()
+                    signals = WorkerSignals()
+                    signals.finished.connect(self.stat_send_finished)
+                    self.request_worker.add_task(MDAS.send_statistic_cache, signals, 1)
+                else:  # Overflowing or STOPPED Overflow - no connection to stat server, longer delay
+                    self.stat_send_timer.start(C.STAT_RESEND_DELAY)
+
+            # ===========================  search in dk9  ==============================
+            self.dk9_request_label.setText(self.curr_model)
+            signals = self.get_dk9_search_signals()
+            self.request_worker.add_task(DK9.adv_search,
+                                         signals,
+                                         0,
+                                         self.curr_type,
+                                         manufacturer,
+                                         self.curr_model,
+                                         self.curr_description)
+        self.thread.start(self.request_worker)
+
+    def send_statistic(self):
+        print('Starting thread to send stats')
+        self.request_worker = Worker()
+        signals = WorkerSignals()
+        signals.finished.connect(self.stat_send_finished)
+        self.request_worker.add_task(MDAS.send_statistic_cache, signals, 1)
+        self.thread.start(self.request_worker)
+
+    def stat_send_finished(self):
+        if MDAS.cache_to_send:
+            C.stat_delay = C.STAT_RESEND_DELAY
+        else:
+            self.reset_stat_timer()
+
+    def reset_stat_timer(self):
+        C.stat_delay = C.STAT_CACHE_DELAY
+        self.stat_send_timer.stop()
+
+    def get_dk9_search_signals(self):
+        signals = WorkerSignals()
+        signals.result.connect(self.update_dk9_data)
+        signals.progress.connect(self.load_progress)
+        signals.finished.connect(self.thread_finished)
+        signals.error.connect(self.error)
+        signals.status.connect(self.update_web_status)
+        return signals
 
     def login_dk9(self):
-        self.worker = Worker(DK9.login)
-        self.worker.signals.progress.connect(self.load_progress)
-        self.worker.signals.status.connect(self.update_web_status)
-        self.worker.signals.error.connect(self.error)
+        self.request_worker = Worker()
+        signals = WorkerSignals()
+        signals.progress.connect(self.load_progress)
+        signals.status.connect(self.update_web_status)
+        signals.error.connect(self.error)
         if self.curr_model:
             self.search_again = True
-            self.worker.signals.finished.connect(self.search_dk9)
+            signals.finished.connect(self.search_dk9)
         else:
-            self.worker.signals.finished.connect(self.finished)
+            signals.finished.connect(self.thread_finished)
         print('Starting thread to login')
-
-        self.thread.start(self.worker)
+        self.request_worker.add_task(DK9.login, signals, 0)
+        self.thread.start(self.request_worker)
 
     def update_dk9_data(self, table_soups: type(bs4.BeautifulSoup) = None, use_old_soup: bool = False):
         if not use_old_soup:
@@ -870,7 +927,7 @@ class App(QMainWindow):
     def load_progress(self, progress):
         self.ui.web_load_progress_bar.setValue(progress)
 
-    def finished(self):
+    def thread_finished(self):
         if self.web_status not in (1, 2):
             self.ui.web_load_progress_bar.setValue(100)
         else:
@@ -1277,11 +1334,23 @@ class App(QMainWindow):
         settings_ui.exec_()
         settings_ui.show()
 
+    def open_first_start(self):
+        settings_ui = FirstStartWindow(C, self, DK9)
+        settings_ui.setWindowIcon(QtGui.QIcon(C.LOGO))
+        settings_ui.exec_()
+        settings_ui.show()
+
     def open_help(self):
         help_ui = HelpWindow(C, self)
         help_ui.setWindowIcon(QtGui.QIcon(C.LOGO))
         help_ui.exec_()
         help_ui.show()
+
+    def open_graphs(self):
+        graphs_ui = GraphWindow(C, self, MDAS)
+        graphs_ui.setWindowIcon(QtGui.QIcon(C.LOGO))
+        graphs_ui.exec_()
+        graphs_ui.show()
 
     @staticmethod
     def error(errors: tuple):

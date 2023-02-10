@@ -185,7 +185,7 @@
                      </property>
                      <property name="minimumSize">
                       <size>
-                       <width>116</width>
+                       <width>24</width>
                        <height>0</height>
                       </size>
                      </property>
@@ -196,7 +196,7 @@
                       </size>
                      </property>
                      <property name="text">
-                      <string>Помощь</string>
+                      <string>?</string>
                      </property>
                     </widget>
                    </item>
@@ -204,18 +204,37 @@
                     <widget class="QPushButton" name="settings_button">
                      <property name="minimumSize">
                       <size>
-                       <width>116</width>
+                       <width>100</width>
                        <height>0</height>
                       </size>
                      </property>
                      <property name="maximumSize">
                       <size>
-                       <width>116</width>
+                       <width>100</width>
                        <height>16777215</height>
                       </size>
                      </property>
                      <property name="text">
                       <string>Настройки</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QPushButton" name="graph_button">
+                     <property name="minimumSize">
+                      <size>
+                       <width>100</width>
+                       <height>0</height>
+                      </size>
+                     </property>
+                     <property name="maximumSize">
+                      <size>
+                       <width>100</width>
+                       <height>16777215</height>
+                      </size>
+                     </property>
+                     <property name="text">
+                      <string>Статистика</string>
                      </property>
                     </widget>
                    </item>
@@ -334,6 +353,9 @@
                     <pointsize>9</pointsize>
                    </font>
                   </property>
+                  <property name="frameShape">
+                   <enum>QFrame::Box</enum>
+                  </property>
                   <property name="verticalScrollBarPolicy">
                    <enum>Qt::ScrollBarAlwaysOff</enum>
                   </property>
@@ -358,6 +380,9 @@
                     <pointsize>9</pointsize>
                    </font>
                   </property>
+                  <property name="frameShape">
+                   <enum>QFrame::Box</enum>
+                  </property>
                   <property name="verticalScrollBarPolicy">
                    <enum>Qt::ScrollBarAlwaysOff</enum>
                   </property>
@@ -381,6 +406,9 @@
                    <font>
                     <pointsize>9</pointsize>
                    </font>
+                  </property>
+                  <property name="frameShape">
+                   <enum>QFrame::Box</enum>
                   </property>
                   <property name="verticalScrollBarPolicy">
                    <enum>Qt::ScrollBarAlwaysOff</enum>
@@ -835,7 +863,7 @@
                       </size>
                      </property>
                      <property name="text">
-                      <string>Искомая модель</string>
+                      <string>Фильтр модели</string>
                      </property>
                     </widget>
                    </item>
@@ -976,7 +1004,7 @@
                    <item>
                     <widget class="QCheckBox" name="chb_search_narrow">
                      <property name="text">
-                      <string>Минимум 2</string>
+                      <string>Два символа</string>
                      </property>
                      <property name="checked">
                       <bool>true</bool>

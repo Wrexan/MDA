@@ -1,8 +1,10 @@
 from PyQt5 import QtCore, QtWidgets
 
-from MDA_UI.window_settings import Ui_settings_window
-from MDA_UI.window_simple import Ui_Dialog
-from MDA_UI.adv_search import Ui_Dialog as AdvSearchDialog
+
+from UI.window_first_start import Ui_start_window
+from UI.window_settings import Ui_settings_window
+from UI.window_help import Ui_Dialog
+from UI.adv_search import Ui_Dialog as AdvSearchDialog
 
 
 class HelpWindow(QtWidgets.QDialog):
@@ -35,6 +37,10 @@ class ConfigWindow(QtWidgets.QDialog):
         self.ui.setupUi(self)
         self.ui.web_login.setText(C.DK9_LOGIN)
         self.ui.web_password.setText(C.DK9_PASSWORD)
+
+        self.ui.cb_branch.addItems(self.C.BRANCHES.values())
+        self.ui.cb_branch.setCurrentIndex(self.C.BRANCH)
+
         self.ui.chk_fullscreen.setCheckState(2 if C.FULLSCREEN else 0)
         self.ui.zebra_contrast.setValue(C.DK9_COL_DIFF)
         self.ui.tables_font_size.setValue(C.TABLE_FONT_SIZE)
@@ -61,6 +67,8 @@ class ConfigWindow(QtWidgets.QDialog):
             login = True
         self.C.DK9_LOGIN = self.ui.web_login.text()
         self.C.DK9_PASSWORD = self.ui.web_password.text()
+        cbi = self.ui.cb_branch.currentIndex()
+        self.C.BRANCH = cbi if self.C.BRANCHES.get(cbi) else 0
 
         self.C.FULLSCREEN = True if self.ui.chk_fullscreen.checkState() == 2 else False
 
@@ -79,6 +87,8 @@ class ConfigWindow(QtWidgets.QDialog):
         self.C.INCOME_PARTS_MARGIN_PERC = self.ui.income_overprice_perc.value()
         # C.WIDE_MONITOR = True if self.ui.wide_monitor.checkState() == 2 else False
         # C.TABLE_COLUMN_SIZE_MAX = self.ui.column_width_max.value()
+        if self.C.BRANCH == 0:
+            self.Parent.reset_stat_timer()
         self.Parent.init_ui_dynamics()
         self.C.precalculate_color_diffs()
         try:
@@ -89,6 +99,53 @@ class ConfigWindow(QtWidgets.QDialog):
             self.DK9.change_data(self.C.c_data())
             print(f'{self.DK9.CDATA=}')
             self.Parent.login_dk9()
+
+
+class FirstStartWindow(QtWidgets.QDialog):
+    def __init__(self, C, Parent, DK9):
+        super().__init__(None,
+                         # QtCore.Qt.WindowSystemMenuHint |
+                         # QtCore.Qt.WindowTitleHint |
+                         QtCore.Qt.WindowCloseButtonHint
+                         )
+        self.C = C
+        self.Parent = Parent
+        self.DK9 = DK9
+        self.ui = Ui_start_window()
+        self.ui.setupUi(self)
+        self.ui.web_login.setText(C.DK9_LOGIN)
+        self.ui.web_password.setText(C.DK9_PASSWORD)
+
+        self.ui.pb_stat_0.clicked.connect(self.apply_stat)
+        self.ui.pb_stat_1.clicked.connect(self.apply_stat)
+        self.ui.pb_stat_2.clicked.connect(self.apply_stat)
+        self.ui.pb_stat_3.clicked.connect(self.apply_stat)
+
+    def apply_stat(self):
+        button_num = int(self.sender().objectName()[-1])
+        if button_num == 0:
+            self.Parent.reset_stat_timer()
+        self.C.BRANCH = button_num
+        print(f'Chosen stat for: {self.C.BRANCHES[self.C.BRANCH]}')
+        self.apply_settings()
+
+    def apply_settings(self):
+        print('Applying settings')
+        login = False
+        if self.ui.web_login.text() and self.ui.web_password.text():
+            login = True
+            self.C.DK9_LOGIN = self.ui.web_login.text()
+            self.C.DK9_PASSWORD = self.ui.web_password.text()
+
+        try:
+            self.C.save_user_config()
+        except Exception as _err:
+            self.Parent.error((f'Error while saving config file:\n{self.C.HELP}', _err))
+        if login:
+            self.DK9.change_data(self.C.c_data())
+            print(f'{self.DK9.CDATA=}')
+            self.Parent.login_dk9()
+        self.close()
 
 
 class AdvancedSearchWindow(QtWidgets.QDialog):
@@ -110,3 +167,5 @@ class AdvancedSearchWindow(QtWidgets.QDialog):
                   '_model': self.ui.inp_model.text(),
                   '_description': self.ui.inp_descr.text()}
         self.Parent.search_dk9(advanced=search)
+
+

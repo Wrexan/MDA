@@ -2,6 +2,8 @@ import os
 import configparser
 from win32comext.shell import shell, shellcon
 
+from secured.confidential_data import *
+
 
 class Config:
     FILTER_SEARCH_RESULT = None
@@ -9,15 +11,43 @@ class Config:
     def __init__(self):
         self.error = None
         self.PATH = f'{os.path.dirname(os.path.dirname(os.path.realpath(__file__)))}\\'
-        self.CONTENT_PATH = f'{self.PATH}MDA_content\\'
+        self.CONTENT_PATH = f'{self.PATH}content\\'
+        self.MDAS_PATH = f'{self.PATH}mdas\\'
 
         self.LOGO = f'{self.CONTENT_PATH}MDA.ico'
         self.USER_CONFIG = f'{self.CONTENT_PATH}user_config.ini'
         self.HELP = f'{self.CONTENT_PATH}Инструкция.txt'
 
-        # ============================================
-        # =============APP SETTINGS====================
-        # ====================UI====================
+        # ===============================================================
+        # =============  CONFIDENTIAL, SECURED DATA  ====================
+        # ===============================================================
+        self.MDAS_URL = MDAS_URL
+        self.MDAS_KEY = MDAS_KEY
+        self.MDAS_HEADER = MDAS_HEADER
+        self.DK9_LOGIN_URL = DK9_LOGIN_URL
+        self.DK9_LOGGED_IN_URL = DK9_LOGGED_IN_URL
+        self.DK9_SEARCH_URL = DK9_SEARCH_URL
+
+        # =================================================
+        # ==================  CLIENT  =====================
+        # =================================================
+        self.FIRST_START: bool = False
+        self.BRANCH: int = 0
+        self.BRANCHES: dict = \
+            {
+                0: '---',
+                1: 'ДРН',
+                2: 'ПЛТ',
+                3: 'ПЗН',
+            }
+        self.STAT_CACHE_DELAY: int = 180_000  # 3 min
+        self.STAT_RESEND_DELAY: int = 300_000  # 5 min
+        self.stat_delay: int = 180_000  # 3 min by default, more on delivery fail
+        self.STAT_CACHE_SIZE: int = 5
+
+        # =================================================
+        # ===============  APP SETTINGS  ==================
+        # ====================  UI  =======================
         self.FULLSCREEN = False
         self.MODEL_LIST_MAX_SIZE = 20
 
@@ -43,7 +73,7 @@ class Config:
         self.PRICE_PATH = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop\\')
         self.PRICE_PATH_ALT = f'{shell.SHGetFolderPath(0, shellcon.CSIDL_DESKTOP, None, 0)}\\'
         self.PRICE_GD_PATH = ''
-        self.PRICE_CONFIG = f'{self.CONTENT_PATH}price_config.ini'
+        # self.PRICE_CONFIG = f'{self.CONTENT_PATH}price_config.ini'
         self.NARROW_SEARCH_LEN = 2  # start search from 2 symbols
         self.APPROVED = False
         self.PRICE_SEARCH_COLUMN_SYMBOLS = {'+': 'BFG',
@@ -120,9 +150,6 @@ class Config:
         self.DK9_PASSWORD, self.PASSWORD = '', ''
         self.DK9_LOGIN_DATA = {}
 
-        self.DK9_LOGIN_URL = "http://dimkak9-001-site1.htempurl.com/Login.aspx"
-        self.DK9_LOGGED_IN_URL = "http://dimkak9-001-site1.htempurl.com/Default.aspx"
-        self.DK9_SEARCH_URL = "http://dimkak9-001-site1.htempurl.com/AllInOne.aspx"
         self.DK9_HEADERS = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
                           '(KHTML, like Gecko) Chrome/93.0.4577.82 Safari/537.36 Firefox/10.0'}
@@ -177,6 +204,7 @@ class Config:
             try:
                 self.DK9_LOGIN = config['WEB DATABASE']['DK9_LOGIN']
                 self.DK9_PASSWORD = config['WEB DATABASE']['DK9_PASSWORD']
+                self.BRANCH = int(config['CLIENT']['BRANCH'])
                 self.FULLSCREEN = True if config['SETTINGS']['FULLSCREEN'] == 'True' else False
                 # ALWAYS FALSE
                 self.FILTER_SEARCH_RESULT = False
@@ -201,6 +229,7 @@ class Config:
                 os.remove(self.USER_CONFIG)
                 self.save_user_config()
         else:
+            self.FIRST_START = True
             self.save_user_config()
 
     def c_data(self):
@@ -229,6 +258,10 @@ class Config:
         config['WEB DATABASE'] = {}
         config['WEB DATABASE']['DK9_LOGIN'] = str(self.DK9_LOGIN)
         config['WEB DATABASE']['DK9_PASSWORD'] = str(self.DK9_PASSWORD)
+
+        config['CLIENT'] = {}
+        config['CLIENT']['BRANCH'] = str(self.BRANCH)
+
         config['SETTINGS'] = {}
         config['SETTINGS']['FULLSCREEN'] = str(self.FULLSCREEN)
 
