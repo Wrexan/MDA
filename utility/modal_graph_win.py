@@ -125,6 +125,11 @@ class GraphWindow(QtWidgets.QDialog):
         for point, brand_stat in self.stat_data['points'].items():
             self.brand_quantity_by_points[int(point)] = \
                 {model: sum(sum(v) for v in quantity.values()) for model, quantity in brand_stat.items()}
+            # _unsorted_model_quantity = \
+            #     {model: sum(sum(v) for v in quantity.values()) for model, quantity in brand_stat.items()}
+            # self.brand_quantity_by_points[int(point)] = \
+            #     dict(sorted(_unsorted_model_quantity.items(), key=lambda x: x[1], reverse=True))
+        # print(f'{self.brand_quantity_by_points=}')
 
         if self.current_chart_view:
             self.GRAPH_LAYOUT.removeWidget(self.current_chart_view)
@@ -192,6 +197,7 @@ class GraphWindow(QtWidgets.QDialog):
                     brand_series[brand].setName(brand)
                     pen.setColor(QColor(*self.get_rgb_by_name(brand)))
                     brand_series[brand].setPen(pen)
+                    brand_series[brand].hovered.connect(self.show_tip_line)
                     # brand_series[brand].setPen(QColor(*self.get_rgb_by_name(brand)))
                     # brand_series[brand].setPointsVisible(True)
 
@@ -269,11 +275,20 @@ class GraphWindow(QtWidgets.QDialog):
         for point, brands in stat_data['points'].items():
             for brand, models in brands.items():
                 if not brands_models_stats.get(brand):
-                    brands_models_stats[brand] = {}
+                    brands_models_stats[brand] = {'overall_quantity': 0, 'models': {}}
                 for model, stats in models.items():
-                    if not brands_models_stats[brand].get(model):
-                        brands_models_stats[brand][model] = 0
-                    brands_models_stats[brand][model] += sum(stats)
+                    if not brands_models_stats[brand]['models'].get(model):
+                        brands_models_stats[brand]['models'][model] = 0
+                    model_quantity = sum(stats)
+                    brands_models_stats[brand]['models'][model] += model_quantity
+                    brands_models_stats[brand]['overall_quantity'] += model_quantity
+        for brand, brand_stats in brands_models_stats.items():
+            # print(f'{brands_models_stats[brand]["models"]=}')
+            brands_models_stats[brand]['models'] = \
+                dict(sorted(brand_stats['models'].items(), key=lambda x: x[1], reverse=True))
+        brands_models_stats = \
+            dict(sorted(brands_models_stats.items(), key=lambda x: x[1]['overall_quantity'], reverse=True))
+        # print(f'{brands_models_stats=}')
 
         # print(f'{brands_models_stats=}')
         brands_models_series = {}
@@ -283,11 +298,12 @@ class GraphWindow(QtWidgets.QDialog):
             # brands_models_series[brand].hovered.connect(donut_breakdown.show_tip)
             brands_models_series[brand].hovered.connect(self.show_tip)
             # brands_models_series[brand].setPen(QColor(*self.get_rgb_by_name(brand)))
-            for model, stat in models_stat.items():
+            for model, stat in models_stat['models'].items():
                 if stat < self.min_req_limit:
                     continue
                 brands_models_series[brand].append(model, stat)
-            donut_breakdown.add_breakdown_series(brands_models_series[brand], QColor(*self.get_rgb_by_name(brand)))
+            donut_breakdown.add_breakdown_series(
+                brands_models_series[brand], QColor(*self.get_rgb_by_name(brand)))
 
         self.current_chart_view = QChartView(donut_breakdown)
         self.current_chart_view.setRenderHint(QPainter.Antialiasing)
@@ -311,6 +327,8 @@ class GraphWindow(QtWidgets.QDialog):
                         # brand_series[brand].setName(brand)
                         # brush.setColor(QColor(*self.get_rgb_by_name(brand)))
                         brand_series[brand].setBrush(QColor(*self.get_rgb_by_name(brand)))
+                        brand_series[brand].setLabel(brand)
+                        brand_series[brand].hovered.connect(self.show_tip_bar)
             else:
                 self.brand_quantity_by_points[point] = {}
 
@@ -327,7 +345,7 @@ class GraphWindow(QtWidgets.QDialog):
                 brand_series[brand].append(float(reqs))
 
         series = QPercentBarSeries()
-        print(f'{len(brand_series.values())=}')
+        # print(f'{len(brand_series.values())=}')
         for series_set in brand_series.values():
             series.append(series_set)
 
@@ -371,9 +389,28 @@ class GraphWindow(QtWidgets.QDialog):
         height = 656
         self.current_chart_view.resize(width, height)
 
+    def show_tip_line(self, state):
+        part = self.sender()
+        if state:
+            # part.setColor(part.color().darker(150))
+            self.setToolTip(part.name())
+        else:
+            # part.setColor(part.color().lighter(150))
+            self.setToolTip('')
+
+    def show_tip_bar(self, state):
+        part = self.sender()
+        if state:
+            part.setColor(part.color().darker(150))
+            self.setToolTip(f'{part.label()} - {int(part.sum())} шт')
+        else:
+            part.setColor(part.color().lighter(150))
+            self.setToolTip('')
+
     def show_tip(self, part, state):
         if state:
-            self.setToolTip(f'{part.label()} {(part.percentage() * 100):.1f}%')
+            # self.setToolTip(f'{part.label()} {(part.percentage() * 100):.1f}%')
+            self.setToolTip(f'{part.label()} - {int(part.value())} шт')
             part.setBrush(part.color().darker(150))
         else:
             self.setToolTip('')
@@ -437,7 +474,7 @@ class DonutBreakdownChart(QChart):
         self.recalculate_angles()
 
         # update customize legend markers
-        self.update_legend_markers()
+        self.update_legend_markers(breakdown_series)
 
     def recalculate_angles(self):
         angle = 0
@@ -448,7 +485,7 @@ class DonutBreakdownChart(QChart):
             angle += pie_slice.percentage() * 360.0  # full pie is 360.0
             breakdown_series.setPieEndAngle(angle)
 
-    def update_legend_markers(self):
+    def update_legend_markers(self, model_quantity):
         # go through all markers
         for series in self.series():
             markers = self.legend().markers(series)
@@ -462,7 +499,7 @@ class DonutBreakdownChart(QChart):
                         marker.setVisible(False)
                         continue
                     # modify markers from breakdown series
-                    label = marker.slice().label()
+                    slice = marker.slice()
                     # print(f'{self.main_series.children()[0].name=}')
 
                     # brand_name = series.name()
@@ -478,8 +515,12 @@ class DonutBreakdownChart(QChart):
                     # if p < 5:
                     #     marker.setVisible(False)
                     #     continue
-                    marker.setLabel(f"{label} {p:.1f}%")
-                    marker.setFont(QFont("Arial", 8))
+                    # marker.setLabel(f"{label} {p:.1f}%")
+                    # print(f'{series.count()=} {series.sum()=}  {series.name()} {label}')
+                    # print(f'{marker.slice().value()}')
+                    # print(f'{series.chart()=} {series.children()=} {series.slices()=} ')
+                    marker.setLabel(f"{int(slice.value())} шт {slice.label()}")
+                    marker.setFont(QFont("Arial", 10, 75))
 
 
 class MainSlice(QPieSlice):
