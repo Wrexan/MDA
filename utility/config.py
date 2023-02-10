@@ -10,13 +10,16 @@ class Config:
 
     def __init__(self):
         self.error = None
+        self.CURRENT_LANG = 'RU'
         self.PATH = f'{os.path.dirname(os.path.dirname(os.path.realpath(__file__)))}\\'
         self.CONTENT_PATH = f'{self.PATH}content\\'
         self.MDAS_PATH = f'{self.PATH}mdas\\'
+        self.LANG_PATH = f'{self.CONTENT_PATH}languages\\'
 
         self.LOGO = f'{self.CONTENT_PATH}MDA.ico'
         self.USER_CONFIG = f'{self.CONTENT_PATH}user_config.ini'
         self.HELP = f'{self.CONTENT_PATH}Инструкция.txt'
+        self.LANG_FILES = os.listdir(f'{self.LANG_PATH}')
 
         # ===============================================================
         # =============  CONFIDENTIAL, SECURED DATA  ====================
