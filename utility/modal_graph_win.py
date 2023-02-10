@@ -3,7 +3,7 @@ from PyQt5 import QtCore, QtWidgets
 
 from PyQt5.QtChart import QLineSeries, QChart, QChartView, QSplineSeries, QPieSeries, \
     QPieSlice, QBarSet, QPercentBarSeries, QBarCategoryAxis, QAbstractAxis, QValueAxis
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSlot
 from PyQt5.QtGui import QPainter, QColor, QFont, QPen, QBrush
 
 from UI.window_graphs import Ui_Dialog as GraphDialog
@@ -93,6 +93,7 @@ class GraphWindow(QtWidgets.QDialog):
             self.current_graph_loader = self.graph_loaders['year']
             self.reload_draw_graph()
 
+    @pyqtSlot()
     def reload_draw_graph(self):
         self.year_to_show = int(self.ui.cb_year.currentText())
         self.month_to_show = self.ui.cb_month.currentIndex() + 1
@@ -107,6 +108,7 @@ class GraphWindow(QtWidgets.QDialog):
         self.stat_data = self.current_graph_loader(self.year_to_show, self.month_to_show)
         self.update_graph()
 
+    @pyqtSlot()
     def update_graph(self):
         graph = self.GRAPH_SELECTOR.currentIndex()
         self.current_graph = graph
@@ -198,7 +200,6 @@ class GraphWindow(QtWidgets.QDialog):
                     pen.setColor(QColor(*self.get_rgb_by_name(brand)))
                     brand_series[brand].setPen(pen)
                     brand_series[brand].hovered.connect(self.show_tip_line)
-                    # brand_series[brand].setPen(QColor(*self.get_rgb_by_name(brand)))
                     # brand_series[brand].setPointsVisible(True)
 
         for point, brand_stat in self.brand_quantity_by_points.items():
@@ -232,13 +233,13 @@ class GraphWindow(QtWidgets.QDialog):
         axis_y_length = (max_requests // 5) * 5 + 5
         axis_y = chart.axisY()
         axis_y.setRange(0, axis_y_length)
-        axis_y.setTickCount(axis_y_length + 1)
+        axis_y.setTickCount(axis_y_length)
         axis_y.setLabelFormat("%i")
 
         axis_x_length = self.stat_data['period_length']
         axis_x = chart.axisX()
         axis_x.setRange(1, axis_x_length)
-        axis_x.setTickCount(axis_x_length + 1)
+        axis_x.setTickCount(axis_x_length)
         axis_x.setLabelFormat("%i")
 
         # categories = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
@@ -345,6 +346,7 @@ class GraphWindow(QtWidgets.QDialog):
                 brand_series[brand].append(float(reqs))
 
         series = QPercentBarSeries()
+        series.setBarWidth(0.9)
         # print(f'{len(brand_series.values())=}')
         for series_set in brand_series.values():
             series.append(series_set)
@@ -364,10 +366,10 @@ class GraphWindow(QtWidgets.QDialog):
         # axis_y.setTickCount(axis_y_length + 1)
         # axis_y.setLabelFormat("%i")
 
-        axis_x_length = 31
+        axis_x_length = self.stat_data['period_length']
         axis_x = QValueAxis()
         axis_x.setRange(1, axis_x_length)
-        axis_x.setTickCount(axis_x_length + 1)
+        axis_x.setTickCount(axis_x_length)
         axis_x.setLabelFormat("%i")
         chart.setAxisX(axis_x)
 
@@ -458,7 +460,7 @@ class DonutBreakdownChart(QChart):
         for pie_slice in breakdown_series.slices():
             # pie_slice.setLabel(f'{pie_slice.label()} {pie_slice.percentage()}')
             # pie_slice.setLabel(f'{pie_slice.label()} {pie_slice.percentage():.1f}%')
-            color = QColor(color).lighter(105)
+            color = QColor(color).lighter(102)
             pie_slice.color = color
             pie_slice.setBrush(color)
             pie_slice.setLabelFont(font)
@@ -474,7 +476,7 @@ class DonutBreakdownChart(QChart):
         self.recalculate_angles()
 
         # update customize legend markers
-        self.update_legend_markers(breakdown_series)
+        self.update_legend_markers()
 
     def recalculate_angles(self):
         angle = 0
@@ -485,21 +487,26 @@ class DonutBreakdownChart(QChart):
             angle += pie_slice.percentage() * 360.0  # full pie is 360.0
             breakdown_series.setPieEndAngle(angle)
 
-    def update_legend_markers(self, model_quantity):
+    def update_legend_markers(self):
         # go through all markers
+        markers = {}
         for series in self.series():
-            markers = self.legend().markers(series)
-            for marker in markers:
+            _markers = self.legend().markers(series)
+            for marker in _markers:
                 if series == self.main_series:
                     # hide markers from main series
                     marker.setVisible(False)
                 else:
-                    p = marker.slice().percentage() * 100
-                    if p < 10:
-                        marker.setVisible(False)
-                        continue
                     # modify markers from breakdown series
-                    slice = marker.slice()
+                    m_slice = marker.slice()
+
+                    markers[marker] = (m_slice.value(), series.name())
+
+                    # p = m_slice.percentage() * 100
+                    # if p < 15:
+                    #     marker.setVisible(False)
+                    #     continue
+
                     # print(f'{self.main_series.children()[0].name=}')
 
                     # brand_name = series.name()
@@ -519,8 +526,15 @@ class DonutBreakdownChart(QChart):
                     # print(f'{series.count()=} {series.sum()=}  {series.name()} {label}')
                     # print(f'{marker.slice().value()}')
                     # print(f'{series.chart()=} {series.children()=} {series.slices()=} ')
-                    marker.setLabel(f"{int(slice.value())} шт {slice.label()}")
-                    marker.setFont(QFont("Arial", 10, 75))
+                    # marker.setLabel(f"{int(m_slice.value())} шт {m_slice.label()}")
+                    # marker.setFont(QFont("Arial", 10, 75))
+        markers = dict(sorted(markers.items(), key=lambda x: x[1][0], reverse=True))
+        for i, (marker, values) in enumerate(markers.items()):
+            m_slice = marker.slice()
+            marker.setLabel(f"{int(values[0])} шт {values[1]} {m_slice.label()}")
+            marker.setFont(QFont("Arial", 10, 75))
+            if i >= 14:
+                marker.setVisible(False)
 
 
 class MainSlice(QPieSlice):

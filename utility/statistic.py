@@ -124,7 +124,7 @@ class MDAS:
         if request.status_code != 200 or raw_data.get('statusCode') != 200:
             self.cache_to_send.extend(cache_to_send)
 
-    def load_month_statistic(self, year: int, month: int = 0):
+    def load_month_statistic(self, year: int, month: int):
         stat_data = {}
         self.current_date = self.get_current_date()
         if year > self.current_date.year or (year == self.current_date.year and month > self.current_date.month):
@@ -143,7 +143,7 @@ class MDAS:
             if not stat_data:
                 return {}
 
-            self.save_stat_file(self.C.MDAS_PATH, stat_data, year)
+            self.save_stat_file(self.C.MDAS_PATH, stat_data, year, month)
         # print(f'returning: {stat_data=}')
         return stat_data
 
