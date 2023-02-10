@@ -133,7 +133,7 @@ class MDAS:
 
         # f'm-{year}-{month}.cache' f'y-{year}.cache'
         if 0 < month < 13:
-            stat_data = self.load_stat_file(self.C.MDAS_PATH, year)
+            stat_data = self.load_stat_file(self.C.MDAS_PATH, year, month)
             if stat_data:
                 return stat_data
 
