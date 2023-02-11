@@ -1334,7 +1334,7 @@ class App(QMainWindow):
     def open_help(self):
         help_ui = HelpWindow(C, self)
         help_ui.setWindowIcon(QtGui.QIcon(C.LOGO))
-        L.translate_HelpWindow_texts(help_ui)
+        L.translate_HelpDialog_texts(help_ui)
         help_ui.exec_()
         help_ui.show()
 
@@ -1342,7 +1342,7 @@ class App(QMainWindow):
         graphs_ui = GraphWindow(C, self, MDAS)
         graphs_ui.setWindowIcon(QtGui.QIcon(C.LOGO))
         L.translate_graph_texts(graphs_ui)
-        # L.translate_GraphWindow_texts(graphs_ui)
+        L.translate_GraphDialog_texts(graphs_ui)
         graphs_ui.exec_()
         graphs_ui.show()
 

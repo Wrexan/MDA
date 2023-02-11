@@ -103,3 +103,17 @@ class Language:
         module.ui.label_8.setText(self.ConfigWindow["label_8"])
         module.ui.label_12.setText(self.ConfigWindow["label_12"])
 
+    def translate_GraphDialog_texts(self, module):
+        module.setWindowTitle(self.GraphDialog["WindowTitle"])
+        module.ui.rb_year.setText(self.GraphDialog["rb_year"])
+        module.ui.rb_month.setText(self.GraphDialog["rb_month"])
+        module.ui.label.setText(self.GraphDialog["label"])
+        module.ui.cb_smooth.setText(self.GraphDialog["cb_smooth"])
+        module.ui.lbl_min.setText(self.GraphDialog["lbl_min"])
+
+    def translate_HelpDialog_texts(self, module):
+        module.setWindowTitle(self.HelpDialog["WindowTitle"])
+        module.ui.label.setText(self.HelpDialog["label"])
+        module.ui.project_link.setText(self.HelpDialog["project_link"])
+        module.ui.label_2.setText(self.HelpDialog["label_2"])
+
