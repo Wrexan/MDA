@@ -23,11 +23,21 @@ class Language:
         ...
 
     def translate_config_texts(self, module):
-        for i in self.config['PRICE_STATUSES']:
-            module.PRICE_STATUSES[i] = self.config['PRICE_STATUSES'][i]
+        for i, elem in enumerate(self.config['PRICE_STATUSES']):
+            module.PRICE_STATUSES[i] = elem
         module.DK9_TABLE_NAMES = (*self.config['DK9_TABLE_NAMES'],)
-        for i in self.config['WEB_STATUSES']:
-            module.WEB_STATUSES[i] = self.config['WEB_STATUSES'][i]
+        for i, elem in enumerate(self.config['WEB_STATUSES']):
+            module.WEB_STATUSES[i] = elem
+
+    def translate_graph_texts(self, module):
+        module.months = (*self.graph['months'],)
+        for i, elem in enumerate(self.graph['graphs_menu']):
+            module.graphs_menu[i] = elem
+        module.line_chart_Title = self.graph['line_chart_Title']
+        module.percent_chart_Title = self.graph['percent_chart_Title']
+        module.donut_breakdown_Title = self.graph['donut_breakdown_Title']
+        module.units = self.graph['units']
+        module.year_word = self.graph['year_word']
 
     def translate_MainWindow_texts(self, module):
         module.help.setText(self.MainWindow["help"])

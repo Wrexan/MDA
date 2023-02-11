@@ -21,16 +21,17 @@ class GraphWindow(QtWidgets.QDialog):
         self.ui = GraphDialog()
         self.ui.setupUi(self)
 
+        self.months = ('январь', 'февраль', 'март',
+                       'апрель', 'май', 'июнь',
+                       'июль', 'август', 'сентябрь',
+                       'октябрь', 'ноябрь', 'декабрь')
         self.year_current = datetime.now().year
         self.month_current = datetime.now().month
         self.year_to_show = self.year_current
         self.month_to_show = self.month_current
         self.available_years = {str(year): year for year in range(2023, self.year_to_show + 1)}
         self.available_months = {month + 1: str(month_name) for month, month_name in
-                                 enumerate(['январь', 'февраль', 'март',
-                                            'апрель', 'май', 'июнь',
-                                            'июль', 'август', 'сентябрь',
-                                            'октябрь', 'ноябрь', 'декабрь'])}
+                                 enumerate(self.months)}
         self.date_to_show = f"{self.available_months[self.month_to_show]} {self.year_to_show}"
 
         self.graphs_menu = {
@@ -38,6 +39,11 @@ class GraphWindow(QtWidgets.QDialog):
             1: 'График запросов по брендам',
             2: 'График соотношения брендов'
         }
+        self.line_chart_Title = "Количество брендов за %s"
+        self.percent_chart_Title = "Соотношение брендов за %s"
+        self.donut_breakdown_Title = "Топ брендов/моделей за %s"
+        self.units = "шт"
+        self.year_word = "год"
 
         self.min_req_limit = 3
         self.smooth_graph = True
@@ -93,7 +99,7 @@ class GraphWindow(QtWidgets.QDialog):
     def load_year_graph(self):
         if self.current_graph_loader != self.graph_loaders['year']:
             self.current_graph_loader = self.graph_loaders['year']
-            self.date_to_show = f"{self.year_to_show} год"
+            self.date_to_show = f"{self.year_to_show} {self.year_word}"
             self.reload_draw_graph()
 
     @pyqtSlot()
@@ -230,8 +236,7 @@ class GraphWindow(QtWidgets.QDialog):
         for series in brand_series.values():
             chart.addSeries(series)
         chart.createDefaultAxes()
-        chart.setTitle(f"Количество брендов за "
-                       f"{self.date_to_show}")
+        chart.setTitle(self.line_chart_Title % self.date_to_show)
         chart.setAnimationOptions(QChart.SeriesAnimations)
         chart.setAnimationDuration(200)
 
@@ -305,8 +310,7 @@ class GraphWindow(QtWidgets.QDialog):
         chart = QChart()
         chart.addSeries(series)
         # chart.createDefaultAxes()
-        chart.setTitle(f"Соотношение брендов за "
-                       f"{self.date_to_show}")
+        chart.setTitle(self.percent_chart_Title % self.date_to_show)
         chart.setAnimationOptions(QChart.SeriesAnimations)
         chart.setAnimationDuration(200)
 
@@ -342,11 +346,10 @@ class GraphWindow(QtWidgets.QDialog):
         self.current_chart_view.resize(width, height)
 
     def draw_donut_breakdown(self, stat_data):
-        donut_breakdown = DonutBreakdownChart()
+        donut_breakdown = DonutBreakdownChart(self)
         # donut_breakdown.setAnimationOptions(QChart.AllAnimations)
         # donut_breakdown.setAnimationDuration(100)
-        donut_breakdown.setTitle(f"Топ брендов/моделей за "
-                                 f"{self.date_to_show}")
+        donut_breakdown.setTitle(self.donut_breakdown_Title % self.date_to_show)
         donut_breakdown.legend().setAlignment(Qt.AlignRight)
 
         brands_models_stats = {}
@@ -405,7 +408,7 @@ class GraphWindow(QtWidgets.QDialog):
         part = self.sender()
         if state:
             part.setColor(part.color().darker(150))
-            self.setToolTip(f'{part.label()} - {int(part.sum())} шт')
+            self.setToolTip(f'{part.label()} - {int(part.sum())} {self.units}')
         else:
             part.setColor(part.color().lighter(150))
             self.setToolTip('')
@@ -413,7 +416,7 @@ class GraphWindow(QtWidgets.QDialog):
     def show_tip(self, part, state):
         if state:
             # self.setToolTip(f'{part.label()} {(part.percentage() * 100):.1f}%')
-            self.setToolTip(f'{part.label()} - {int(part.value())} шт')
+            self.setToolTip(f'{part.label()} - {int(part.value())} {self.units}')
             part.setBrush(part.color().darker(150))
         else:
             self.setToolTip('')
@@ -421,8 +424,9 @@ class GraphWindow(QtWidgets.QDialog):
 
 
 class DonutBreakdownChart(QChart):
-    def __init__(self, parent=None):
+    def __init__(self, parent_module, parent=None):
         super().__init__(parent, Qt.WindowFlags())
+        self.parent_module = parent_module
         self.main_series = QPieSeries()
         self.main_series.setPieSize(0.5)
         self.main_series.hovered.connect(self.show_tip)
@@ -532,7 +536,7 @@ class DonutBreakdownChart(QChart):
         markers = dict(sorted(markers.items(), key=lambda x: x[1][0], reverse=True))
         for i, (marker, values) in enumerate(markers.items()):
             m_slice = marker.slice()
-            marker.setLabel(f"{int(values[0])} шт {values[1]} {m_slice.label()}")
+            marker.setLabel(f"{int(values[0])} {self.parent_module.units} {values[1]} {m_slice.label()}")
             marker.setFont(QFont("Arial", 10, 75))
             if i >= 19:
                 marker.setVisible(False)
