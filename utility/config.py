@@ -17,11 +17,12 @@ class Config:
 
         self.LOGO = f'{self.CONTENT_PATH}MDA.ico'
         self.USER_CONFIG = f'{self.CONTENT_PATH}user_config.ini'
-        self.HELP = f'{self.CONTENT_PATH}help_ru.txt'
 
         self.CURRENT_LANG = 1
-        self.LANGS = None
+        self.LANGS: tuple
         self.upd_langs()
+        self.HELP_FILE_PATH: str
+        self.upd_help_file_path()
 
         # ===============================================================
         # =============  CONFIDENTIAL, SECURED DATA  ====================
@@ -177,6 +178,9 @@ class Config:
         # self.UPDATE_FOLDER = '1JauaFxPrsksy3cuYiQ-VKoz3tv2dpO0x'
 
         self.load_or_generate_config()
+
+    def upd_help_file_path(self):
+        self.HELP_FILE_PATH = f'{self.CONTENT_PATH}help_{self.LANGS[self.CURRENT_LANG].lower()}.txt'
 
     def upd_langs(self):
         self.LANGS = (*os.listdir(f'{self.LANG_PATH}'),)

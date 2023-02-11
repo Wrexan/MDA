@@ -10,9 +10,9 @@ from UI.adv_search import Ui_Dialog as AdvSearchDialog
 class HelpWindow(QtWidgets.QDialog):
     def __init__(self, C, Parent):
         super().__init__()
-        print(f'Reading {C.HELP}')
+        print(f'Reading {C.HELP_FILE_PATH}')
         try:
-            file = open(C.HELP, 'r', encoding='utf-8')
+            file = open(C.HELP_FILE_PATH, 'r', encoding='utf-8')
             with file:
                 text = file.read()
 
@@ -20,7 +20,7 @@ class HelpWindow(QtWidgets.QDialog):
             self.ui.setupUi(self)
             self.ui.text.setPlainText(text)
         except Exception as _err:
-            Parent.error((f'Error while reading help file:\n{C.HELP}', _err))
+            Parent.error((f'Error while reading help file:\n{C.HELP_FILE_PATH}', _err))
 
 
 class ConfigWindow(QtWidgets.QDialog):
@@ -107,7 +107,7 @@ class ConfigWindow(QtWidgets.QDialog):
         try:
             self.C.save_user_config()
         except Exception as _err:
-            self.Parent.error((f'Error while saving config file:\n{self.C.HELP}', _err))
+            self.Parent.error((f'Error while saving config file:\n{self.C.USER_CONFIG}', _err))
         if login:
             self.DK9.change_data(self.C.c_data())
             print(f'{self.DK9.CDATA=}')
@@ -166,7 +166,7 @@ class FirstStartWindow(QtWidgets.QDialog):
         try:
             self.C.save_user_config()
         except Exception as _err:
-            self.Parent.error((f'Error while saving config file:\n{self.C.HELP}', _err))
+            self.Parent.error((f'Error while saving config file:\n{self.C.USER_CONFIG}', _err))
         if login:
             self.DK9.change_data(self.C.c_data())
             print(f'{self.DK9.CDATA=}')

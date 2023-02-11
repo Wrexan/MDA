@@ -10,7 +10,7 @@ from UI.window_graphs import Ui_Dialog as GraphDialog
 
 
 class GraphWindow(QtWidgets.QDialog):
-    def __init__(self, C, Parent, MDAS):
+    def __init__(self, C, Parent, MDAS, L):
         super().__init__(None,
                          # QtCore.Qt.WindowSystemMenuHint |
                          # QtCore.Qt.WindowTitleHint |
@@ -30,9 +30,9 @@ class GraphWindow(QtWidgets.QDialog):
         self.year_to_show = self.year_current
         self.month_to_show = self.month_current
         self.available_years = {str(year): year for year in range(2023, self.year_to_show + 1)}
-        self.available_months = {month + 1: str(month_name) for month, month_name in
-                                 enumerate(self.months)}
-        self.date_to_show = f"{self.available_months[self.month_to_show]} {self.year_to_show}"
+        # self.available_months = {month + 1: str(month_name) for month, month_name in
+        #                          enumerate(self.months)}
+        self.date_to_show = f"{self.get_available_month()[self.month_to_show]} {self.year_to_show}"
 
         self.graphs_menu = {
             0: 'Топ за весь период',
@@ -61,17 +61,23 @@ class GraphWindow(QtWidgets.QDialog):
         }
         self.current_graph_loader = self.graph_loaders['month']
 
-        self.configurate_on_load()
+        self.configurate_on_load(L)
 
         self.draw_graph()
 
-    def configurate_on_load(self):
+    def get_available_month(self):
+        return {month + 1: str(month_name) for month, month_name in
+                                 enumerate(self.months)}
+
+    def configurate_on_load(self, L):
+        L.translate_graph_texts(self)
         self.ui.cb_year.addItems(self.available_years.keys())
         self.ui.cb_year.setCurrentText(str(self.year_to_show))
         self.ui.cb_year.currentIndexChanged.connect(self.reload_draw_graph)
 
-        self.ui.cb_month.addItems(self.available_months.values())
-        self.ui.cb_month.setCurrentText(self.available_months[self.month_to_show])
+        months = self.get_available_month()
+        self.ui.cb_month.addItems(months.values())
+        self.ui.cb_month.setCurrentText(months[self.month_to_show])
         self.ui.cb_month.currentIndexChanged.connect(self.reload_draw_graph)
 
         self.ui.cb_graph.addItems(self.graphs_menu.values())
@@ -93,7 +99,7 @@ class GraphWindow(QtWidgets.QDialog):
     def load_month_graph(self):
         if self.current_graph_loader != self.graph_loaders['month']:
             self.current_graph_loader = self.graph_loaders['month']
-            self.date_to_show = f"{self.available_months[self.month_to_show]} {self.year_to_show}"
+            self.date_to_show = f"{self.get_available_month()[self.month_to_show]} {self.year_to_show}"
             self.reload_draw_graph()
 
     def load_year_graph(self):

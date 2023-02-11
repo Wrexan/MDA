@@ -1336,7 +1336,7 @@ class App(QMainWindow):
         help_ui.show()
 
     def open_graphs(self):
-        graphs_ui = GraphWindow(C, self, MDAS)
+        graphs_ui = GraphWindow(C, self, MDAS, L)
         graphs_ui.setWindowIcon(QtGui.QIcon(C.LOGO))
         L.translate_GraphDialog_texts(graphs_ui)
         graphs_ui.exec_()

@@ -21,6 +21,7 @@ class Language:
                 self.__setattr__(module_name, lang_data[module_name])
 
     def apply_lang(self):
+        self.C.upd_help_file_path()
         self.translate_config_texts(self.C)
         self.translate_MainWindow_texts(self.Parent)
 
@@ -97,7 +98,6 @@ class Language:
         module.ui.label_12.setText(self.ConfigWindow["label_12"])
 
     def translate_GraphDialog_texts(self, module):
-        self.translate_graph_texts(module)
         module.setWindowTitle(self.GraphDialog["WindowTitle"])
         module.ui.rb_year.setText(self.GraphDialog["rb_year"])
         module.ui.rb_month.setText(self.GraphDialog["rb_month"])
