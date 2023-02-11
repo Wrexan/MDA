@@ -6,6 +6,7 @@ from dataclasses import dataclass
 class Language:
     def __init__(self, config):
         self.C = config
+        self.Parent = None
         self.apply_as_attrs = 'main'
         self.load_language()
 
@@ -19,8 +20,9 @@ class Language:
             else:
                 self.__setattr__(module_name, lang_data[module_name])
 
-    def apply_lang_to_all_app(self):
-        ...
+    def apply_lang(self):
+        self.translate_config_texts(self.C)
+        self.translate_MainWindow_texts(self.Parent)
 
     def translate_config_texts(self, module):
         for i, elem in enumerate(self.config['PRICE_STATUSES']):
@@ -28,16 +30,6 @@ class Language:
         module.DK9_TABLE_NAMES = (*self.config['DK9_TABLE_NAMES'],)
         for i, elem in enumerate(self.config['WEB_STATUSES']):
             module.WEB_STATUSES[i] = elem
-
-    def translate_graph_texts(self, module):
-        module.months = (*self.graph['months'],)
-        for i, elem in enumerate(self.graph['graphs_menu']):
-            module.graphs_menu[i] = elem
-        module.line_chart_Title = self.graph['line_chart_Title']
-        module.percent_chart_Title = self.graph['percent_chart_Title']
-        module.donut_breakdown_Title = self.graph['donut_breakdown_Title']
-        module.units = self.graph['units']
-        module.year_word = self.graph['year_word']
 
     def translate_MainWindow_texts(self, module):
         module.help.setText(self.MainWindow["help"])
@@ -104,12 +96,23 @@ class Language:
         module.ui.label_12.setText(self.ConfigWindow["label_12"])
 
     def translate_GraphDialog_texts(self, module):
+        self.translate_graph_texts(module)
         module.setWindowTitle(self.GraphDialog["WindowTitle"])
         module.ui.rb_year.setText(self.GraphDialog["rb_year"])
         module.ui.rb_month.setText(self.GraphDialog["rb_month"])
         module.ui.label.setText(self.GraphDialog["label"])
         module.ui.cb_smooth.setText(self.GraphDialog["cb_smooth"])
         module.ui.lbl_min.setText(self.GraphDialog["lbl_min"])
+
+    def translate_graph_texts(self, module):
+        module.months = (*self.graph['months'],)
+        for i, elem in enumerate(self.graph['graphs_menu']):
+            module.graphs_menu[i] = elem
+        module.line_chart_Title = self.graph['line_chart_Title']
+        module.percent_chart_Title = self.graph['percent_chart_Title']
+        module.donut_breakdown_Title = self.graph['donut_breakdown_Title']
+        module.units = self.graph['units']
+        module.year_word = self.graph['year_word']
 
     def translate_HelpDialog_texts(self, module):
         module.setWindowTitle(self.HelpDialog["WindowTitle"])

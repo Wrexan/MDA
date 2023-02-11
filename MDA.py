@@ -80,6 +80,9 @@ class App(QMainWindow):
         self.search_input.setParent(self.ui.frame_3)
         self.ui.search_layout.addWidget(self.search_input)
 
+        L.Parent = self.ui
+        L.apply_lang()
+
         self.freeze_ui_update = True
 
         self.copied_table_items = {}
@@ -101,6 +104,7 @@ class App(QMainWindow):
                                             f"{C.DK9_BG_HOVER_COLOR});" \
                                             f"{self.web_table_stylesheet_template[1]}"
 
+        self.upd_ui_static_texts()
         self.init_ui_statics()
         self.apply_window_size()
         self.init_ui_dynamics()
@@ -134,41 +138,34 @@ class App(QMainWindow):
         # self.login_dk9()
         self.update_web_status(0)
         # self.update_price_status()
-        L.translate_MainWindow_texts(self.ui)
         self.show()
         if C.FIRST_START:
             C.FIRST_START = False
             self.open_first_start()
 
+    def upd_ui_static_texts(self):
+        self.ui.pb_adv_search.setToolTip(L.pb_adv_search_ToolTip)
+        self.ui.chb_show_exact.setToolTip(L.chb_show_exact_ToolTip)
+        self.ui.chb_show_date.setToolTip(L.chb_show_date_ToolTip)
+        self.ui.chb_price_name_only.setToolTip(L.chb_price_name_only_ToolTip)
+        self.ui.chb_search_eng.setToolTip(L.chb_search_eng_ToolTip)
+        self.ui.chb_search_narrow.setToolTip(L.chb_search_narrow_ToolTip)
+        self.ui.table_price.setHorizontalHeaderLabels((L.table_price_HHL))
+        self.ui.table_parts.setHorizontalHeaderLabels((L.table_parts_HHL))
+        self.ui.table_accesory.setHorizontalHeaderLabels((L.table_accesory_HHL))
+
     def init_ui_statics(self):
 
         self.resized.connect(self.init_ui_dynamics)
         self.search_input.textChanged[str].connect(self.prepare_and_search)
-
-        self.ui.pb_adv_search.setToolTip(L.pb_adv_search_ToolTip)
-
         self.ui.chb_show_exact.stateChanged.connect(self.upd_dk9_on_rule_change)
-        self.ui.chb_show_exact.setToolTip(L.chb_show_exact_ToolTip)
-
         self.ui.chb_show_date.stateChanged.connect(self.switch_n_upd_dk9_tables_grid)
-        self.ui.chb_show_date.setToolTip(L.chb_show_date_ToolTip)
-
         self.ui.chb_price_name_only.stateChanged.connect(self.start_search_on_rule_change)
-        self.ui.chb_price_name_only.setToolTip(L.chb_price_name_only_ToolTip)
-
         self.ui.chb_search_eng.stateChanged.connect(self.start_search_on_rule_change)
-        self.ui.chb_search_eng.setToolTip(L.chb_search_eng_ToolTip)
-
         self.ui.chb_search_narrow.stateChanged.connect(self.start_search_on_rule_change)
-        self.ui.chb_search_narrow.setToolTip(L.chb_search_narrow_ToolTip)
-
         self.ui.pb_adv_search.clicked.connect(self.open_adv_search)
         self.ui.settings_button.clicked.connect(self.open_settings)
         self.ui.graph_button.clicked.connect(self.open_graphs)
-
-        self.ui.table_price.setHorizontalHeaderLabels((L.table_price_HHL))
-        self.ui.table_parts.setHorizontalHeaderLabels((L.table_parts_HHL))
-        self.ui.table_accesory.setHorizontalHeaderLabels((L.table_accesory_HHL))
 
         self.ui.table_parts.doubleClicked.connect(self.copy_web_table_items_connected)
         self.ui.table_accesory.doubleClicked.connect(self.copy_web_table_items_connected)
@@ -1341,7 +1338,6 @@ class App(QMainWindow):
     def open_graphs(self):
         graphs_ui = GraphWindow(C, self, MDAS)
         graphs_ui.setWindowIcon(QtGui.QIcon(C.LOGO))
-        L.translate_graph_texts(graphs_ui)
         L.translate_GraphDialog_texts(graphs_ui)
         graphs_ui.exec_()
         graphs_ui.show()

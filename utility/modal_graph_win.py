@@ -346,7 +346,7 @@ class GraphWindow(QtWidgets.QDialog):
         self.current_chart_view.resize(width, height)
 
     def draw_donut_breakdown(self, stat_data):
-        donut_breakdown = DonutBreakdownChart(self)
+        donut_breakdown = DonutBreakdownChart(units=self.units)
         # donut_breakdown.setAnimationOptions(QChart.AllAnimations)
         # donut_breakdown.setAnimationDuration(100)
         donut_breakdown.setTitle(self.donut_breakdown_Title % self.date_to_show)
@@ -424,9 +424,9 @@ class GraphWindow(QtWidgets.QDialog):
 
 
 class DonutBreakdownChart(QChart):
-    def __init__(self, parent_module, parent=None):
+    def __init__(self, parent=None, units: str = 'pcs'):
         super().__init__(parent, Qt.WindowFlags())
-        self.parent_module = parent_module
+        self.units = units
         self.main_series = QPieSeries()
         self.main_series.setPieSize(0.5)
         self.main_series.hovered.connect(self.show_tip)
@@ -536,7 +536,7 @@ class DonutBreakdownChart(QChart):
         markers = dict(sorted(markers.items(), key=lambda x: x[1][0], reverse=True))
         for i, (marker, values) in enumerate(markers.items()):
             m_slice = marker.slice()
-            marker.setLabel(f"{int(values[0])} {self.parent_module.units} {values[1]} {m_slice.label()}")
+            marker.setLabel(f"{int(values[0])} {self.units} {values[1]} {m_slice.label()}")
             marker.setFont(QFont("Arial", 10, 75))
             if i >= 19:
                 marker.setVisible(False)

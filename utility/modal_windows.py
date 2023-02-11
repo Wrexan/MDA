@@ -68,8 +68,10 @@ class ConfigWindow(QtWidgets.QDialog):
     def apply_selected_language(self):
         self.C.CURRENT_LANG = self.ui.cb_language.currentIndex()
         self.L.load_language()
+        self.L.apply_lang()
         self.L.translate_ConfigWindow_texts(self)
-        self.L.translate_MainWindow_texts(self.Parent)
+        self.Parent.upd_ui_static_texts()
+        self.Parent.init_ui_dynamics()
 
     def apply_settings(self):
         print('Applying settings')
@@ -140,8 +142,10 @@ class FirstStartWindow(QtWidgets.QDialog):
     def apply_selected_language(self):
         self.C.CURRENT_LANG = self.ui.cb_language.currentIndex()
         self.L.load_language()
+        self.L.apply_lang()
         self.L.translate_StartWindow_texts(self)
-        self.L.translate_MainWindow_texts(self.Parent)
+        self.Parent.upd_ui_static_texts()
+        self.Parent.init_ui_dynamics()
 
     def apply_stat(self):
         button_num = int(self.sender().objectName()[-1])

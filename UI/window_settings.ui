@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>597</width>
+    <width>640</width>
     <height>565</height>
    </rect>
   </property>
@@ -48,8 +48,8 @@
      </property>
      <property name="font">
       <font>
-       <family>Segoe UI</family>
        <pointsize>12</pointsize>
+       <underline>true</underline>
       </font>
      </property>
      <property name="text">
@@ -158,8 +158,8 @@
      </property>
      <property name="font">
       <font>
-       <family>Segoe UI</family>
        <pointsize>12</pointsize>
+       <underline>true</underline>
       </font>
      </property>
      <property name="text">
@@ -252,8 +252,8 @@
      </property>
      <property name="font">
       <font>
-       <family>Segoe UI</family>
        <pointsize>12</pointsize>
+       <underline>true</underline>
       </font>
      </property>
      <property name="text">
@@ -425,6 +425,12 @@
           <height>20</height>
          </size>
         </property>
+        <property name="font">
+         <font>
+          <pointsize>12</pointsize>
+          <underline>true</underline>
+         </font>
+        </property>
         <property name="text">
          <string>Настройки поиска при запуске</string>
         </property>
@@ -577,6 +583,12 @@
           <width>0</width>
           <height>20</height>
          </size>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>12</pointsize>
+          <underline>true</underline>
+         </font>
         </property>
         <property name="text">
          <string>Таблицы</string>
@@ -762,8 +774,8 @@
      </property>
      <property name="font">
       <font>
-       <family>Segoe UI</family>
        <pointsize>12</pointsize>
+       <underline>true</underline>
       </font>
      </property>
      <property name="text">
@@ -816,6 +828,9 @@
           </property>
           <property name="text">
            <string>Наценка при поступлени на склад (доп. % к ценам веб базы):</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
           </property>
          </widget>
         </item>
