@@ -1,3 +1,4 @@
+{"main":
 {
 "pb_adv_search_ToolTip": "Необходимо для поиска в веб базе в конкретных полях",
 "chb_show_exact_ToolTip":
@@ -19,4 +20,30 @@
 "work_cost_label_Text": "Работа: %dгрн  Б/Н: %dгрн",
 "copy_for_order_contextMenu": "Копировать для заказа",
 "copy_full_row_contextMenu": "Копировать всю строку"
+},
+"config":
+{
+"PRICE_STATUSES": ["Не загружен", "Не найден", "Загрузка", "Ошибка загрузки", "Чтение", "Ошибка чтения"],
+"DK9_TABLE_NAMES": [" ЗАПЧАСТИ - ", " АКСЕССУАРЫ - "],
+"WEB_STATUSES": ["Нет соединения", "Подключение...", "Подключен", "Перенаправление", "Запрос отклонен", "Ошибка сервера", "Ошибка авторизации", "Ошибка соединения"],
+"graph_button": "Статистика",
+"chb_show_exact": "Фильтр модели",
+"chb_show_date": "Показать дату",
+"pb_adv_search": "Расш. поиск",
+"chb_price_name_only": "Модель прайса",
+"chb_search_eng": "Латиница",
+"chb_search_narrow": "Два символа"
+},
+"MainWindow":
+{
+"help": "?",
+"settings_button": "Настройки",
+"graph_button": "Статистика",
+"chb_show_exact": "Фильтр модели",
+"chb_show_date": "Показать дату",
+"pb_adv_search": "Расш. поиск",
+"chb_price_name_only": "Модель прайса",
+"chb_search_eng": "Латиница",
+"chb_search_narrow": "Два символа"
+}
 }

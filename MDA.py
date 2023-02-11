@@ -134,6 +134,7 @@ class App(QMainWindow):
         # self.login_dk9()
         self.update_web_status(0)
         # self.update_price_status()
+        L.translate_MainWindow_texts(self.ui)
         self.show()
         if C.FIRST_START:
             C.FIRST_START = False

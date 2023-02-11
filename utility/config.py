@@ -18,7 +18,7 @@ class Config:
 
         self.LOGO = f'{self.CONTENT_PATH}MDA.ico'
         self.USER_CONFIG = f'{self.CONTENT_PATH}user_config.ini'
-        self.HELP = f'{self.CONTENT_PATH}Инструкция.txt'
+        self.HELP = f'{self.CONTENT_PATH}help_ru.txt'
         self.LANG_FILES = os.listdir(f'{self.LANG_PATH}')
 
         # ===============================================================
