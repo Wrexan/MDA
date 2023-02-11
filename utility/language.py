@@ -35,3 +35,11 @@ class Language:
         module.chb_price_name_only.setText(self.MainWindow["chb_price_name_only"])
         module.chb_search_eng.setText(self.MainWindow["chb_search_eng"])
         module.chb_search_narrow.setText(self.MainWindow["chb_search_narrow"])
+
+    def translate_AdvSearchDialog_texts(self, module):
+        module.setWindowTitle(self.AdvSearchDialog["WindowTitle"])
+        module.ui.label_2.setText(self.AdvSearchDialog["label_2"])
+        module.ui.label.setText(self.AdvSearchDialog["label"])
+        module.ui.label_3.setText(self.AdvSearchDialog["label_3"])
+        module.ui.label_4.setText(self.AdvSearchDialog["label_4"])
+        module.ui.label_5.setText(self.AdvSearchDialog["label_5"])

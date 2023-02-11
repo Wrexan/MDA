@@ -1313,6 +1313,7 @@ class App(QMainWindow):
     def open_adv_search(self):
         settings_ui = AdvancedSearchWindow(self)
         settings_ui.setWindowIcon(QtGui.QIcon(C.LOGO))
+        L.translate_AdvSearchDialog_texts(settings_ui)
         settings_ui.exec_()
         settings_ui.show()
 
