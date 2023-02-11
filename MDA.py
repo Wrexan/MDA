@@ -1324,7 +1324,7 @@ class App(QMainWindow):
         settings_ui.show()
 
     def open_first_start(self):
-        settings_ui = FirstStartWindow(C, self, DK9)
+        settings_ui = FirstStartWindow(C, self, DK9, L)
         settings_ui.setWindowIcon(QtGui.QIcon(C.LOGO))
         settings_ui.exec_()
         settings_ui.show()

@@ -10,7 +10,6 @@ class Config:
 
     def __init__(self):
         self.error = None
-        self.CURRENT_LANG = 'RU'
         self.PATH = f'{os.path.dirname(os.path.dirname(os.path.realpath(__file__)))}\\'
         self.CONTENT_PATH = f'{self.PATH}content\\'
         self.MDAS_PATH = f'{self.PATH}mdas\\'
@@ -19,7 +18,10 @@ class Config:
         self.LOGO = f'{self.CONTENT_PATH}MDA.ico'
         self.USER_CONFIG = f'{self.CONTENT_PATH}user_config.ini'
         self.HELP = f'{self.CONTENT_PATH}help_ru.txt'
-        self.LANG_FILES = os.listdir(f'{self.LANG_PATH}')
+
+        self.CURRENT_LANG = 0
+        self.LANGS = None
+        self.upd_langs()
 
         # ===============================================================
         # =============  CONFIDENTIAL, SECURED DATA  ====================
@@ -175,6 +177,9 @@ class Config:
         # self.UPDATE_FOLDER = '1JauaFxPrsksy3cuYiQ-VKoz3tv2dpO0x'
 
         self.load_or_generate_config()
+
+    def upd_langs(self):
+        self.LANGS = (*os.listdir(f'{self.LANG_PATH}'),)
 
     def set_error_signal(self, signal):
         self.error = signal

@@ -6,13 +6,14 @@ from dataclasses import dataclass
 class Language:
     def __init__(self, config):
         self.C = config
-        self.load_language(as_attributes='main')
+        self.apply_as_attrs = 'main'
+        self.load_language()
 
-    def load_language(self, as_attributes: str):
-        with open(f'{self.C.LANG_PATH}\\{self.C.CURRENT_LANG}', 'r', encoding='utf-8') as f:
+    def load_language(self):
+        with open(f'{self.C.LANG_PATH}\\{self.C.LANGS[self.C.CURRENT_LANG]}', 'r', encoding='utf-8') as f:
             lang_data = json.load(f)
         for module_name, module_attrs in lang_data.items():
-            if module_name == as_attributes:
+            if module_name == self.apply_as_attrs:
                 for text_elem in lang_data[module_name].items():
                     self.__setattr__(*text_elem)
             else:
@@ -43,3 +44,21 @@ class Language:
         module.ui.label_3.setText(self.AdvSearchDialog["label_3"])
         module.ui.label_4.setText(self.AdvSearchDialog["label_4"])
         module.ui.label_5.setText(self.AdvSearchDialog["label_5"])
+
+    def translate_StartWindow_texts(self, module):
+        module.setWindowTitle(self.StartWindow["WindowTitle"])
+        module.ui.label_6.setText(self.StartWindow["label_6"])
+        module.ui.label_5.setText(self.StartWindow["label_5"])
+        module.ui.frame_11.setToolTip(self.StartWindow["frame_11_ToolTip"])
+        # module.ui.frame_11.setStatusTip(self.StartWindow["start_window", "2"])
+        # module.ui.frame_11.setWhatsThis(self.StartWindow["start_window", "1"])
+        module.ui.label_7.setText(self.StartWindow["label_7"])
+        module.ui.label_8.setText(self.StartWindow["label_8"])
+        module.ui.label.setText(self.StartWindow["label"])
+        module.ui.label_2.setText(self.StartWindow["label_2"])
+        module.ui.pb_stat_0.setText(self.StartWindow["pb_stat_0"])
+        module.ui.label_3.setText(self.StartWindow["label_3"])
+        module.ui.label_4.setText(self.StartWindow["label_4"])
+        module.ui.pb_stat_1.setText(self.StartWindow["pb_stat_1"])
+        module.ui.pb_stat_2.setText(self.StartWindow["pb_stat_2"])
+        module.ui.pb_stat_3.setText(self.StartWindow["pb_stat_3"])
