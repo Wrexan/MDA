@@ -10,9 +10,9 @@ from UI.adv_search import Ui_Dialog as AdvSearchDialog
 class HelpWindow(QtWidgets.QDialog):
     def __init__(self, C, Parent):
         super().__init__()
-        print(f'Reading {C.HELP}')
+        print(f'Reading {C.HELP_FILE_PATH}')
         try:
-            file = open(C.HELP, 'r', encoding='utf-8')
+            file = open(C.HELP_FILE_PATH, 'r', encoding='utf-8')
             with file:
                 text = file.read()
 
@@ -20,11 +20,11 @@ class HelpWindow(QtWidgets.QDialog):
             self.ui.setupUi(self)
             self.ui.text.setPlainText(text)
         except Exception as _err:
-            Parent.error((f'Error while reading help file:\n{C.HELP}', _err))
+            Parent.error((f'Error while reading help file:\n{C.HELP_FILE_PATH}', _err))
 
 
 class ConfigWindow(QtWidgets.QDialog):
-    def __init__(self, C, Parent, DK9):
+    def __init__(self, C, Parent, DK9, L):
         super().__init__(None,
                          # QtCore.Qt.WindowSystemMenuHint |
                          # QtCore.Qt.WindowTitleHint |
@@ -33,6 +33,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.C = C
         self.Parent = Parent
         self.DK9 = DK9
+        self.L = L
         self.ui = Ui_settings_window()
         self.ui.setupUi(self)
         self.ui.web_login.setText(C.DK9_LOGIN)
@@ -40,6 +41,10 @@ class ConfigWindow(QtWidgets.QDialog):
 
         self.ui.cb_branch.addItems(self.C.BRANCHES.values())
         self.ui.cb_branch.setCurrentIndex(self.C.BRANCH)
+
+        self.ui.cb_language.addItems(self.C.LANGS)
+        self.ui.cb_language.setCurrentIndex(self.C.CURRENT_LANG)
+        self.ui.cb_language.currentIndexChanged.connect(self.apply_selected_language)
 
         self.ui.chk_fullscreen.setCheckState(2 if C.FULLSCREEN else 0)
         self.ui.zebra_contrast.setValue(C.DK9_COL_DIFF)
@@ -59,6 +64,14 @@ class ConfigWindow(QtWidgets.QDialog):
         # self.ui.column_width_max.setValue(C.TABLE_COLUMN_SIZE_MAX)
         # self.ui.buttonBox.button()..accept.connect(self.apply_settings())
         self.ui.buttonBox.accepted.connect(self.apply_settings)
+
+    def apply_selected_language(self):
+        self.C.CURRENT_LANG = self.ui.cb_language.currentIndex()
+        self.L.load_language()
+        self.L.apply_lang()
+        self.L.translate_ConfigWindow_texts(self)
+        self.Parent.upd_ui_static_texts()
+        self.Parent.init_ui_dynamics()
 
     def apply_settings(self):
         print('Applying settings')
@@ -94,7 +107,7 @@ class ConfigWindow(QtWidgets.QDialog):
         try:
             self.C.save_user_config()
         except Exception as _err:
-            self.Parent.error((f'Error while saving config file:\n{self.C.HELP}', _err))
+            self.Parent.error((f'Error while saving config file:\n{self.C.USER_CONFIG}', _err))
         if login:
             self.DK9.change_data(self.C.c_data())
             print(f'{self.DK9.CDATA=}')
@@ -102,7 +115,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
 
 class FirstStartWindow(QtWidgets.QDialog):
-    def __init__(self, C, Parent, DK9):
+    def __init__(self, C, Parent, DK9, L):
         super().__init__(None,
                          # QtCore.Qt.WindowSystemMenuHint |
                          # QtCore.Qt.WindowTitleHint |
@@ -111,15 +124,28 @@ class FirstStartWindow(QtWidgets.QDialog):
         self.C = C
         self.Parent = Parent
         self.DK9 = DK9
+        self.L = L
         self.ui = Ui_start_window()
         self.ui.setupUi(self)
         self.ui.web_login.setText(C.DK9_LOGIN)
         self.ui.web_password.setText(C.DK9_PASSWORD)
 
+        self.ui.cb_language.addItems(self.C.LANGS)
+        self.ui.cb_language.setCurrentIndex(self.C.CURRENT_LANG)
+        self.ui.cb_language.currentIndexChanged.connect(self.apply_selected_language)
+
         self.ui.pb_stat_0.clicked.connect(self.apply_stat)
         self.ui.pb_stat_1.clicked.connect(self.apply_stat)
         self.ui.pb_stat_2.clicked.connect(self.apply_stat)
         self.ui.pb_stat_3.clicked.connect(self.apply_stat)
+
+    def apply_selected_language(self):
+        self.C.CURRENT_LANG = self.ui.cb_language.currentIndex()
+        self.L.load_language()
+        self.L.apply_lang()
+        self.L.translate_StartWindow_texts(self)
+        self.Parent.upd_ui_static_texts()
+        self.Parent.init_ui_dynamics()
 
     def apply_stat(self):
         button_num = int(self.sender().objectName()[-1])
@@ -140,7 +166,7 @@ class FirstStartWindow(QtWidgets.QDialog):
         try:
             self.C.save_user_config()
         except Exception as _err:
-            self.Parent.error((f'Error while saving config file:\n{self.C.HELP}', _err))
+            self.Parent.error((f'Error while saving config file:\n{self.C.USER_CONFIG}', _err))
         if login:
             self.DK9.change_data(self.C.c_data())
             print(f'{self.DK9.CDATA=}')

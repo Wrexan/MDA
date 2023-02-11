@@ -24,6 +24,7 @@ from utility.config import Config
 from utility.dk9 import DK9Parser
 from utility.price import Price
 from utility.statistic import MDAS
+from utility.language import Language
 from utility.modal_windows import ConfigWindow, HelpWindow, AdvancedSearchWindow, FirstStartWindow
 from utility.modal_graph_win import GraphWindow
 from utility.thread_worker import Worker, WorkerSignals
@@ -32,6 +33,7 @@ from UI.window_main import Ui_MainWindow
 C = Config()
 DK9 = DK9Parser(C)
 MDAS = MDAS(C)
+L = Language(C)
 
 
 class App(QMainWindow):
@@ -78,6 +80,9 @@ class App(QMainWindow):
         self.search_input.setParent(self.ui.frame_3)
         self.ui.search_layout.addWidget(self.search_input)
 
+        L.Parent = self.ui
+        L.apply_lang()
+
         self.freeze_ui_update = True
 
         self.copied_table_items = {}
@@ -99,6 +104,7 @@ class App(QMainWindow):
                                             f"{C.DK9_BG_HOVER_COLOR});" \
                                             f"{self.web_table_stylesheet_template[1]}"
 
+        self.upd_ui_static_texts()
         self.init_ui_statics()
         self.apply_window_size()
         self.init_ui_dynamics()
@@ -137,48 +143,29 @@ class App(QMainWindow):
             C.FIRST_START = False
             self.open_first_start()
 
+    def upd_ui_static_texts(self):
+        self.ui.pb_adv_search.setToolTip(L.pb_adv_search_ToolTip)
+        self.ui.chb_show_exact.setToolTip(L.chb_show_exact_ToolTip)
+        self.ui.chb_show_date.setToolTip(L.chb_show_date_ToolTip)
+        self.ui.chb_price_name_only.setToolTip(L.chb_price_name_only_ToolTip)
+        self.ui.chb_search_eng.setToolTip(L.chb_search_eng_ToolTip)
+        self.ui.chb_search_narrow.setToolTip(L.chb_search_narrow_ToolTip)
+        self.ui.table_price.setHorizontalHeaderLabels((L.table_price_HHL))
+        self.ui.table_parts.setHorizontalHeaderLabels((L.table_parts_HHL))
+        self.ui.table_accesory.setHorizontalHeaderLabels((L.table_accesory_HHL))
+
     def init_ui_statics(self):
 
         self.resized.connect(self.init_ui_dynamics)
         self.search_input.textChanged[str].connect(self.prepare_and_search)
-
-        self.ui.pb_adv_search.setToolTip(
-            'Необходимо для поиска в веб базе в конкретных полях')
-
         self.ui.chb_show_exact.stateChanged.connect(self.upd_dk9_on_rule_change)
-        self.ui.chb_show_exact.setToolTip(
-            'Вкл - отображает максимально релевантные модели\n'
-            'Откл - отображается все, что выдает база (Mi8 lite по запросу Mi8)')
-
         self.ui.chb_show_date.stateChanged.connect(self.switch_n_upd_dk9_tables_grid)
-        self.ui.chb_show_date.setToolTip(
-            'Вкл - отображает дату поступления товара\n'
-            'Откл - дата поступления товара урезана (появляется при наведении курсора)')
-
         self.ui.chb_price_name_only.stateChanged.connect(self.start_search_on_rule_change)
-        self.ui.chb_price_name_only.setToolTip(
-            'Вкл - запросом в интернет базу являются производитель и модель из прайса\n'
-            'Откл - запросом в интернет базу является текст в строке ввода '
-            '(позволяет по запросу 5 найти все модели всех фирм, содержащие 5)')
-
         self.ui.chb_search_eng.stateChanged.connect(self.start_search_on_rule_change)
-        self.ui.chb_search_eng.setToolTip(
-            'Вкл - переводит символы алфавита в латиницу нижнего регистра')
-
         self.ui.chb_search_narrow.stateChanged.connect(self.start_search_on_rule_change)
-        self.ui.chb_search_narrow.setToolTip(
-            'Вкл - поиск начинается с 2х символов\n'
-            'Откл - позволяет найти отдельный символ (например украинскую С или Е)')
-
         self.ui.pb_adv_search.clicked.connect(self.open_adv_search)
         self.ui.settings_button.clicked.connect(self.open_settings)
         self.ui.graph_button.clicked.connect(self.open_graphs)
-
-        self.ui.table_price.setHorizontalHeaderLabels(('Виды работ', 'Цена', 'Прим'))
-        self.ui.table_parts.setHorizontalHeaderLabels(('Тип', 'Фирма', 'Модель', 'Примечание',
-                                                       'Цена', 'Шт', 'Дата', 'Где'))
-        self.ui.table_accesory.setHorizontalHeaderLabels(('Тип', 'Фирма', 'Модель', 'Примечание',
-                                                          'Цена', 'Шт', 'Дата', 'Где'))
 
         self.ui.table_parts.doubleClicked.connect(self.copy_web_table_items_connected)
         self.ui.table_accesory.doubleClicked.connect(self.copy_web_table_items_connected)
@@ -813,7 +800,8 @@ class App(QMainWindow):
                     else:
                         self.ui.table_price.insertRow(0)
                         self.ui.table_price.setItem(0, 0, QTableWidgetItem(
-                            f'Модель {recursive_model} не найдена в прайсе'))
+                            L.table_price_Item_not_found % recursive_model
+                        ))
                         self.ui.table_price.item(0, 0).setFont(self.tab_font_bold)
                         return
             else:
@@ -1038,8 +1026,8 @@ class App(QMainWindow):
     @staticmethod
     def _update_dk9_tooltip(tab_widget, num: int, tab_names: tuple, count_1: int, count_2: int):
         # tab_widget.setTabText(num, f'{tab_names[num]}{count_1} / {count_2} ')
-        tab_widget.setTabText(num, f'{tab_names[num]} {count_2} шт')
-        tab_widget.setTabToolTip(num, f'{count_1} позиций/ {count_2} штук')
+        tab_widget.setTabText(num, L.tab_widget_left_TabText % (tab_names[num], count_2))
+        tab_widget.setTabToolTip(num, L.tab_widget_left_TabToolTip % (count_1, count_2))
 
     def update_work_cost(self):
         if self.selected_work_price == 0 or self.selected_part_price == 0:
@@ -1047,12 +1035,9 @@ class App(QMainWindow):
             self.work_cost_label.setText('')
         else:
             self.work_cost_label.setText(
-                f'Работа: '
-                f'{int(self.selected_work_price - self.selected_part_price * (1 + C.INCOME_PARTS_MARGIN_PERC / 100))}'
-                f'грн  '
-                f'Б/Н: '
-                f'{int(self.selected_work_price - self.selected_part_price)}'
-                f'грн')
+                L.work_cost_label_Text %
+                (int(self.selected_work_price - self.selected_part_price * (1 + C.INCOME_PARTS_MARGIN_PERC / 100)),
+                 int(self.selected_work_price - self.selected_part_price)))
 
     # WEB TABLE SELECTION
     def handle_web_table_item_selection_connected(self):
@@ -1310,8 +1295,8 @@ class App(QMainWindow):
                 if row:
                     # user = str(row[0].data())
                     contextMenu = QMenu(self)
-                    copy_for_order = contextMenu.addAction("Копировать для заказа")
-                    copy_full_row = contextMenu.addAction("Копировать всю строку")
+                    copy_for_order = contextMenu.addAction(L.copy_for_order_contextMenu)
+                    copy_full_row = contextMenu.addAction(L.copy_full_row_contextMenu)
                     action = contextMenu.exec_(event.globalPos())
                     if action == copy_for_order:
                         if source is self.ui.table_price:
@@ -1323,32 +1308,37 @@ class App(QMainWindow):
         return super().eventFilter(source, event)
 
     def open_adv_search(self):
-        settings_ui = AdvancedSearchWindow(self)
-        settings_ui.setWindowIcon(QtGui.QIcon(C.LOGO))
-        settings_ui.exec_()
-        settings_ui.show()
+        adv_search_ui = AdvancedSearchWindow(self)
+        adv_search_ui.setWindowIcon(QtGui.QIcon(C.LOGO))
+        L.translate_AdvSearchDialog_texts(adv_search_ui)
+        adv_search_ui.exec_()
+        adv_search_ui.show()
 
     def open_settings(self):
-        settings_ui = ConfigWindow(C, self, DK9)
+        settings_ui = ConfigWindow(C, self, DK9, L)
         settings_ui.setWindowIcon(QtGui.QIcon(C.LOGO))
+        L.translate_ConfigWindow_texts(settings_ui)
         settings_ui.exec_()
         settings_ui.show()
 
     def open_first_start(self):
-        settings_ui = FirstStartWindow(C, self, DK9)
-        settings_ui.setWindowIcon(QtGui.QIcon(C.LOGO))
-        settings_ui.exec_()
-        settings_ui.show()
+        first_start_ui = FirstStartWindow(C, self, DK9, L)
+        first_start_ui.setWindowIcon(QtGui.QIcon(C.LOGO))
+        L.translate_StartWindow_texts(first_start_ui)
+        first_start_ui.exec_()
+        first_start_ui.show()
 
     def open_help(self):
         help_ui = HelpWindow(C, self)
         help_ui.setWindowIcon(QtGui.QIcon(C.LOGO))
+        L.translate_HelpDialog_texts(help_ui)
         help_ui.exec_()
         help_ui.show()
 
     def open_graphs(self):
-        graphs_ui = GraphWindow(C, self, MDAS)
+        graphs_ui = GraphWindow(C, self, MDAS, L)
         graphs_ui.setWindowIcon(QtGui.QIcon(C.LOGO))
+        L.translate_GraphDialog_texts(graphs_ui)
         graphs_ui.exec_()
         graphs_ui.show()
 

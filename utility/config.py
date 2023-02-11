@@ -13,10 +13,16 @@ class Config:
         self.PATH = f'{os.path.dirname(os.path.dirname(os.path.realpath(__file__)))}\\'
         self.CONTENT_PATH = f'{self.PATH}content\\'
         self.MDAS_PATH = f'{self.PATH}mdas\\'
+        self.LANG_PATH = f'{self.CONTENT_PATH}languages\\'
 
         self.LOGO = f'{self.CONTENT_PATH}MDA.ico'
         self.USER_CONFIG = f'{self.CONTENT_PATH}user_config.ini'
-        self.HELP = f'{self.CONTENT_PATH}Инструкция.txt'
+
+        self.CURRENT_LANG = 1
+        self.LANGS: tuple
+        self.upd_langs()
+        self.HELP_FILE_PATH: str
+        self.upd_help_file_path()
 
         # ===============================================================
         # =============  CONFIDENTIAL, SECURED DATA  ====================
@@ -173,6 +179,12 @@ class Config:
 
         self.load_or_generate_config()
 
+    def upd_help_file_path(self):
+        self.HELP_FILE_PATH = f'{self.CONTENT_PATH}help_{self.LANGS[self.CURRENT_LANG].lower()}.txt'
+
+    def upd_langs(self):
+        self.LANGS = (*os.listdir(f'{self.LANG_PATH}'),)
+
     def set_error_signal(self, signal):
         self.error = signal
 
@@ -204,6 +216,7 @@ class Config:
             try:
                 self.DK9_LOGIN = config['WEB DATABASE']['DK9_LOGIN']
                 self.DK9_PASSWORD = config['WEB DATABASE']['DK9_PASSWORD']
+                self.CURRENT_LANG = int(config['CLIENT']['LANG'])
                 self.BRANCH = int(config['CLIENT']['BRANCH'])
                 self.FULLSCREEN = True if config['SETTINGS']['FULLSCREEN'] == 'True' else False
                 # ALWAYS FALSE
@@ -260,6 +273,7 @@ class Config:
         config['WEB DATABASE']['DK9_PASSWORD'] = str(self.DK9_PASSWORD)
 
         config['CLIENT'] = {}
+        config['CLIENT']['LANG'] = str(self.CURRENT_LANG)
         config['CLIENT']['BRANCH'] = str(self.BRANCH)
 
         config['SETTINGS'] = {}
