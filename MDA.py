@@ -1311,33 +1311,37 @@ class App(QMainWindow):
         return super().eventFilter(source, event)
 
     def open_adv_search(self):
-        settings_ui = AdvancedSearchWindow(self)
-        settings_ui.setWindowIcon(QtGui.QIcon(C.LOGO))
-        L.translate_AdvSearchDialog_texts(settings_ui)
-        settings_ui.exec_()
-        settings_ui.show()
+        adv_search_ui = AdvancedSearchWindow(self)
+        adv_search_ui.setWindowIcon(QtGui.QIcon(C.LOGO))
+        L.translate_AdvSearchDialog_texts(adv_search_ui)
+        adv_search_ui.exec_()
+        adv_search_ui.show()
 
     def open_settings(self):
-        settings_ui = ConfigWindow(C, self, DK9)
+        settings_ui = ConfigWindow(C, self, DK9, L)
         settings_ui.setWindowIcon(QtGui.QIcon(C.LOGO))
+        L.translate_ConfigWindow_texts(settings_ui)
         settings_ui.exec_()
         settings_ui.show()
 
     def open_first_start(self):
-        settings_ui = FirstStartWindow(C, self, DK9, L)
-        settings_ui.setWindowIcon(QtGui.QIcon(C.LOGO))
-        settings_ui.exec_()
-        settings_ui.show()
+        first_start_ui = FirstStartWindow(C, self, DK9, L)
+        first_start_ui.setWindowIcon(QtGui.QIcon(C.LOGO))
+        L.translate_StartWindow_texts(first_start_ui)
+        first_start_ui.exec_()
+        first_start_ui.show()
 
     def open_help(self):
         help_ui = HelpWindow(C, self)
         help_ui.setWindowIcon(QtGui.QIcon(C.LOGO))
+        L.translate_HelpWindow_texts(help_ui)
         help_ui.exec_()
         help_ui.show()
 
     def open_graphs(self):
         graphs_ui = GraphWindow(C, self, MDAS)
         graphs_ui.setWindowIcon(QtGui.QIcon(C.LOGO))
+        L.translate_GraphWindow_texts(graphs_ui)
         graphs_ui.exec_()
         graphs_ui.show()
 

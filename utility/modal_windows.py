@@ -24,7 +24,7 @@ class HelpWindow(QtWidgets.QDialog):
 
 
 class ConfigWindow(QtWidgets.QDialog):
-    def __init__(self, C, Parent, DK9):
+    def __init__(self, C, Parent, DK9, L):
         super().__init__(None,
                          # QtCore.Qt.WindowSystemMenuHint |
                          # QtCore.Qt.WindowTitleHint |
@@ -33,6 +33,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.C = C
         self.Parent = Parent
         self.DK9 = DK9
+        self.L = L
         self.ui = Ui_settings_window()
         self.ui.setupUi(self)
         self.ui.web_login.setText(C.DK9_LOGIN)
@@ -40,6 +41,10 @@ class ConfigWindow(QtWidgets.QDialog):
 
         self.ui.cb_branch.addItems(self.C.BRANCHES.values())
         self.ui.cb_branch.setCurrentIndex(self.C.BRANCH)
+
+        self.ui.cb_language.addItems(self.C.LANGS)
+        self.ui.cb_language.setCurrentIndex(self.C.CURRENT_LANG)
+        self.ui.cb_language.currentIndexChanged.connect(self.apply_selected_language)
 
         self.ui.chk_fullscreen.setCheckState(2 if C.FULLSCREEN else 0)
         self.ui.zebra_contrast.setValue(C.DK9_COL_DIFF)
@@ -59,6 +64,12 @@ class ConfigWindow(QtWidgets.QDialog):
         # self.ui.column_width_max.setValue(C.TABLE_COLUMN_SIZE_MAX)
         # self.ui.buttonBox.button()..accept.connect(self.apply_settings())
         self.ui.buttonBox.accepted.connect(self.apply_settings)
+
+    def apply_selected_language(self):
+        self.C.CURRENT_LANG = self.ui.cb_language.currentIndex()
+        self.L.load_language()
+        self.L.translate_ConfigWindow_texts(self)
+        self.L.translate_MainWindow_texts(self.Parent)
 
     def apply_settings(self):
         print('Applying settings')
@@ -130,6 +141,7 @@ class FirstStartWindow(QtWidgets.QDialog):
         self.C.CURRENT_LANG = self.ui.cb_language.currentIndex()
         self.L.load_language()
         self.L.translate_StartWindow_texts(self)
+        self.L.translate_MainWindow_texts(self.Parent)
 
     def apply_stat(self):
         button_num = int(self.sender().objectName()[-1])

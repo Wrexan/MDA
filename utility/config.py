@@ -212,6 +212,7 @@ class Config:
             try:
                 self.DK9_LOGIN = config['WEB DATABASE']['DK9_LOGIN']
                 self.DK9_PASSWORD = config['WEB DATABASE']['DK9_PASSWORD']
+                self.CURRENT_LANG = int(config['CLIENT']['LANG'])
                 self.BRANCH = int(config['CLIENT']['BRANCH'])
                 self.FULLSCREEN = True if config['SETTINGS']['FULLSCREEN'] == 'True' else False
                 # ALWAYS FALSE
@@ -268,6 +269,7 @@ class Config:
         config['WEB DATABASE']['DK9_PASSWORD'] = str(self.DK9_PASSWORD)
 
         config['CLIENT'] = {}
+        config['CLIENT']['LANG'] = str(self.CURRENT_LANG)
         config['CLIENT']['BRANCH'] = str(self.BRANCH)
 
         config['SETTINGS'] = {}
