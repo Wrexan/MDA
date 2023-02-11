@@ -19,7 +19,7 @@ class Config:
         self.USER_CONFIG = f'{self.CONTENT_PATH}user_config.ini'
         self.HELP = f'{self.CONTENT_PATH}help_ru.txt'
 
-        self.CURRENT_LANG = 0
+        self.CURRENT_LANG = 1
         self.LANGS = None
         self.upd_langs()
 

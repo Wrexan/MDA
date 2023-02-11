@@ -59,6 +59,7 @@ class Language:
         # module.ui.frame_11.setWhatsThis(self.StartWindow["start_window", "1"])
         module.ui.label_7.setText(self.StartWindow["label_7"])
         module.ui.label_8.setText(self.StartWindow["label_8"])
+        module.ui.label_9.setText(self.StartWindow["label_9"])
         module.ui.label.setText(self.StartWindow["label"])
         module.ui.label_2.setText(self.StartWindow["label_2"])
         module.ui.pb_stat_0.setText(self.StartWindow["pb_stat_0"])
