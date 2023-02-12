@@ -32,12 +32,13 @@ class GraphWindow(QtWidgets.QDialog):
         self.available_years = {str(year): year for year in range(2023, self.year_to_show + 1)}
         # self.available_months = {month + 1: str(month_name) for month, month_name in
         #                          enumerate(self.months)}
-        self.date_to_show = f"{self.get_available_month()[self.month_to_show]} {self.year_to_show}"
+        self.date_to_show = None  # f"{self.get_available_month()[self.month_to_show]} {self.year_to_show}"
 
         self.graphs_menu = {
-            0: 'Топ за весь период',
-            1: 'График запросов по брендам',
-            2: 'График соотношения брендов'
+            0: 'Топ бренд за период',
+            1: 'Топ модель за период',
+            2: 'График запросов по брендам',
+            3: 'График соотношения брендов'
         }
         self.line_chart_Title = "Количество брендов за %s"
         self.percent_chart_Title = "Соотношение брендов за %s"
@@ -67,15 +68,18 @@ class GraphWindow(QtWidgets.QDialog):
 
     def get_available_month(self):
         return {month + 1: str(month_name) for month, month_name in
-                                 enumerate(self.months)}
+                enumerate(self.months)}
 
     def configurate_on_load(self, L):
         L.translate_graph_texts(self)
+
+        months = self.get_available_month()
+        self.date_to_show = f"{months[self.month_to_show]} {self.year_to_show}"
+
         self.ui.cb_year.addItems(self.available_years.keys())
         self.ui.cb_year.setCurrentText(str(self.year_to_show))
         self.ui.cb_year.currentIndexChanged.connect(self.reload_draw_graph)
 
-        months = self.get_available_month()
         self.ui.cb_month.addItems(months.values())
         self.ui.cb_month.setCurrentText(months[self.month_to_show])
         self.ui.cb_month.currentIndexChanged.connect(self.reload_draw_graph)
@@ -98,12 +102,18 @@ class GraphWindow(QtWidgets.QDialog):
 
     def load_month_graph(self):
         if self.current_graph_loader != self.graph_loaders['month']:
+            self.ui.sb_min.setMaximum(5)
+            self.min_req_limit = 3
+            self.ui.sb_min.setValue(self.min_req_limit)
             self.current_graph_loader = self.graph_loaders['month']
             self.date_to_show = f"{self.get_available_month()[self.month_to_show]} {self.year_to_show}"
             self.reload_draw_graph()
 
     def load_year_graph(self):
         if self.current_graph_loader != self.graph_loaders['year']:
+            self.ui.sb_min.setMaximum(15)
+            self.min_req_limit = 10
+            self.ui.sb_min.setValue(self.min_req_limit)
             self.current_graph_loader = self.graph_loaders['year']
             self.date_to_show = f"{self.year_to_show} {self.year_word}"
             self.reload_draw_graph()
@@ -157,11 +167,16 @@ class GraphWindow(QtWidgets.QDialog):
             self.ui.cb_smooth.setVisible(False)
             self.draw_donut_breakdown(self.stat_data)
         if self.current_graph == 1:
+            self.ui.sb_min.setVisible(True)
+            self.ui.lbl_min.setVisible(True)
+            self.ui.cb_smooth.setVisible(False)
+            self.draw_pie_chart(self.stat_data)
+        if self.current_graph == 2:
             self.ui.sb_min.setVisible(False)
             self.ui.lbl_min.setVisible(False)
             self.ui.cb_smooth.setVisible(True)
             self.draw_line_chart()
-        if self.current_graph == 2:
+        if self.current_graph == 3:
             self.ui.sb_min.setVisible(False)
             self.ui.lbl_min.setVisible(False)
             self.ui.cb_smooth.setVisible(False)
@@ -211,14 +226,12 @@ class GraphWindow(QtWidgets.QDialog):
                         brand_series[brand] = QSplineSeries()
                     else:
                         brand_series[brand] = QLineSeries()
-                    brand_series[brand].setName(brand)
-                    pen.setColor(QColor(*self.get_rgb_by_name(brand)))
-                    brand_series[brand].setPen(pen)
-                    brand_series[brand].hovered.connect(self.show_tip_line)
                     # brand_series[brand].setPointsVisible(True)
 
         for point in range(1, self.stat_data['period_length'] + 1):
             brand_stat = self.brand_quantity_by_points.get(point)
+            # stat_is_last = brand_stat and not self.brand_quantity_by_points.get(point + 1)
+            # print(f'{stat_is_last=}')
             if brand_stat:
                 # for point, brand_stat in self.brand_quantity_by_points.items():
                 for brand, series in brand_series.items():
@@ -226,9 +239,19 @@ class GraphWindow(QtWidgets.QDialog):
                         reqs = brand_stat[brand]
                     else:
                         reqs = 0
+                    brand_series[brand].setName(brand)
+                    pen.setColor(QColor(*self.get_rgb_by_name(brand)))
+                    brand_series[brand].setPen(pen)
+                    brand_series[brand].hovered.connect(self.show_tip_line)
+
                     brand_series[brand].append(point, reqs)
-                    if not self.smooth_graph:
-                        brand_series[brand].setPointsVisible(True)
+                    # if not self.smooth_graph:
+                    brand_series[brand].setPointsVisible(True)
+                    # if stat_is_last:
+                    # brand_series[brand].setPointLabelsVisible(True)
+                    # brand_series[brand].setPointLabelsFormat(str(stat_is_last))
+                    # brand_series[brand].setPointLabelsClipping(False)
+                    # brand_series[brand].setPointLabelsFormat("@yPoint")
 
         # self.series = QLineSeries()
         # # self.series.setPen(QPen(Qt.darkGreen, 2))
@@ -249,14 +272,15 @@ class GraphWindow(QtWidgets.QDialog):
         axis_y_length = (max_requests // 5) * 5 + 5
         axis_y = chart.axisY()
         axis_y.setRange(0, axis_y_length)
-        axis_y.setTickCount(axis_y_length)
-        axis_y.setLabelFormat("%i")
+        axis_y.setTickCount(axis_y_length / 4)
+        axis_y.setMinorTickCount(4)
+        axis_y.setLabelFormat("%d")
 
         axis_x_length = self.stat_data['period_length']
         axis_x = chart.axisX()
         axis_x.setRange(1, axis_x_length)
         axis_x.setTickCount(axis_x_length)
-        axis_x.setLabelFormat("%i")
+        axis_x.setLabelFormat("%d")
 
         # categories = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
         # cat_axis = QBarCategoryAxis()
@@ -269,6 +293,7 @@ class GraphWindow(QtWidgets.QDialog):
 
         chart.legend().setVisible(True)
         chart.legend().setAlignment(Qt.AlignBottom)
+        # chart.legend().setAlignment(Qt.AlignRight)
 
         self.current_chart_view = QChartView(chart)
         self.current_chart_view.setRenderHint(QPainter.Antialiasing)
@@ -401,6 +426,49 @@ class GraphWindow(QtWidgets.QDialog):
         height = 656
         self.current_chart_view.resize(width, height)
 
+    def draw_pie_chart(self, stat_data):
+        models_stats = {}
+        for point, brands in stat_data['points'].items():
+            for brand, models in brands.items():
+                for model, stats in models.items():
+                    model_brand = (brand, model)
+                    if not models_stats.get(model_brand):
+                        models_stats[model_brand] = 0
+                    model_quantity = sum(stats)
+                    models_stats[model_brand] += model_quantity
+
+        models_stats = \
+            dict(sorted(models_stats.items(), key=lambda x: x[1], reverse=True))
+
+        models_series = QPieSeries()
+        for i, (brand_model, overall_quantity) in enumerate(models_stats.items()):
+            if overall_quantity < self.min_req_limit or i > 20:
+                continue
+            model_slice = QPieSlice()
+            model_slice.setLabel(f'{overall_quantity} {self.units} {brand_model[0]} {brand_model[1]}')
+            model_slice.setValue(overall_quantity)
+            model_slice.setColor(QColor(*self.get_rgb_by_name(brand_model[0])))
+            model_slice.setLabelVisible()
+            label_arm_len = -0.35 + len(model_slice.label()) / 32
+            if label_arm_len > 0.3:
+                label_arm_len = 0.3
+            model_slice.setLabelArmLengthFactor(label_arm_len)
+            model_slice.hovered.connect(self.show_tip_pie)
+            models_series.append(model_slice)
+
+        chart = QChart()
+        chart.addSeries(models_series)
+        chart.setTitle(self.donut_breakdown_Title % self.date_to_show)
+        chart.legend().setAlignment(Qt.AlignRight)
+
+        self.current_chart_view = QChartView(chart)
+        self.current_chart_view.setRenderHint(QPainter.Antialiasing)
+
+        self.GRAPH_LAYOUT.addChildWidget(self.current_chart_view)
+        width = 1236
+        height = 656
+        self.current_chart_view.resize(width, height)
+
     def show_tip_line(self, state):
         part = self.sender()
         if state:
@@ -416,6 +484,17 @@ class GraphWindow(QtWidgets.QDialog):
             part.setColor(part.color().darker(150))
             self.setToolTip(f'{part.label()} - {int(part.sum())} {self.units}')
         else:
+            part.setColor(part.color().lighter(150))
+            self.setToolTip('')
+
+    def show_tip_pie(self, state):
+        part = self.sender()
+        if state:
+            # part.setExploded(True)
+            part.setColor(part.color().darker(150))
+            self.setToolTip(f'{part.label()} - {int(part.value())} {self.units}')
+        else:
+            # part.setExploded(False)
             part.setColor(part.color().lighter(150))
             self.setToolTip('')
 
