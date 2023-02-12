@@ -277,13 +277,13 @@
             <widget class="QSpinBox" name="sb_min">
              <property name="minimumSize">
               <size>
-               <width>32</width>
+               <width>40</width>
                <height>0</height>
               </size>
              </property>
              <property name="maximumSize">
               <size>
-               <width>32</width>
+               <width>40</width>
                <height>16777215</height>
               </size>
              </property>
@@ -291,6 +291,9 @@
               <font>
                <pointsize>10</pointsize>
               </font>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
              </property>
              <property name="minimum">
               <number>1</number>

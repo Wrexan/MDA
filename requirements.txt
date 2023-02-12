@@ -12,6 +12,7 @@ gevent==22.10.2
 gevent-websocket==0.10.1
 greenlet==2.0.2
 idna==3.4
+numpy==1.24.1
 pefile==2022.5.30
 pycparser==2.21
 pyinstaller==5.7.0
@@ -20,6 +21,8 @@ pyparsing==3.0.9
 PyQt5==5.15.8
 PyQt5-Qt5==5.15.2
 PyQt5-sip==12.11.1
+PyQtChart==5.15.6
+PyQtChart-Qt5==5.15.2
 pywin32==304
 pywin32-ctypes==0.2.0
 requests==2.28.2
