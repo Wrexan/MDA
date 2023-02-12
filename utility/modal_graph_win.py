@@ -441,6 +441,7 @@ class GraphWindow(QtWidgets.QDialog):
             dict(sorted(models_stats.items(), key=lambda x: x[1], reverse=True))
 
         models_series = QPieSeries()
+        models_series.setHoleSize(0.1)
         for i, (brand_model, overall_quantity) in enumerate(models_stats.items()):
             if overall_quantity < self.min_req_limit or i > 20:
                 continue
