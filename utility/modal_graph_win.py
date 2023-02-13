@@ -2,7 +2,8 @@ from datetime import datetime
 from PyQt5 import QtCore, QtWidgets
 
 from PyQt5.QtChart import QLineSeries, QChart, QChartView, QSplineSeries, QPieSeries, \
-    QPieSlice, QBarSet, QPercentBarSeries, QBarCategoryAxis, QAbstractAxis, QValueAxis
+    QPieSlice, QBarSet, QPercentBarSeries, QBarCategoryAxis, QAbstractAxis, QValueAxis, QXYLegendMarker, \
+    QBarLegendMarker
 from PyQt5.QtCore import Qt, pyqtSlot
 from PyQt5.QtGui import QPainter, QColor, QFont, QPen, QBrush
 
@@ -242,7 +243,7 @@ class GraphWindow(QtWidgets.QDialog):
                     brand_series[brand].setName(brand)
                     pen.setColor(QColor(*self.get_rgb_by_name(brand)))
                     brand_series[brand].setPen(pen)
-                    brand_series[brand].hovered.connect(self.show_tip_line)
+                    # brand_series[brand].hovered.connect(self.show_tip_line)
 
                     brand_series[brand].append(point, reqs)
                     # if not self.smooth_graph:
@@ -263,6 +264,7 @@ class GraphWindow(QtWidgets.QDialog):
         chart = QChart()
         # self.chart.legend().hide()
         for series in brand_series.values():
+            series.hovered.connect(self.show_tip_line)
             chart.addSeries(series)
         chart.createDefaultAxes()
         chart.setTitle(self.line_chart_Title % self.date_to_show)
@@ -272,7 +274,7 @@ class GraphWindow(QtWidgets.QDialog):
         axis_y_length = (max_requests // 5) * 5 + 5
         axis_y = chart.axisY()
         axis_y.setRange(0, axis_y_length)
-        axis_y.setTickCount(axis_y_length / 4)
+        axis_y.setTickCount((axis_y_length / 5) + 1)
         axis_y.setMinorTickCount(4)
         axis_y.setLabelFormat("%d")
 
@@ -293,6 +295,8 @@ class GraphWindow(QtWidgets.QDialog):
 
         chart.legend().setVisible(True)
         chart.legend().setAlignment(Qt.AlignBottom)
+        for marker in chart.legend().markers():
+            marker.hovered.connect(self.show_tip_line)
         # chart.legend().setAlignment(Qt.AlignRight)
 
         self.current_chart_view = QChartView(chart)
@@ -318,7 +322,7 @@ class GraphWindow(QtWidgets.QDialog):
                         # brush.setColor(QColor(*self.get_rgb_by_name(brand)))
                         brand_series[brand].setBrush(QColor(*self.get_rgb_by_name(brand)))
                         brand_series[brand].setLabel(brand)
-                        brand_series[brand].hovered.connect(self.show_tip_bar)
+                        # brand_series[brand].hovered.connect(self.show_tip_bar)
             else:
                 self.brand_quantity_by_points[point] = {}
 
@@ -335,7 +339,9 @@ class GraphWindow(QtWidgets.QDialog):
         series.setBarWidth(1)
         series.setLabelsAngle(90)
         # print(f'{len(brand_series.values())=}')
-        for series_set in brand_series.values():
+        for brand, series_set in brand_series.items():
+            series_set.hovered.connect(self.show_tip_bar)
+            series_set.setLabel(brand)
             series.append(series_set)
 
         chart = QChart()
@@ -367,6 +373,8 @@ class GraphWindow(QtWidgets.QDialog):
 
         chart.legend().setVisible(True)
         chart.legend().setAlignment(Qt.AlignBottom)
+        for marker in chart.legend().markers():
+            marker.hovered.connect(self.show_tip_bar)
 
         self.current_chart_view = QChartView(chart)
         self.current_chart_view.setRenderHint(QPainter.Antialiasing)
@@ -470,17 +478,37 @@ class GraphWindow(QtWidgets.QDialog):
         height = 656
         self.current_chart_view.resize(width, height)
 
-    def show_tip_line(self, state):
-        part = self.sender()
-        if state:
-            # part.setColor(part.color().darker(150))
-            self.setToolTip(part.name())
+    def show_tip_line(self, *args):
+        if len(args) == 2:
+            state = args[1]
         else:
-            # part.setColor(part.color().lighter(150))
-            self.setToolTip('')
-
-    def show_tip_bar(self, state):
+            state = args[0]
         part = self.sender()
+        if isinstance(part, QXYLegendMarker):
+            part = part.series()
+        if isinstance(part, QBarSet):
+            brand = part.label()
+        else:
+            brand = part.name()
+        if state:
+            # part.setColor(part.color().darker(300))
+            pen = QPen(part.color().darker(150))
+            pen.setWidth(3)
+            self.setToolTip(brand)
+        else:
+            pen = QPen(QColor(*self.get_rgb_by_name(brand)))
+            pen.setWidth(2)
+            # part.setColor(QColor(*self.get_rgb_by_name(part.name())))
+            self.setToolTip('')
+        part.setPen(pen)
+
+    def show_tip_bar(self, *args):
+        state = args[0]
+        part = self.sender()
+        if isinstance(part, QBarLegendMarker):
+            part = part.barset()
+            # part = part.series()
+        brand = part.label()
         if state:
             part.setColor(part.color().darker(150))
             self.setToolTip(f'{part.label()} - {int(part.sum())} {self.units}')

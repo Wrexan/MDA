@@ -190,9 +190,9 @@ class MDAS:
         # if temp found
         elif os.path.exists(f'{folder_path}{file_name_tmp}'):
             # ================================================== FOR TEST ONLY  #
-            # with open(f'{folder_path}{file_name_tmp}', 'r') as cache_file:  #
-            #     stat_data = json.load(cache_file)  #
-            # return stat_data  #
+            with open(f'{folder_path}{file_name_tmp}', 'r') as cache_file:  #
+                stat_data = json.load(cache_file)  #
+            return stat_data  #
             # ================================================== FOR TEST ONLY  #
 
             # if outdated - deleting
