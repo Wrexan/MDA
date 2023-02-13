@@ -2,7 +2,7 @@ from datetime import datetime
 from PyQt5 import QtCore, QtWidgets
 
 from PyQt5.QtChart import QLineSeries, QChart, QChartView, QSplineSeries, QPieSeries, \
-    QPieSlice, QBarSet, QPercentBarSeries, QBarCategoryAxis, QAbstractAxis, QValueAxis, QXYLegendMarker, \
+    QPieSlice, QBarSet, QPercentBarSeries, QValueAxis, QXYLegendMarker, \
     QBarLegendMarker
 from PyQt5.QtCore import Qt, pyqtSlot
 from PyQt5.QtGui import QPainter, QColor, QFont, QPen, QBrush
@@ -128,8 +128,6 @@ class GraphWindow(QtWidgets.QDialog):
                 or self.year_to_show == self.year_current and self.month_to_show > self.month_current:
             self.year_to_show = self.year_current
             self.month_to_show = self.month_current
-            # self.ui.cb_year.setCurrentText(str(self.year_to_show))
-            # self.ui.cb_month.setCurrentText([k for k, v in self.available_months.items() if v == self.month_to_show][0])
 
         self.stat_data = self.current_graph_loader(self.year_to_show, self.month_to_show)
         self.update_graph()
@@ -153,11 +151,6 @@ class GraphWindow(QtWidgets.QDialog):
         for point, brand_stat in self.stat_data['points'].items():
             self.brand_quantity_by_points[int(point)] = \
                 {model: sum(sum(v) for v in quantity.values()) for model, quantity in brand_stat.items()}
-            # _unsorted_model_quantity = \
-            #     {model: sum(sum(v) for v in quantity.values()) for model, quantity in brand_stat.items()}
-            # self.brand_quantity_by_points[int(point)] = \
-            #     dict(sorted(_unsorted_model_quantity.items(), key=lambda x: x[1], reverse=True))
-        # print(f'{self.brand_quantity_by_points=}')
 
         if self.current_chart_view:
             self.GRAPH_LAYOUT.removeWidget(self.current_chart_view)
@@ -215,8 +208,6 @@ class GraphWindow(QtWidgets.QDialog):
         pen = QPen()
         pen.setWidth(2)
 
-        # print(f'{self.brand_quantity_by_points=}')
-
         brand_series = {}
         for point, brand_stat in self.brand_quantity_by_points.items():
             for brand, quantity in brand_stat.items():
@@ -227,14 +218,10 @@ class GraphWindow(QtWidgets.QDialog):
                         brand_series[brand] = QSplineSeries()
                     else:
                         brand_series[brand] = QLineSeries()
-                    # brand_series[brand].setPointsVisible(True)
 
         for point in range(1, self.stat_data['period_length'] + 1):
             brand_stat = self.brand_quantity_by_points.get(point)
-            # stat_is_last = brand_stat and not self.brand_quantity_by_points.get(point + 1)
-            # print(f'{stat_is_last=}')
             if brand_stat:
-                # for point, brand_stat in self.brand_quantity_by_points.items():
                 for brand, series in brand_series.items():
                     if brand in brand_stat.keys():
                         reqs = brand_stat[brand]
@@ -243,26 +230,11 @@ class GraphWindow(QtWidgets.QDialog):
                     brand_series[brand].setName(brand)
                     pen.setColor(QColor(*self.get_rgb_by_name(brand)))
                     brand_series[brand].setPen(pen)
-                    # brand_series[brand].hovered.connect(self.show_tip_line)
 
                     brand_series[brand].append(point, reqs)
-                    # if not self.smooth_graph:
                     brand_series[brand].setPointsVisible(True)
-                    # if stat_is_last:
-                    # brand_series[brand].setPointLabelsVisible(True)
-                    # brand_series[brand].setPointLabelsFormat(str(stat_is_last))
-                    # brand_series[brand].setPointLabelsClipping(False)
-                    # brand_series[brand].setPointLabelsFormat("@yPoint")
-
-        # self.series = QLineSeries()
-        # # self.series.setPen(QPen(Qt.darkGreen, 2))
-        # self.series.setPen(QColor(100, 100, 200))
-        # # self.series.setBrush(Qt.green)
-        # self.series.setName('123')
-        # self.series.setPointsVisible(True)
 
         chart = QChart()
-        # self.chart.legend().hide()
         for series in brand_series.values():
             series.hovered.connect(self.show_tip_line)
             chart.addSeries(series)
@@ -284,25 +256,14 @@ class GraphWindow(QtWidgets.QDialog):
         axis_x.setTickCount(axis_x_length)
         axis_x.setLabelFormat("%d")
 
-        # categories = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
-        # cat_axis = QBarCategoryAxis()
-        # cat_axis.append(categories)
-        #
-        # # self.chart.createDefaultAxes()
-        # self.chart.setAxisX(cat_axis)
-        # # self.chart.addAxis(cat_axis, Qt.AlignBottom)
-        # # self.series.attachAxis(axis)
-
         chart.legend().setVisible(True)
         chart.legend().setAlignment(Qt.AlignBottom)
         for marker in chart.legend().markers():
             marker.hovered.connect(self.show_tip_line)
-        # chart.legend().setAlignment(Qt.AlignRight)
 
         self.current_chart_view = QChartView(chart)
         self.current_chart_view.setRenderHint(QPainter.Antialiasing)
 
-        # self.setCentralWidget(self._chart_view)
         self.GRAPH_LAYOUT.addChildWidget(self.current_chart_view)
         width = 1236
         height = 656
@@ -310,7 +271,6 @@ class GraphWindow(QtWidgets.QDialog):
 
     def draw_percent_bar_chart(self):
         brand_series = {}
-        # brush = QBrush()
         for point in range(1, self.stat_data['period_length'] + 1):
             brands = self.brand_quantity_by_points.get(point)
             if brands:
@@ -318,11 +278,8 @@ class GraphWindow(QtWidgets.QDialog):
                 for brand in brands.keys():
                     if not brand_series.get(brand):
                         brand_series[brand] = QBarSet(brand)
-                        # brand_series[brand].setName(brand)
-                        # brush.setColor(QColor(*self.get_rgb_by_name(brand)))
                         brand_series[brand].setBrush(QColor(*self.get_rgb_by_name(brand)))
                         brand_series[brand].setLabel(brand)
-                        # brand_series[brand].hovered.connect(self.show_tip_bar)
             else:
                 self.brand_quantity_by_points[point] = {}
 
@@ -338,7 +295,6 @@ class GraphWindow(QtWidgets.QDialog):
         series = QPercentBarSeries()
         series.setBarWidth(1)
         series.setLabelsAngle(90)
-        # print(f'{len(brand_series.values())=}')
         for brand, series_set in brand_series.items():
             series_set.hovered.connect(self.show_tip_bar)
             series_set.setLabel(brand)
@@ -346,30 +302,15 @@ class GraphWindow(QtWidgets.QDialog):
 
         chart = QChart()
         chart.addSeries(series)
-        # chart.createDefaultAxes()
         chart.setTitle(self.percent_chart_Title % self.date_to_show)
         chart.setAnimationOptions(QChart.SeriesAnimations)
         chart.setAnimationDuration(200)
-
-        # axis_y_length = 100
-        # axis_y = chart.axisY()
-        # axis_y.setRange(0, axis_y_length)
-        # axis_y.setTickCount(axis_y_length + 1)
-        # axis_y.setLabelFormat("%i")
-
         axis_x_length = self.stat_data['period_length']
         axis_x = QValueAxis()
         axis_x.setRange(1, axis_x_length + 1)
         axis_x.setTickCount(axis_x_length + 1)
         axis_x.setLabelFormat("%i")
         chart.setAxisX(axis_x)
-
-        # categories = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
-        # axis = QBarCategoryAxis()
-        # axis.append(categories)
-        # chart.createDefaultAxes()
-        # chart.addAxis(axis_x, Qt.AlignBottom)
-        # series.attachAxis(axis_x)
 
         chart.legend().setVisible(True)
         chart.legend().setAlignment(Qt.AlignBottom)
@@ -386,8 +327,6 @@ class GraphWindow(QtWidgets.QDialog):
 
     def draw_donut_breakdown(self, stat_data):
         donut_breakdown = DonutBreakdownChart(units=self.units)
-        # donut_breakdown.setAnimationOptions(QChart.AllAnimations)
-        # donut_breakdown.setAnimationDuration(100)
         donut_breakdown.setTitle(self.donut_breakdown_Title % self.date_to_show)
         donut_breakdown.legend().setAlignment(Qt.AlignRight)
 
@@ -403,21 +342,16 @@ class GraphWindow(QtWidgets.QDialog):
                     brands_models_stats[brand]['models'][model] += model_quantity
                     brands_models_stats[brand]['overall_quantity'] += model_quantity
         for brand, brand_stats in brands_models_stats.items():
-            # print(f'{brands_models_stats[brand]["models"]=}')
             brands_models_stats[brand]['models'] = \
                 dict(sorted(brand_stats['models'].items(), key=lambda x: x[1], reverse=True))
         brands_models_stats = \
             dict(sorted(brands_models_stats.items(), key=lambda x: x[1]['overall_quantity'], reverse=True))
-        # print(f'{brands_models_stats=}')
 
-        # print(f'{brands_models_stats=}')
         brands_models_series = {}
         for brand, models_stat in brands_models_stats.items():
             brands_models_series[brand] = QPieSeries()
             brands_models_series[brand].setName(brand)
-            # brands_models_series[brand].hovered.connect(donut_breakdown.show_tip)
             brands_models_series[brand].hovered.connect(self.show_tip)
-            # brands_models_series[brand].setPen(QColor(*self.get_rgb_by_name(brand)))
             for model, stat in models_stat['models'].items():
                 if stat < self.min_req_limit:
                     continue
@@ -428,7 +362,6 @@ class GraphWindow(QtWidgets.QDialog):
         self.current_chart_view = QChartView(donut_breakdown)
         self.current_chart_view.setRenderHint(QPainter.Antialiasing)
 
-        # self.setCentralWidget(self._chart_view)
         self.GRAPH_LAYOUT.addChildWidget(self.current_chart_view)
         width = 1236
         height = 656
@@ -491,14 +424,12 @@ class GraphWindow(QtWidgets.QDialog):
         else:
             brand = part.name()
         if state:
-            # part.setColor(part.color().darker(300))
             pen = QPen(part.color().darker(150))
             pen.setWidth(3)
             self.setToolTip(brand)
         else:
             pen = QPen(QColor(*self.get_rgb_by_name(brand)))
             pen.setWidth(2)
-            # part.setColor(QColor(*self.get_rgb_by_name(part.name())))
             self.setToolTip('')
         part.setPen(pen)
 
@@ -507,8 +438,6 @@ class GraphWindow(QtWidgets.QDialog):
         part = self.sender()
         if isinstance(part, QBarLegendMarker):
             part = part.barset()
-            # part = part.series()
-        brand = part.label()
         if state:
             part.setColor(part.color().darker(150))
             self.setToolTip(f'{part.label()} - {int(part.sum())} {self.units}')
@@ -529,7 +458,6 @@ class GraphWindow(QtWidgets.QDialog):
 
     def show_tip(self, part, state):
         if state:
-            # self.setToolTip(f'{part.label()} {(part.percentage() * 100):.1f}%')
             self.setToolTip(f'{part.label()} - {int(part.value())} {self.units}')
             part.setBrush(part.color().darker(150))
         else:
@@ -577,8 +505,6 @@ class DonutBreakdownChart(QChart):
         breakdown_series.setLabelsVisible()
 
         for pie_slice in breakdown_series.slices():
-            # pie_slice.setLabel(f'{pie_slice.label()} {pie_slice.percentage()}')
-            # pie_slice.setLabel(f'{pie_slice.label()} {pie_slice.percentage():.1f}%')
             color = QColor(color).lighter(102)
             pie_slice.color = color
             pie_slice.setBrush(color)
@@ -621,32 +547,6 @@ class DonutBreakdownChart(QChart):
 
                     markers[marker] = (m_slice.value(), series.name())
 
-                    # p = m_slice.percentage() * 100
-                    # if p < 15:
-                    #     marker.setVisible(False)
-                    #     continue
-
-                    # print(f'{self.main_series.children()[0].name=}')
-
-                    # brand_name = series.name()
-                    # brand_percent = 0
-                    # for child_series in self.main_series.children():
-                    #     if child_series.name == brand_name:
-                    #         brand_percent = child_series.percentage()
-                    #         # print(f'{brand_percent=}')
-                    #         continue
-                    # # print(f'{series.name()=}')
-                    # # print(f'{series.percentage()=}')
-                    # p = marker.slice().percentage() * brand_percent * 100
-                    # if p < 5:
-                    #     marker.setVisible(False)
-                    #     continue
-                    # marker.setLabel(f"{label} {p:.1f}%")
-                    # print(f'{series.count()=} {series.sum()=}  {series.name()} {label}')
-                    # print(f'{marker.slice().value()}')
-                    # print(f'{series.chart()=} {series.children()=} {series.slices()=} ')
-                    # marker.setLabel(f"{int(m_slice.value())} шт {m_slice.label()}")
-                    # marker.setFont(QFont("Arial", 10, 75))
         markers = dict(sorted(markers.items(), key=lambda x: x[1][0], reverse=True))
         for i, (marker, values) in enumerate(markers.items()):
             m_slice = marker.slice()
