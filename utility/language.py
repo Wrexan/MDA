@@ -28,6 +28,7 @@ class Language:
     def translate_config_texts(self, module):
         for i, elem in enumerate(self.config['PRICE_STATUSES']):
             module.PRICE_STATUSES[i] = elem
+        module.PRICE_ABSENT_ERROR_TEXT = self.config['PRICE_ABSENT']
         module.DK9_TABLE_NAMES = (*self.config['DK9_TABLE_NAMES'],)
         for i, elem in enumerate(self.config['WEB_STATUSES']):
             module.WEB_STATUSES[i] = elem

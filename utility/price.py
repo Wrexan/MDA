@@ -28,6 +28,8 @@ class Price:
                 print(f'Price loaded: {price_path_name}')
             else:
                 status.emit(self.S_NOT_FOUND)
+                error.emit((f'File not found: "*{self.C.PRICE_PARTIAL_NAME[0]}*{self.C.PRICE_PARTIAL_NAME[1]}"',
+                            f'{self.C.PRICE_ABSENT_ERROR_TEXT}'))
                 # self.NAME = f'*{self.PRICE_PARTIAL_NAME[0]}*{self.PRICE_PARTIAL_NAME[1]} file not found'
                 # self.ui.model_lable.setText('ОШИБКА! Файл "Прайс..xls" не найден')
                 # self.ui.price_name.setText('Расположите файл "Прайс..xls" на рабочем столе')
@@ -50,6 +52,7 @@ class Price:
                 for name in os.listdir(path):
                     if name[-4:] == self.C.PRICE_PARTIAL_NAME[1] and self.C.PRICE_PARTIAL_NAME[0] in name:
                         return f'{path}{name}', name
+        return None, None
 
     def approve(self):
         if self.DB:
