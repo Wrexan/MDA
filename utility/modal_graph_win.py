@@ -93,30 +93,62 @@ class GraphWindow(QtWidgets.QDialog):
 
         self.ui.rb_year.setChecked(False)
         self.ui.rb_month.setChecked(True)
+        # self.ui.cb_month.setEnabled(True)
+        # self.ui.cb_year.setDisabled(True)
 
-        self.ui.rb_year.clicked.connect(self.load_year_graph)
-        self.ui.rb_month.clicked.connect(self.load_month_graph)
+        self.ui.rb_year.clicked.connect(self.switch_graph_to_year)
+        self.ui.rb_month.clicked.connect(self.switch_graph_to_month)
 
         self.ui.sb_min.setValue(self.min_req_limit)
         self.ui.sb_min.valueChanged.connect(self.update_graph)
         # self.ui.cb_by_branches.setDisabled(True)
 
-    def load_month_graph(self):
-        if self.current_graph_loader != self.graph_loaders['month']:
-            self.ui.sb_min.setMaximum(5)
-            self.min_req_limit = 3
-            self.ui.sb_min.setValue(self.min_req_limit)
-            self.current_graph_loader = self.graph_loaders['month']
-            self.date_to_show = f"{self.get_available_month()[self.month_to_show]} {self.year_to_show}"
-            self.reload_draw_graph()
+    # def load_month_graph(self):
+    #     if self.current_graph_loader != self.graph_loaders['month']:
+    #         self.ui.cb_month.setEnabled(True)
+    #         self.ui.cb_year.setDisabled(True)
+    #         self.ui.sb_min.setMaximum(5)
+    #         self.min_req_limit = 3
+    #         self.ui.sb_min.setValue(self.min_req_limit)
+    #         self.current_graph_loader = self.graph_loaders['month']
+    #         self.date_to_show = f"{self.get_available_month()[self.month_to_show]} {self.year_to_show}"
+    #         self.reload_draw_graph()
+    #
+    # def load_year_graph(self):
+    #     if self.current_graph_loader != self.graph_loaders['year']:
+    #         self.ui.cb_year.setEnabled(True)
+    #         self.ui.cb_month.setDisabled(True)
+    #         self.ui.sb_min.setMaximum(15)
+    #         self.min_req_limit = 10
+    #         self.ui.sb_min.setValue(self.min_req_limit)
+    #         self.current_graph_loader = self.graph_loaders['year']
+    #         self.date_to_show = f"{self.year_to_show} {self.year_word}"
+    #         self.reload_draw_graph()
 
-    def load_year_graph(self):
-        if self.current_graph_loader != self.graph_loaders['year']:
-            self.ui.sb_min.setMaximum(15)
-            self.min_req_limit = 10
-            self.ui.sb_min.setValue(self.min_req_limit)
-            self.current_graph_loader = self.graph_loaders['year']
-            self.date_to_show = f"{self.year_to_show} {self.year_word}"
+    def switch_graph_to_month(self):
+        self.switch_graph_period(period='month',
+                                 elements_on=(self.ui.cb_month,), elements_off=(),
+                                 limit_max=5, limit=3,
+                                 title=f"{self.get_available_month()[self.month_to_show]} {self.year_to_show}")
+
+    def switch_graph_to_year(self):
+        self.switch_graph_period(period='year',
+                                 elements_on=(self.ui.cb_year,), elements_off=(self.ui.cb_month,),
+                                 limit_max=15, limit=10,
+                                 title=f"{self.year_to_show} {self.year_word}")
+
+    def switch_graph_period(self, period: str, elements_on: tuple, elements_off: tuple, limit_max: int, limit: int,
+                            title: str):
+        if self.current_graph_loader != self.graph_loaders[period]:
+            for elem in elements_on:
+                elem.setEnabled(True)
+            for elem in elements_off:
+                elem.setDisabled(True)
+            self.ui.sb_min.setMaximum(limit_max)
+            self.min_req_limit = limit
+            self.ui.sb_min.setValue(limit)
+            self.current_graph_loader = self.graph_loaders[period]
+            self.date_to_show = title
             self.reload_draw_graph()
 
     @pyqtSlot()
