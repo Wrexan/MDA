@@ -109,7 +109,7 @@ class Language:
     def translate_graph_texts(self, module):
         module.months = (*self.graph['months'],)
         for i, elem in enumerate(self.graph['graphs_menu']):
-            module.graphs_menu[i] = elem
+            module.graphs_menu[i]['name'] = elem
         module.line_chart_Title = self.graph['line_chart_Title']
         module.percent_chart_Title = self.graph['percent_chart_Title']
         module.donut_breakdown_Title = self.graph['donut_breakdown_Title']

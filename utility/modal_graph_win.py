@@ -1,4 +1,5 @@
 from datetime import datetime
+from numpy import average
 from PyQt5 import QtCore, QtWidgets
 
 from PyQt5.QtChart import QLineSeries, QChart, QChartView, QSplineSeries, QPieSeries, \
@@ -31,23 +32,34 @@ class GraphWindow(QtWidgets.QDialog):
         self.year_to_show = self.year_current
         self.month_to_show = self.month_current
         self.available_years = {str(year): year for year in range(2023, self.year_to_show + 1)}
-        # self.available_months = {month + 1: str(month_name) for month, month_name in
-        #                          enumerate(self.months)}
-        self.date_to_show = None  # f"{self.get_available_month()[self.month_to_show]} {self.year_to_show}"
+        self.date_to_show = None
 
-        self.graphs_menu = {
-            0: 'Топ бренд за период',
-            1: 'Топ модель за период',
-            2: 'График запросов по брендам',
-            3: 'График соотношения брендов'
-        }
+        # self.graphs_menu = {
+        #     0: 'Топ бренд за период',
+        #     1: 'Топ модель за период',
+        #     2: 'График запросов по брендам',
+        #     3: 'График соотношения брендов',
+        # }
+
+        # self.ui.sb_min, self.ui.lbl_min, self.ui.cb_smooth, run
+        self.graphs_menu = (
+            {'name': 'Топ бренд за период', 'params': (True, True, False, 0)},
+            {'name': 'Топ модель за период', 'params': (True, True, False, 1)},
+            {'name': 'Запросы по брендам', 'params': (False, False, True, 2)},
+            {'name': 'Популярность брендов', 'params': (False, False, False, 3)},
+            {'name': 'Популярность моделей', 'params': (True, True, False, 4)},
+        )
+
         self.line_chart_Title = "Количество брендов за %s"
         self.percent_chart_Title = "Соотношение брендов за %s"
         self.donut_breakdown_Title = "Топ брендов/моделей за %s"
         self.units = "шт"
         self.year_word = "год"
 
-        self.min_req_limit = 3
+        self.month_req_limit = 5
+        self.month_req_limit_max = 20
+        self.year_req_limit = 20
+        self.year_req_limit_max = 50
         self.smooth_graph = True
         self.current_graph = 0
 
@@ -85,8 +97,11 @@ class GraphWindow(QtWidgets.QDialog):
         self.ui.cb_month.setCurrentText(months[self.month_to_show])
         self.ui.cb_month.currentIndexChanged.connect(self.reload_draw_graph)
 
-        self.ui.cb_graph.addItems(self.graphs_menu.values())
-        self.ui.cb_graph.setCurrentText(self.graphs_menu[0])
+        # self.ui.cb_graph.addItems(self.graphs_menu.values())
+        # self.ui.cb_graph.setCurrentText(self.graphs_menu[0])
+
+        self.ui.cb_graph.addItems([item['name'] for item in self.graphs_menu])
+        # self.ui.cb_graph.setCurrentText(self.graphs_menu[0]['name'])
         self.ui.cb_graph.currentIndexChanged.connect(self.update_graph)
 
         self.ui.cb_smooth.stateChanged.connect(self.update_graph)
@@ -99,42 +114,21 @@ class GraphWindow(QtWidgets.QDialog):
         self.ui.rb_year.clicked.connect(self.switch_graph_to_year)
         self.ui.rb_month.clicked.connect(self.switch_graph_to_month)
 
-        self.ui.sb_min.setValue(self.min_req_limit)
+        self.ui.sb_min.setValue(self.month_req_limit)
+        self.ui.sb_min.setMaximum(self.month_req_limit_max)
         self.ui.sb_min.valueChanged.connect(self.update_graph)
         # self.ui.cb_by_branches.setDisabled(True)
-
-    # def load_month_graph(self):
-    #     if self.current_graph_loader != self.graph_loaders['month']:
-    #         self.ui.cb_month.setEnabled(True)
-    #         self.ui.cb_year.setDisabled(True)
-    #         self.ui.sb_min.setMaximum(5)
-    #         self.min_req_limit = 3
-    #         self.ui.sb_min.setValue(self.min_req_limit)
-    #         self.current_graph_loader = self.graph_loaders['month']
-    #         self.date_to_show = f"{self.get_available_month()[self.month_to_show]} {self.year_to_show}"
-    #         self.reload_draw_graph()
-    #
-    # def load_year_graph(self):
-    #     if self.current_graph_loader != self.graph_loaders['year']:
-    #         self.ui.cb_year.setEnabled(True)
-    #         self.ui.cb_month.setDisabled(True)
-    #         self.ui.sb_min.setMaximum(15)
-    #         self.min_req_limit = 10
-    #         self.ui.sb_min.setValue(self.min_req_limit)
-    #         self.current_graph_loader = self.graph_loaders['year']
-    #         self.date_to_show = f"{self.year_to_show} {self.year_word}"
-    #         self.reload_draw_graph()
 
     def switch_graph_to_month(self):
         self.switch_graph_period(period='month',
                                  elements_on=(self.ui.cb_month,), elements_off=(),
-                                 limit_max=5, limit=3,
+                                 limit_max=self.month_req_limit_max, limit=self.month_req_limit,
                                  title=f"{self.get_available_month()[self.month_to_show]} {self.year_to_show}")
 
     def switch_graph_to_year(self):
         self.switch_graph_period(period='year',
                                  elements_on=(self.ui.cb_year,), elements_off=(self.ui.cb_month,),
-                                 limit_max=15, limit=10,
+                                 limit_max=self.year_req_limit_max, limit=self.year_req_limit,
                                  title=f"{self.year_to_show} {self.year_word}")
 
     def switch_graph_period(self, period: str, elements_on: tuple, elements_off: tuple, limit_max: int, limit: int,
@@ -145,7 +139,6 @@ class GraphWindow(QtWidgets.QDialog):
             for elem in elements_off:
                 elem.setDisabled(True)
             self.ui.sb_min.setMaximum(limit_max)
-            self.min_req_limit = limit
             self.ui.sb_min.setValue(limit)
             self.current_graph_loader = self.graph_loaders[period]
             self.date_to_show = title
@@ -169,7 +162,7 @@ class GraphWindow(QtWidgets.QDialog):
         graph = self.GRAPH_SELECTOR.currentIndex()
         self.current_graph = graph
         self.smooth_graph = True if self.ui.cb_smooth.checkState() == 2 else False
-        self.min_req_limit = self.ui.sb_min.value()
+        self.month_req_limit = self.ui.sb_min.value()
         self.draw_graph()
 
     def draw_graph(self):
@@ -179,48 +172,87 @@ class GraphWindow(QtWidgets.QDialog):
         if not self.stat_data or not self.stat_data['points']:
             return
 
-        self.brand_quantity_by_points = {}
-        for point, brand_stat in self.stat_data['points'].items():
-            self.brand_quantity_by_points[int(point)] = \
-                {model: sum(sum(v) for v in quantity.values()) for model, quantity in brand_stat.items()}
-
         if self.current_chart_view:
             self.GRAPH_LAYOUT.removeWidget(self.current_chart_view)
 
-        if self.current_graph == 0:
-            self.ui.sb_min.setVisible(True)
-            self.ui.lbl_min.setVisible(True)
-            self.ui.cb_smooth.setVisible(False)
-            self.draw_donut_breakdown(self.stat_data)
-        if self.current_graph == 1:
-            self.ui.sb_min.setVisible(True)
-            self.ui.lbl_min.setVisible(True)
-            self.ui.cb_smooth.setVisible(False)
-            self.draw_pie_chart(self.stat_data)
-        if self.current_graph == 2:
-            self.ui.sb_min.setVisible(False)
-            self.ui.lbl_min.setVisible(False)
-            self.ui.cb_smooth.setVisible(True)
+        graph_settings = self.graphs_menu[self.current_graph]
+        self.ui.sb_min.setVisible(graph_settings['params'][0])
+        self.ui.lbl_min.setVisible(graph_settings['params'][1])
+        self.ui.cb_smooth.setVisible(graph_settings['params'][2])
+        if graph_settings['params'][3] == 0:
+            self.draw_donut_breakdown()
+        elif graph_settings['params'][3] == 1:
+            self.draw_pie_chart()
+        elif graph_settings['params'][3] == 2:
             self.draw_line_chart()
-        if self.current_graph == 3:
-            self.ui.sb_min.setVisible(False)
-            self.ui.lbl_min.setVisible(False)
-            self.ui.cb_smooth.setVisible(False)
+        elif graph_settings['params'][3] == 3:
             self.draw_percent_bar_chart()
+        elif graph_settings['params'][3] == 4:
+            self.draw_percent_bar_chart1()
+
+    def distribute_brands_by_time_points(self):
+        brand_quantity_by_points = {}
+        for point, brand_stat in self.stat_data['points'].items():
+            brand_quantity_by_points[int(point)] = \
+                {brand: sum(sum(v) for v in quantity.values()) for brand, quantity in brand_stat.items()}
+        return brand_quantity_by_points
+
+    def distribute_models_by_time_points(self):
+        model_quantity_by_points = {}
+        for point, brand_stat in self.stat_data['points'].items():
+            point = int(point)
+            model_quantity_by_points[point] = {}
+            for brand, model_stat in brand_stat.items():
+                for model, quantities in model_stat.items():
+                    model_quantity_by_points[point][(brand, model)] = sum(quantities)
+                    # if sum(quantities) > 1:
+                    #     model_quantity_by_points[point][f'{brand.capitalize()} {model}'] = sum(quantities)
+            # model_quantity_by_points[point] = \
+            #     dict(sorted(model_quantity_by_points[point].items(), key=lambda x: x[0]))
+        return model_quantity_by_points
 
     @staticmethod
-    def get_rgb_by_name(name):
-        brand_lower = name.lower()
-        red = int((ord(brand_lower[0]) - 97) * 9.8)
-        # g = 2 if len(name) >= 3 else -1
-        # print(f'{red=}')
-        # blue = 255 - red
-        # green = int((ord(brand_lower[g]) - 97) * 9.8)
-        # b = 1 if len(name) >= 3 else -1
-        blue = int((ord(brand_lower[1]) - 97) * 9.8)
-        green = int((ord(brand_lower[-1]) - 97) * 9.8)
-        # green = int((ord(brand_lower[-1]) - 87) * 7.08)
-        # print(f'{red=} {green=} {blue=} ')
+    def get_color_from_symbol(symbol: str):
+        result = int(symbol) * 28 if symbol.isdigit() else int((ord(symbol) - 97) * 9.8)
+        if 0 <= result <= 255:
+            return result
+        return abs(result % 255)
+
+    def get_rgb_by_name(self, name):
+        name_lower = name.lower()
+        # name_avg = int(128 - average([ord(c) for c in name_lower]))
+        red_symbol = name_lower[0]
+        green_symbol = name_lower[-1]
+        blue_symbol = name_lower[1] if len(name_lower) > 1 else name_lower[0]
+        red = self.get_color_from_symbol(red_symbol)
+        green = self.get_color_from_symbol(green_symbol)
+        blue = self.get_color_from_symbol(blue_symbol)
+        # if 0 <= green - name_avg <= 255:
+        #     green -= name_avg
+        # if 0 <= blue + name_avg <= 255:
+        #     blue += name_avg
+        # blue_symbols = []
+        # for symbol in brand_lower:
+        #     if symbol.isdigit():
+        #         blue_symbols.append(int(symbol) * 28)
+        #     else:
+        #         ascii_code = ord(symbol)
+        #         if 0 <= ascii_code <= 26:
+        #             blue_symbols.append(int((ascii_code - 97) * 9.8))
+        #         else:
+        #             blue_symbols.append(ascii_code)
+        # if symbol.isdigit():
+        #     blue_symbols.append(int(symbol) * 28)
+        # else:
+        #     ascii_code = ord(symbol)
+        #     if 0 <= ascii_code <= 26:
+        #         blue_symbols.append(int((ascii_code - 97) * 9.8))
+        #     else:
+        #         blue_symbols.append(ascii_code)
+        # print(f'{brand_lower}:{blue_symbols=}')
+        # blue = blue_symbols[int(len(blue_symbols)/2)]
+
+        # blue = 255 - int(blue_symbol) * 28 if blue_symbol.isdigit() else int((ord(blue_symbol) - 97) * 9.8)
         return red, green, blue
 
     def draw_line_chart(self):
@@ -241,6 +273,7 @@ class GraphWindow(QtWidgets.QDialog):
         pen.setWidth(2)
 
         brand_series = {}
+        self.brand_quantity_by_points = self.distribute_brands_by_time_points()
         for point, brand_stat in self.brand_quantity_by_points.items():
             for brand, quantity in brand_stat.items():
                 if quantity > max_requests:
@@ -303,6 +336,7 @@ class GraphWindow(QtWidgets.QDialog):
 
     def draw_percent_bar_chart(self):
         brand_series = {}
+        self.brand_quantity_by_points = self.distribute_brands_by_time_points()
         for point in range(1, self.stat_data['period_length'] + 1):
             brands = self.brand_quantity_by_points.get(point)
             if brands:
@@ -357,13 +391,84 @@ class GraphWindow(QtWidgets.QDialog):
         height = 656
         self.current_chart_view.resize(width, height)
 
-    def draw_donut_breakdown(self, stat_data):
+    def draw_percent_bar_chart1(self):
+        unit_series = {}
+        self.units_quantity_by_points = self.distribute_models_by_time_points()
+        top_models = self.get_top_models(self.ui.sb_min.value())
+        # print(f'{top_models=}')
+        # print(f'{self.units_quantity_by_points=}')
+        unit_names = set()
+        for units_at_point in self.units_quantity_by_points.values():
+            unit_names.update(unit_name for unit_name in units_at_point.keys() if unit_name in top_models)
+        unit_names = sorted(unit_names, reverse=True)
+        # print(f'{unit_names=}')
+        for unit in unit_names:
+            if not unit_series.get(unit):
+                unit_name = f'{unit[0]} {unit[1]}'
+                unit_series[unit] = QBarSet(unit_name)
+                unit_series[unit].setBrush(QColor(*self.get_rgb_by_name(unit[1])))
+                # print(f'{unit[1]} {unit_series[unit].label()}: {self.get_rgb_by_name(unit[1])=}')
+                # unit_series[unit].setLabel(unit_name)
+                # print(f'{unit_series[unit].label()=}')
+
+        for point in range(1, self.stat_data['period_length'] + 1):
+            if not self.units_quantity_by_points.get(point):
+                self.units_quantity_by_points[point] = {}
+
+        for point in range(1, self.stat_data['period_length'] + 1):
+            unit_stat = self.units_quantity_by_points.get(point)
+            # if not unit_stat:
+            #     continue
+            for unit, series in unit_series.items():
+                if unit in unit_stat.keys():
+            # for unit, series in unit_stat.items():
+            #     if unit in unit_series.keys():
+                    reqs = unit_stat[unit]
+                else:
+                    reqs = 0
+                unit_series[unit].append(float(reqs))
+
+        series = QPercentBarSeries()
+        series.setBarWidth(1)
+        series.setLabelsAngle(-90)
+        series.setLabelsVisible(True)
+        for unit, series_set in unit_series.items():
+            series_set.hovered.connect(self.show_tip_bar)
+            series_set.setLabel(f'{unit[0]} {unit[1]}')
+            series.append(series_set)
+
+        chart = QChart()
+        chart.addSeries(series)
+        chart.setTitle(self.percent_chart_Title % self.date_to_show)
+        chart.setAnimationOptions(QChart.SeriesAnimations)
+        chart.setAnimationDuration(200)
+        axis_x_length = self.stat_data['period_length']
+        axis_x = QValueAxis()
+        axis_x.setRange(1, axis_x_length + 1)
+        axis_x.setTickCount(axis_x_length + 1)
+        axis_x.setLabelFormat("%i")
+        chart.setAxisX(axis_x)
+
+        chart.legend().setVisible(True)
+        chart.legend().setAlignment(Qt.AlignBottom)
+        for marker in chart.legend().markers():
+            marker.hovered.connect(self.show_tip_bar)
+
+        self.current_chart_view = QChartView(chart)
+        self.current_chart_view.setRenderHint(QPainter.Antialiasing)
+
+        self.GRAPH_LAYOUT.addChildWidget(self.current_chart_view)
+        width = 1236
+        height = 656
+        self.current_chart_view.resize(width, height)
+
+    def draw_donut_breakdown(self):
         donut_breakdown = DonutBreakdownChart(units=self.units)
         donut_breakdown.setTitle(self.donut_breakdown_Title % self.date_to_show)
         donut_breakdown.legend().setAlignment(Qt.AlignRight)
 
         brands_models_stats = {}
-        for point, brands in stat_data['points'].items():
+        for point, brands in self.stat_data['points'].items():
             for brand, models in brands.items():
                 if not brands_models_stats.get(brand):
                     brands_models_stats[brand] = {'overall_quantity': 0, 'models': {}}
@@ -385,7 +490,7 @@ class GraphWindow(QtWidgets.QDialog):
             brands_models_series[brand].setName(brand)
             brands_models_series[brand].hovered.connect(self.show_tip)
             for model, stat in models_stat['models'].items():
-                if stat < self.min_req_limit:
+                if stat < self.month_req_limit:
                     continue
                 brands_models_series[brand].append(model, stat)
             donut_breakdown.add_breakdown_series(
@@ -399,25 +504,11 @@ class GraphWindow(QtWidgets.QDialog):
         height = 656
         self.current_chart_view.resize(width, height)
 
-    def draw_pie_chart(self, stat_data):
-        models_stats = {}
-        for point, brands in stat_data['points'].items():
-            for brand, models in brands.items():
-                for model, stats in models.items():
-                    model_brand = (brand, model)
-                    if not models_stats.get(model_brand):
-                        models_stats[model_brand] = 0
-                    model_quantity = sum(stats)
-                    models_stats[model_brand] += model_quantity
-
-        models_stats = \
-            dict(sorted(models_stats.items(), key=lambda x: x[1], reverse=True))
-
+    def draw_pie_chart(self):
+        models_stats = self.get_top_models(20)
         models_series = QPieSeries()
         models_series.setHoleSize(0.1)
-        for i, (brand_model, overall_quantity) in enumerate(models_stats.items()):
-            if overall_quantity < self.min_req_limit or i > 20:
-                continue
+        for brand_model, overall_quantity in models_stats.items():
             model_slice = QPieSlice()
             model_slice.setLabel(f'{overall_quantity} {self.units} {brand_model[0]} {brand_model[1]}')
             model_slice.setValue(overall_quantity)
@@ -495,6 +586,27 @@ class GraphWindow(QtWidgets.QDialog):
         else:
             self.setToolTip('')
             part.setBrush(part.color().lighter(150))
+
+    def get_top_models(self, quantity: int) -> dict:
+        models_stats = {}
+        for point, brands in self.stat_data['points'].items():
+            for brand, models in brands.items():
+                for model, stats in models.items():
+                    model_brand = (brand, model)
+                    if not models_stats.get(model_brand):
+                        models_stats[model_brand] = 0
+                    model_quantity = sum(stats)
+                    models_stats[model_brand] += model_quantity
+
+        models_stats = \
+            dict(sorted(models_stats.items(), key=lambda x: x[1], reverse=True))
+        top_models = {}
+        for i, (brand_model, overall_quantity) in enumerate(models_stats.items()):
+            # if overall_quantity < self.month_req_limit or i > 20:
+            top_models[brand_model] = overall_quantity
+            if i >= quantity - 1:
+                break
+        return top_models
 
 
 class DonutBreakdownChart(QChart):
