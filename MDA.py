@@ -72,13 +72,24 @@ class App(QMainWindow):
         self.ui = Ui_MainWindow()
         # self.ui = MainUI()
         self.ui.setupUi(self)
-        self.model_list_widget = QListWidget()
         self.dk9_request_label = QLabel()
         self.work_cost_label = QLabel()
 
         self.search_input = SearchInput(self)
         self.search_input.setParent(self.ui.frame_3)
         self.ui.search_layout.addWidget(self.search_input)
+
+        self.model_list_widget = QTableWidget()#QListWidget()
+        self.model_list_widget.setColumnCount(2)
+        # self.model_list_widget.setHorizontalHeaderLabels('f')
+        self.model_list_widget.verticalHeader().hide()
+        self.model_list_widget.horizontalHeader().hide()
+        widget_width = self.search_input.width()
+        self.model_list_widget.setMaximumWidth(widget_width)
+        column_0_width = int(widget_width * 0.9)
+        self.model_list_widget.setColumnWidth(0, column_0_width)
+        self.model_list_widget.setColumnWidth(1, widget_width - column_0_width - 2)
+        self.model_list_widget.setHorizontalScrollBarPolicy(1)  # Allways off
 
         L.Parent = self.ui
         L.apply_lang()
@@ -117,10 +128,11 @@ class App(QMainWindow):
         # self.curr_manufacturers: tuple = ()
         self.curr_type: str = ''
         self.curr_model: str = ''  # --------------------------------------
-        self.curr_model_idx: int = 0
+        # self.curr_model_idx: int = 0
         self.curr_description: str = ''
         self.recursor = ' -> '
 
+        self.statify_next_request: bool = False
         self.search_req_ruled: str = ''
         self.search_again = False
         # self.old_search = ''
@@ -255,19 +267,19 @@ class App(QMainWindow):
         self.work_cost_label.setFont(self.ui_font_bold)
 
         self.model_list_widget.setStyleSheet(
-            "QListView::item"
+            "QTableWidget::item"
             "{"
             # "background: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 0, stop: 0 lightgreen, stop: 1 #DCF1DE);"
             "border: 1px solid #ffffff;"
             # "background-color : lightgreen;"
             "}"
-            "QListView::item:hover"
+            "QTableWidget::item:hover"
             "{"
             "background: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 0, stop: 0 lightgreen, stop: 1 #DCF1DE);"
             # "border: 1px solid #6a6ea9;"
             # "background-color : lightgreen;"
             "}"
-            "QListView::item:selected"
+            "QTableWidget::item:selected"
             "{"
             "background: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 0, stop: 0 #b5BfF3, stop: 1 #E5E8F9);"
             "border: 1px solid #6a6ea9;"
@@ -492,9 +504,22 @@ class App(QMainWindow):
             self.model_list_widget.hide()
         else:
             self.model_list_widget.clear()
-            self.model_list_widget.addItems(models_list)
-            self.model_list_widget.setCurrentRow(0)
-            self.model_list_widget.setFixedHeight(self.model_list_widget.sizeHintForRow(0) * (size + 1))
+            # self.model_list_widget.items.addItems(models_list)
+            self.model_list_widget.setRowCount(size)
+            row_height = 24
+            for row, model_ in enumerate(models_list):
+                link_stat_1 = QTableWidgetItem(model_)
+                link_stat_1.setData(1, model_)
+                link_stat_2 = QTableWidgetItem('')
+                link_stat_2.setData(1, model_)
+                self.model_list_widget.setItem(row, 0, link_stat_1)
+                self.model_list_widget.setItem(row, 1, link_stat_2)
+                self.model_list_widget.setRowHeight(row, row_height)
+                # self.model_list_widget.item(row, 0).setStyleSheet(self.model_list_widget_style)
+            # self.model_list_widget.setCurrentRow(0)
+            self.model_list_widget.setCurrentCell(0, 0)
+            self.model_list_widget.setFixedHeight((row_height * size) + 2)
+            # self.model_list_widget.setFixedHeight(self.model_list_widget.sizeHintForRow(0) * (size + 1))
 
     def upd_model_buttons(self, model_names):
         lay = self.ui.lay_model_buttons
@@ -509,11 +534,11 @@ class App(QMainWindow):
             if num == 0:
                 self.model_buttons[num].setDefault(True)
                 # self.curr_model = model
-                if self.web_status == 2:
-                    if DK9.LOGIN_SUCCESS:
-                        self.search_dk9()
-                else:
-                    self.login_dk9()
+                # if self.web_status == 2:
+                #     if DK9.LOGIN_SUCCESS:
+                #         self.search_dk9()
+                # else:
+                #     self.login_dk9()
             lay.addWidget(self.model_buttons[num], 0)
             le -= 1
         sp = QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -527,9 +552,15 @@ class App(QMainWindow):
             self.ui.price_status.setText(self.Price.NAME)
         # print(f'{self.price_status=}')
 
+    def schedule_statify(self, item):
+        self.statify_next_request = True
+        self.scheduler(item)
+
     # @QtCore.pyqtSlot
     def scheduler(self, item):
-        text_lower: str = item.text().lower()
+        if item.text():
+            self.statify_next_request = True
+        text_lower: str = item.data(1).lower()
         text_lower_orig = text_lower[:]
         # print(f'Scheduler: {text_lower=}')
         for i in range(len(text_lower) - 2):
@@ -574,6 +605,7 @@ class App(QMainWindow):
             self.curr_model = models_for_buttons[0]
         else:
             self.curr_model = self.search_req_ruled
+        self.search_dk9_or_login()
         self.upd_models_list(clear=True)
         self.upd_model_buttons(models_for_buttons)
         self.update_price_table(text_lower_orig, recursive_model)
@@ -598,10 +630,19 @@ class App(QMainWindow):
         print('Starting thread to read price')
         self.thread.start(self.file_io_worker, priority=QtCore.QThread.Priority.HighestPriority)
 
+    # @QtCore.pyqtSlot
     def search_dk9_by_button(self):
         self.curr_model = self.sender().text()
         # print(f'SEARCH BY BUTTON: {self.curr_model}')
-        self.search_dk9()
+        self.search_dk9_or_login()
+
+    # @QtCore.pyqtSlot
+    def search_dk9_or_login(self):
+        if self.web_status == 2:
+            if DK9.LOGIN_SUCCESS:
+                self.search_dk9()
+        else:
+            self.login_dk9()
 
     def search_dk9(self, advanced: dict = None):
         # Auto reset filter on search
@@ -631,20 +672,23 @@ class App(QMainWindow):
                 self.search_again = False
 
             # ===========================  statistic  ==============================
-            elif C.BRANCH > 0 and manufacturer and self.curr_model:
+            elif manufacturer and self.curr_model and self.statify_next_request:  # -----test
+            # elif C.BRANCH > 0 and manufacturer and self.curr_model and self.statify_next_request:  # +++++prod
                 # print(f'SCHEDULE TO SEND: {C.BRANCH} {manufacturer} {self.curr_model}')
+                print(f'Add request to statistic: {self.curr_model}')
+                self.statify_next_request = False
                 self.stat_send_timer.stop()
-                cache_full = MDAS.cache_item(branch=C.BRANCH, brand=manufacturer, model=self.curr_model)
-                # self.stat_send_scheduled = True
-                if cache_full == 0:  # Not full - standard delay
-                    self.stat_send_timer.start(C.STAT_CACHE_DELAY)
-                elif cache_full == 1:  # Full+ - time to send
-                    self.stat_send_timer.stop()
-                    signals = WorkerSignals()
-                    signals.finished.connect(self.stat_send_finished)
-                    self.request_worker.add_task(MDAS.send_statistic_cache, signals, 1)
-                else:  # Overflowing or STOPPED Overflow - no connection to stat server, longer delay
-                    self.stat_send_timer.start(C.STAT_RESEND_DELAY)
+                # cache_full = MDAS.cache_item(branch=C.BRANCH, brand=manufacturer, model=self.curr_model)  # +++++prod
+                # # self.stat_send_scheduled = True
+                # if cache_full == 0:  # Not full - standard delay
+                #     self.stat_send_timer.start(C.STAT_CACHE_DELAY)
+                # elif cache_full == 1:  # Full+ - time to send
+                #     self.stat_send_timer.stop()
+                #     signals = WorkerSignals()
+                #     signals.finished.connect(self.stat_send_finished)
+                #     self.request_worker.add_task(MDAS.send_statistic_cache, signals, 1)
+                # else:  # Overflowing or STOPPED Overflow - no connection to stat server, longer delay
+                #     self.stat_send_timer.start(C.STAT_RESEND_DELAY)
 
             # ===========================  search in dk9  ==============================
             self.dk9_request_label.setText(self.curr_model)
@@ -1406,7 +1450,8 @@ class SearchInput(QLineEdit):
                 idx = self.app.model_list_widget.currentRow() - 1
                 if idx < 0:
                     idx = len(self.app.models[self.app.curr_manufacturer]) - 1
-                self.app.model_list_widget.setCurrentRow(idx)
+                # self.app.model_list_widget.setCurrentRow(idx)
+                self.app.model_list_widget.setCurrentCell(idx, 0)
 
             elif event.key() == Qt.Key_Down:
                 if self.app.model_list_widget.isHidden():
@@ -1415,7 +1460,14 @@ class SearchInput(QLineEdit):
                 idx = self.app.model_list_widget.currentRow() + 1
                 if idx > len(self.app.models[self.app.curr_manufacturer]) - 1:
                     idx = 0
-                self.app.model_list_widget.setCurrentRow(idx)
+                # self.app.model_list_widget.setCurrentRow(idx)
+                self.app.model_list_widget.setCurrentCell(idx, 0)
+
+            elif event.key() == Qt.Key_Shift:
+                # self.app.model_list_widget.setCurrentRow(idx)
+                self.app.model_list_widget.setCurrentCell(
+                    self.app.model_list_widget.currentRow(),
+                    abs(1 - self.app.model_list_widget.currentColumn()))
 
         if event.key() == Qt.Key_Right:
             self.app.upd_manufacturer_wheel(increment=1)
