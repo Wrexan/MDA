@@ -69,6 +69,9 @@ class GraphWindow(QtWidgets.QDialog):
         self.stat_data = None
         self.current_chart_view = None
 
+        # self.legend_font = QFont('Arial', 8, 75)
+        # self.legend_font_bold = QFont('Arial', 8, 90)
+
         self.graph_loaders = {
             'month': self.MDAS.load_month_statistic,
             'year': self.MDAS.load_year_statistic,
@@ -308,10 +311,11 @@ class GraphWindow(QtWidgets.QDialog):
         chart.setAnimationOptions(QChart.SeriesAnimations)
         chart.setAnimationDuration(200)
 
-        axis_y_length = (max_requests // 5) * 5 + 5
+        min_requests_ticks = (max_requests // 100) * 5 + 5
+        axis_y_length = (max_requests // min_requests_ticks) * min_requests_ticks + min_requests_ticks
         axis_y = chart.axisY()
         axis_y.setRange(0, axis_y_length)
-        axis_y.setTickCount((axis_y_length / 5) + 1)
+        axis_y.setTickCount((axis_y_length / min_requests_ticks) + 1)
         axis_y.setMinorTickCount(4)
         axis_y.setLabelFormat("%d")
 
@@ -322,7 +326,7 @@ class GraphWindow(QtWidgets.QDialog):
         axis_x.setLabelFormat("%d")
 
         chart.legend().setVisible(True)
-        chart.legend().setAlignment(Qt.AlignBottom)
+        chart.legend().setAlignment(Qt.AlignRight)
         for marker in chart.legend().markers():
             marker.hovered.connect(self.show_tip_line)
 
@@ -379,7 +383,7 @@ class GraphWindow(QtWidgets.QDialog):
         chart.setAxisX(axis_x)
 
         chart.legend().setVisible(True)
-        chart.legend().setAlignment(Qt.AlignBottom)
+        chart.legend().setAlignment(Qt.AlignRight)
         for marker in chart.legend().markers():
             marker.hovered.connect(self.show_tip_bar)
 
@@ -400,7 +404,7 @@ class GraphWindow(QtWidgets.QDialog):
         unit_names = set()
         for units_at_point in self.units_quantity_by_points.values():
             unit_names.update(unit_name for unit_name in units_at_point.keys() if unit_name in top_models)
-        unit_names = sorted(unit_names, reverse=True)
+        unit_names = sorted(unit_names, reverse=False)
         # print(f'{unit_names=}')
         for unit in unit_names:
             if not unit_series.get(unit):
@@ -450,7 +454,7 @@ class GraphWindow(QtWidgets.QDialog):
         chart.setAxisX(axis_x)
 
         chart.legend().setVisible(True)
-        chart.legend().setAlignment(Qt.AlignBottom)
+        chart.legend().setAlignment(Qt.AlignRight)
         for marker in chart.legend().markers():
             marker.hovered.connect(self.show_tip_bar)
 
@@ -695,7 +699,7 @@ class DonutBreakdownChart(QChart):
         for i, (marker, values) in enumerate(markers.items()):
             m_slice = marker.slice()
             marker.setLabel(f"{int(values[0])} {self.units} {values[1]} {m_slice.label()}")
-            marker.setFont(QFont("Arial", 10, 75))
+            marker.setFont(QFont("Arial", 8, 75))
             if i >= 19:
                 marker.setVisible(False)
 
