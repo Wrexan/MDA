@@ -383,6 +383,7 @@ class GraphWindow(QtWidgets.QDialog):
         chart.setAxisX(axis_x)
 
         chart.legend().setVisible(True)
+        chart.legend().setReverseMarkers(True)
         chart.legend().setAlignment(Qt.AlignRight)
         for marker in chart.legend().markers():
             marker.hovered.connect(self.show_tip_bar)
@@ -404,7 +405,7 @@ class GraphWindow(QtWidgets.QDialog):
         unit_names = set()
         for units_at_point in self.units_quantity_by_points.values():
             unit_names.update(unit_name for unit_name in units_at_point.keys() if unit_name in top_models)
-        unit_names = sorted(unit_names, reverse=False)
+        unit_names = sorted(unit_names, reverse=True)
         # print(f'{unit_names=}')
         for unit in unit_names:
             if not unit_series.get(unit):
@@ -425,8 +426,8 @@ class GraphWindow(QtWidgets.QDialog):
             #     continue
             for unit, series in unit_series.items():
                 if unit in unit_stat.keys():
-            # for unit, series in unit_stat.items():
-            #     if unit in unit_series.keys():
+                    # for unit, series in unit_stat.items():
+                    #     if unit in unit_series.keys():
                     reqs = unit_stat[unit]
                 else:
                     reqs = 0
@@ -454,6 +455,7 @@ class GraphWindow(QtWidgets.QDialog):
         chart.setAxisX(axis_x)
 
         chart.legend().setVisible(True)
+        chart.legend().setReverseMarkers(True)
         chart.legend().setAlignment(Qt.AlignRight)
         for marker in chart.legend().markers():
             marker.hovered.connect(self.show_tip_bar)
