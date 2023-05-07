@@ -13,6 +13,7 @@ from datetime import datetime, timezone, timedelta
 class MDAS:
     def __init__(self, config):
         self.C = config
+        self.error = None
         self.current_date = self.get_current_date()
 
         self.cache_to_send = []
@@ -78,16 +79,10 @@ class MDAS:
         """Returns: unpacked_data =
         {'year': 2023, 'month': 2, 'days': {
         1: {'Xiaomi': {'mi8': [1, 2, 3], 'mi11': [5, 0, 1]}, ...},"""
-        request = requests.get(url=f'{self.C.MDAS_URL}year-month/{year}-{month}',
-                               headers={self.C.MDAS_HEADER: self.get_mdas_token()})
-        print(request.status_code)
-        if request.status_code == 200:
-            raw_data: dict = json.loads(request.content)
-            if raw_data.get('statusCode') == 200 and raw_data.get('body'):
-                unpacked_data = self.unpack_statistic_data(raw_data['body'])
-                # print(unpacked_data)
-                return unpacked_data
-        print(f'{request.content=}')
+        status_code, raw_data = self.request_statistic(url=f'{self.C.MDAS_URL}year-month/{year}-{month}')
+        if status_code == 200 and raw_data:
+            return self.unpack_statistic_data(raw_data['body'])
+        print(f'ERROR: {status_code=} {raw_data=}')
 
     # =======================================================================
     # ===========================  GET by YEAR  ============================
@@ -96,16 +91,45 @@ class MDAS:
         """Returns: unpacked_data =
         {'year': 2023, 'months': {
         1: {'Xiaomi': {'mi8': [1, 2, 3], 'mi11': [5, 0, 1]}, ...},"""
-        request = requests.get(url=f'{self.C.MDAS_URL}year/{year}',
-                               headers={self.C.MDAS_HEADER: self.get_mdas_token()})
-        print(f'{request.status_code=}')
-        if request.status_code == 200:
-            raw_data: dict = json.loads(request.content)
+        status_code, raw_data = self.request_statistic(url=f'{self.C.MDAS_URL}year/{year}')
+        if status_code == 200 and raw_data:
+            return self.unpack_archive_data(raw_data['body'])
+        print(f'ERROR: {status_code=} {raw_data=}')
+
+    # =======================================================================
+    # ===============================  GET  =================================
+    # =======================================================================
+    def request_statistic(self, url: str) -> (int, dict):
+        """Returns: unpacked_data =
+        {'year': 2023, 'month': 2, 'days': {
+        1: {'Xiaomi': {'mi8': [1, 2, 3], 'mi11': [5, 0, 1]}, ...},"""
+        status_code: int = 0
+        raw_data: dict = {}
+        try:
+            request = requests.get(url=url, headers={self.C.MDAS_HEADER: self.get_mdas_token()})
+            status_code = request.status_code
+        except Exception as _err:
+            self.error((f'Connection error\n'
+                        f'Try to check statistic later.',
+                        f'{_err}'))
+            return status_code, raw_data
+
+        print(status_code)
+        if status_code == 200:
+            try:
+                raw_data = json.loads(request.content)
+            except Exception as _err:
+                self.error((f'Data error\n'
+                            f'Receiving wrong data from server. Try to check statistic later.',
+                            f'{_err}'))
+                return status_code, raw_data
             if raw_data.get('statusCode') == 200 and raw_data.get('body'):
-                unpacked_data = self.unpack_archive_data(raw_data['body'])
-                # print(unpacked_data)
-                return unpacked_data
-        print(f'{request.content=}')
+                return status_code, raw_data
+            else:
+                self.error((f'Data error\n'
+                            f'Receiving wrong data from server.',
+                            f'Try to check statistic later.'))
+        return status_code, raw_data
 
     # =======================================================================
     # ===============================  PUT  =================================

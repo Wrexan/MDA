@@ -93,6 +93,7 @@ class App(QMainWindow):
 
         L.Parent = self.ui
         L.apply_lang()
+        MDAS.error = self.error
 
         self.freeze_ui_update = True
 
