@@ -32,6 +32,8 @@ class Language:
         module.DK9_TABLE_NAMES = (*self.config['DK9_TABLE_NAMES'],)
         for i, elem in enumerate(self.config['WEB_STATUSES']):
             module.WEB_STATUSES[i] = elem
+        for i, elem in enumerate(self.config['MDAS_DATA_HANDLE_MSGS']):
+            module.MDAS_DATA_HANDLE_MSGS[i] = elem
 
     def translate_MainWindow_texts(self, module):
         module.help.setText(self.MainWindow["help"])

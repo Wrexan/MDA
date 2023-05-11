@@ -1,12 +1,10 @@
 from datetime import datetime
-from numpy import average
 from PyQt5 import QtCore, QtWidgets
 
 from PyQt5.QtChart import QLineSeries, QChart, QChartView, QSplineSeries, QPieSeries, \
-    QPieSlice, QBarSet, QPercentBarSeries, QValueAxis, QXYLegendMarker, \
-    QBarLegendMarker
+    QPieSlice, QBarSet, QPercentBarSeries, QValueAxis, QXYLegendMarker, QBarLegendMarker
 from PyQt5.QtCore import Qt, pyqtSlot
-from PyQt5.QtGui import QPainter, QColor, QFont, QPen, QBrush
+from PyQt5.QtGui import QPainter, QColor, QFont, QPen
 
 from UI.window_graphs import Ui_Dialog as GraphDialog
 

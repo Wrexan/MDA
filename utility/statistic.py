@@ -109,8 +109,7 @@ class MDAS:
             request = requests.get(url=url, headers={self.C.MDAS_HEADER: self.get_mdas_token()})
             status_code = request.status_code
         except Exception as _err:
-            self.error((f'Connection error\n'
-                        f'Try to check statistic later.',
+            self.error((self.C.MDAS_DATA_HANDLE_MSGS['Connection error'],
                         f'{_err}'))
             return status_code, raw_data
 
@@ -119,16 +118,14 @@ class MDAS:
             try:
                 raw_data = json.loads(request.content)
             except Exception as _err:
-                self.error((f'Data error\n'
-                            f'Receiving wrong data from server. Try to check statistic later.',
+                self.error((self.C.MDAS_DATA_HANDLE_MSGS['Data error'],
                             f'{_err}'))
                 return status_code, raw_data
             if raw_data.get('statusCode') == 200 and raw_data.get('body'):
                 return status_code, raw_data
             else:
-                self.error((f'Data error\n'
-                            f'Receiving wrong data from server.',
-                            f'Try to check statistic later.'))
+                self.error((self.C.MDAS_DATA_HANDLE_MSGS['Data error'],
+                            f'Code: {status_code}'))
         return status_code, raw_data
 
     # =======================================================================

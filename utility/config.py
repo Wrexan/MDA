@@ -174,6 +174,14 @@ class Config:
             'я': 'z', 'ч': 'x', 'с': 'c', 'м': 'v', 'и': 'b', 'т': 'n', 'ь': 'm', 'б': ',', 'ю': '.',  # '.': '/',
             'ї': ']', 'і': 's', 'є': "'",
         }
+        self.MDAS_DATA_HANDLE_MSGS = {
+            'Data error':
+                f'Data error\n'
+                f'Receiving wrong data from server. Try to check statistic later.',
+            'Connection error':
+                f'Connection error\n'
+                f'Server not responding. Try to check statistic later.'
+        }
 
         # self.UPDATE_FOLDER = '1JauaFxPrsksy3cuYiQ-VKoz3tv2dpO0x'
 

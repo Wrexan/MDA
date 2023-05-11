@@ -16,7 +16,7 @@ os.add_dll_directory(os.getcwd())
 # print(f'{os.path=}')
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, QMenu, QTableWidget, \
-    QHeaderView, qApp, QMessageBox, QListWidget, QSizePolicy, QLineEdit, QSpacerItem, QPushButton, QLabel, QStyleFactory
+    QHeaderView, qApp, QMessageBox, QSizePolicy, QLineEdit, QSpacerItem, QPushButton, QLabel, QStyleFactory
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import Qt, QEvent
 
