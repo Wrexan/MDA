@@ -79,7 +79,7 @@ class App(QMainWindow):
         self.search_input.setParent(self.ui.frame_3)
         self.ui.search_layout.addWidget(self.search_input)
 
-        self.model_list_widget = QTableWidget()#QListWidget()
+        self.model_list_widget = QTableWidget()  # QListWidget()
         self.model_list_widget.setColumnCount(2)
         # self.model_list_widget.setHorizontalHeaderLabels('f')
         self.model_list_widget.verticalHeader().hide()
@@ -234,9 +234,9 @@ class App(QMainWindow):
         self.ui.table_price.setFont(self.tab_font)
         self.ui.table_parts.setFont(self.tab_font)
         self.ui.table_accesory.setFont(self.tab_font)
-        self.ui.pt_cash_name.setFont(self.tab_font)
-        self.ui.pt_cash_descr.setFont(self.tab_font)
-        self.ui.pt_cash_price.setFont(self.tab_font)
+        self.ui.le_cash_name.setFont(self.tab_font)
+        self.ui.le_cash_descr.setFont(self.tab_font)
+        self.ui.le_cash_price.setFont(self.tab_font)
         self._update_dk9_tooltip(tab_widget=self.ui.tab_widget,
                                  num=0, tab_names=C.DK9_TABLE_NAMES, count_1=0, count_2=0)
         self._update_dk9_tooltip(tab_widget=self.ui.tab_widget,
@@ -314,19 +314,19 @@ class App(QMainWindow):
 
         self.ui.table_accesory.setStyleSheet(self.default_web_table_stylesheet)
 
-        self.ui.pt_cash_name.setStyleSheet(
-            "QPlainTextEdit"
-            "{selection-background-color: #b5BfF3;"
-            # "selection-color:white;"
-            "}")
-
-        self.ui.pt_cash_price.setStyleSheet(
-            "QPlainTextEdit"
-            "{selection-background-color: #b5BfF3;}")
-
-        self.ui.pt_cash_descr.setStyleSheet(
-            "QPlainTextEdit"
-            "{selection-background-color: #b5BfF3;}")
+        # self.ui.le_cash_name.setStyleSheet(
+        #     "QPlainTextEdit"
+        #     "{selection-background-color: #b5BfF3;"
+        #     # "selection-color:white;"
+        #     "}")
+        #
+        # self.ui.le_cash_price.setStyleSheet(
+        #     "QPlainTextEdit"
+        #     "{selection-background-color: #b5BfF3;}")
+        #
+        # self.ui.le_cash_descr.setStyleSheet(
+        #     "QPlainTextEdit"
+        #     "{selection-background-color: #b5BfF3;}")
 
     # =============================================================================================================
 
@@ -674,7 +674,7 @@ class App(QMainWindow):
 
             # ===========================  statistic  ==============================
             elif manufacturer and self.curr_model and self.statify_next_request:  # -----test
-            # elif C.BRANCH > 0 and manufacturer and self.curr_model and self.statify_next_request:  # +++++prod
+                # elif C.BRANCH > 0 and manufacturer and self.curr_model and self.statify_next_request:  # +++++prod
                 # print(f'SCHEDULE TO SEND: {C.BRANCH} {manufacturer} {self.curr_model}')
                 print(f'Add request to statistic: {self.curr_model}')
                 self.statify_next_request = False
@@ -724,8 +724,8 @@ class App(QMainWindow):
     def get_dk9_search_signals(self):
         signals = WorkerSignals()
         signals.result.connect(self.update_dk9_data)
-        signals.progress.connect(self.load_progress)
-        signals.finished.connect(self.thread_finished)
+        signals.progress.connect(self.web_progress_bar)
+        signals.finished.connect(self.web_progress_bar)
         signals.error.connect(self.error)
         signals.status.connect(self.update_web_status)
         return signals
@@ -733,14 +733,14 @@ class App(QMainWindow):
     def login_dk9(self):
         self.request_worker = Worker()
         signals = WorkerSignals()
-        signals.progress.connect(self.load_progress)
+        signals.progress.connect(self.web_progress_bar)
         signals.status.connect(self.update_web_status)
         signals.error.connect(self.error)
         if self.curr_model:
             self.search_again = True
             signals.finished.connect(self.search_dk9)
         else:
-            signals.finished.connect(self.thread_finished)
+            signals.finished.connect(self.web_progress_bar)
         print('Starting thread to login')
         self.request_worker.add_task(DK9.login, signals, 0)
         self.thread.start(self.request_worker)
@@ -754,7 +754,7 @@ class App(QMainWindow):
                 self.update_web_status(2)
 
         if self.web_status == 2:
-            self.load_progress(70)
+            self.web_progress_bar(70)
             self.ui.table_parts.setSortingEnabled(False)
             self.fill_dk9_table_from_soup(self.soup, self.ui.table_parts, 0,
                                           C.DK9_TABLE_NAMES, C.DK9_BG_P_COLOR1, C.DK9_BG_P_COLOR2, 5,
@@ -765,7 +765,7 @@ class App(QMainWindow):
             self.ui.table_parts.setSortingEnabled(True)
 
             self.ui.table_accesory.setSortingEnabled(False)
-            self.load_progress(85)
+            self.web_progress_bar(85)
             self.fill_dk9_table_from_soup(self.soup, self.ui.table_accesory, 1,
                                           C.DK9_TABLE_NAMES, C.DK9_BG_A_COLOR1, C.DK9_BG_A_COLOR2, 5,
                                           align={4: Qt.AlignRight | Qt.AlignVCenter})
@@ -777,7 +777,7 @@ class App(QMainWindow):
             self.upd_tables_row_heights(dk9=True)
         else:
             self.login_dk9()
-        self.load_progress(0) if use_old_soup else self.load_progress(100)
+        self.web_progress_bar(0) if use_old_soup else self.web_progress_bar(100)
 
     def dummy(self):
         pass
@@ -957,14 +957,16 @@ class App(QMainWindow):
             if bold:
                 table.item(t_row_num, c).setFont(self.tab_font_bold if bold else self.tab_font)
 
-    def load_progress(self, progress):
-        self.ui.web_load_progress_bar.setValue(progress)
-
-    def thread_finished(self):
-        if self.web_status not in (1, 2):
-            self.ui.web_load_progress_bar.setValue(100)
+    def web_progress_bar(self, progress=None):
+        if progress:
+            self.ui.web_progress_bar.setValue(progress)
         else:
-            self.ui.web_load_progress_bar.setValue(0)
+            if self.web_status in (1, 2):
+                self.ui.web_progress_bar.setValue(0)
+                self.ui.web_progress_bar.setStyleSheet("QProgressBar::chunk {background-color: rgb(230, 230, 230);}")
+            else:
+                self.ui.web_progress_bar.setValue(100)
+                self.ui.web_progress_bar.setStyleSheet("QProgressBar::chunk {background-color: orangered;}")
 
     def fill_dk9_table_from_soup(self, soup, table, num: int, tab_names: tuple,
                                  def_bg_color1: tuple, def_bg_color2: tuple,
@@ -1149,10 +1151,10 @@ class App(QMainWindow):
         # copy to cash
         selected_row = self.sender().selectedItems()
         selected_row_len = len(selected_row)
-        self.ui.pt_cash_name.setPlainText(selected_row[0].text() if selected_row_len > 0 else '')
+        self.ui.le_cash_name.setText(selected_row[0].text() if selected_row_len > 0 else '')
         _price = selected_row[1].text() if selected_row_len > 1 else ''
-        self.ui.pt_cash_price.setPlainText(_price)
-        self.ui.pt_cash_descr.setPlainText(selected_row[2].text() if selected_row_len > 2 else '')
+        self.ui.le_cash_price.setText(_price)
+        self.ui.le_cash_descr.setText(selected_row[2].text() if selected_row_len > 2 else '')
         self.selected_work_price = (int(_price) if _price.isdigit() else 0)
         if selected_row:
             self.highlight_web_parts_by_part_name(selected_row[0].text())
