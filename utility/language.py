@@ -79,6 +79,8 @@ class Language:
         module.ui.frame.setToolTip(self.ConfigWindow["frame_ToolTip"])
         module.ui.label_2.setText(self.ConfigWindow["label_2"])
         module.ui.label_3.setText(self.ConfigWindow["label_3"])
+        module.ui.chb_dk9_caching.setText(self.ConfigWindow["chb_dk9_caching"])
+        module.ui.lbl_minutes.setText(self.ConfigWindow["lbl_minutes"])
         module.ui.label_14.setText(self.ConfigWindow["label_14"])
         module.ui.frame_7.setToolTip(self.ConfigWindow["frame_7_ToolTip"])
         module.ui.label_9.setText(self.ConfigWindow["label_9"])
