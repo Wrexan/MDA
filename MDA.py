@@ -178,6 +178,8 @@ class App(QMainWindow):
 
         self.resized.connect(self.init_ui_dynamics)
         self.search_input.textChanged[str].connect(self.prepare_and_search)
+        self.ui.bt_upd_web.clicked.connect(self.try_login_dk9)
+        self.ui.bt_upd_price.clicked.connect(self.read_price)
         self.ui.chb_show_exact.stateChanged.connect(self.upd_dk9_on_rule_change)
         self.ui.chb_show_date.stateChanged.connect(self.switch_n_upd_dk9_tables_grid)
         self.ui.chb_price_name_only.stateChanged.connect(self.start_search_on_rule_change)
@@ -631,7 +633,8 @@ class App(QMainWindow):
     def read_price(self):
         self.file_io_worker = Worker()
         signals = WorkerSignals()
-        signals.finished.connect(self.login_dk9)
+        signals.finished.connect(self.price_read_progress_bar)
+        signals.progress.connect(self.price_read_progress_bar)
         signals.error.connect(self.error)
         signals.status.connect(self.update_price_status)
         self.file_io_worker.add_task(self.Price.load_price, signals, 1)
@@ -736,6 +739,10 @@ class App(QMainWindow):
         signals.error.connect(self.error)
         signals.status.connect(self.update_web_status)
         return signals
+
+    def try_login_dk9(self):
+        if self.web_status != 2 and self.price_status == 6:
+            self.login_dk9()
 
     def login_dk9(self):
         self.request_worker = Worker()
@@ -965,15 +972,33 @@ class App(QMainWindow):
                 table.item(t_row_num, c).setFont(self.tab_font_bold if bold else self.tab_font)
 
     def web_progress_bar(self, progress=None):
+        bar = self.ui.web_progress_bar
         if progress:
-            self.ui.web_progress_bar.setValue(progress)
+            bar.setStyleSheet("")
+            bar.setValue(progress)
         else:
             if self.web_status in (1, 2):
-                self.ui.web_progress_bar.setValue(0)
-                self.ui.web_progress_bar.setStyleSheet("QProgressBar::chunk {background-color: rgb(230, 230, 230);}")
+                bar.setValue(0)
+                # bar.setStyleSheet("QProgressBar::chunk {background-color: rgb(230, 230, 230);}")
             else:
-                self.ui.web_progress_bar.setValue(100)
-                self.ui.web_progress_bar.setStyleSheet("QProgressBar::chunk {background-color: orangered;}")
+                bar.setValue(100)
+                bar.setStyleSheet("QProgressBar::chunk {background-color: orangered;}")
+
+    def price_read_progress_bar(self, progress=None):
+        bar = self.ui.price_progress_bar
+        if progress:
+            bar.setStyleSheet("")
+            bar.setValue(progress)
+        else:
+            if self.price_status == 6:
+                bar.setValue(0)
+                print(f'{bar.style()=}')
+                # bar.setStyleSheet("")
+                # bar.setStyleSheet("QProgressBar::chunk {background-color: rgb(230, 230, 230);}")
+                self.try_login_dk9()
+            else:
+                bar.setValue(100)
+                bar.setStyleSheet("QProgressBar::chunk {background-color: orangered;}")
 
     def fill_dk9_table_from_soup(self, soup, table, num: int, tab_names: tuple,
                                  def_bg_color1: tuple, def_bg_color2: tuple,
