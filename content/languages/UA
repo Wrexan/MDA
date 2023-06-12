@@ -51,7 +51,8 @@
 "pb_adv_search": "Розш. пошук",
 "chb_price_name_only": "Модель прайса",
 "chb_search_eng": "Латиниця",
-"chb_search_narrow": "Два символи"
+"chb_search_narrow": "Два символи",
+"le_cash_name_placeholder": "Даблклік для копіювання"
 },
 "AdvSearchDialog":
 {

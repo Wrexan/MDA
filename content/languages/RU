@@ -51,7 +51,8 @@
 "pb_adv_search": "Расш. поиск",
 "chb_price_name_only": "Модель прайса",
 "chb_search_eng": "Латиница",
-"chb_search_narrow": "Два символа"
+"chb_search_narrow": "Два символа",
+"le_cash_name_placeholder": "Даблклик для копирования"
 },
 "AdvSearchDialog":
 {

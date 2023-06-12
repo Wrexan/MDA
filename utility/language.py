@@ -45,6 +45,7 @@ class Language:
         module.chb_price_name_only.setText(self.MainWindow["chb_price_name_only"])
         module.chb_search_eng.setText(self.MainWindow["chb_search_eng"])
         module.chb_search_narrow.setText(self.MainWindow["chb_search_narrow"])
+        module.le_cash_name.setPlaceholderText(self.MainWindow["le_cash_name_placeholder"])
 
     def translate_AdvSearchDialog_texts(self, module):
         module.setWindowTitle(self.AdvSearchDialog["WindowTitle"])

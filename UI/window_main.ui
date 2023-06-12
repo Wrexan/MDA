@@ -713,6 +713,18 @@
                        <pointsize>10</pointsize>
                       </font>
                      </property>
+                     <property name="mouseTracking">
+                      <bool>false</bool>
+                     </property>
+                     <property name="focusPolicy">
+                      <enum>Qt::NoFocus</enum>
+                     </property>
+                     <property name="contextMenuPolicy">
+                      <enum>Qt::PreventContextMenu</enum>
+                     </property>
+                     <property name="acceptDrops">
+                      <bool>false</bool>
+                     </property>
                      <property name="styleSheet">
                       <string notr="true">border: 1px solid rgb(180,180,180);</string>
                      </property>
@@ -724,6 +736,9 @@
                      </property>
                      <property name="readOnly">
                       <bool>true</bool>
+                     </property>
+                     <property name="placeholderText">
+                      <string>Даблклік для копіювання</string>
                      </property>
                     </widget>
                    </item>
@@ -751,6 +766,18 @@
                       <font>
                        <pointsize>10</pointsize>
                       </font>
+                     </property>
+                     <property name="mouseTracking">
+                      <bool>false</bool>
+                     </property>
+                     <property name="focusPolicy">
+                      <enum>Qt::NoFocus</enum>
+                     </property>
+                     <property name="contextMenuPolicy">
+                      <enum>Qt::PreventContextMenu</enum>
+                     </property>
+                     <property name="acceptDrops">
+                      <bool>false</bool>
                      </property>
                      <property name="styleSheet">
                       <string notr="true">border: 1px solid rgb(180,180,180);</string>
@@ -787,6 +814,18 @@
                    <font>
                     <pointsize>10</pointsize>
                    </font>
+                  </property>
+                  <property name="mouseTracking">
+                   <bool>false</bool>
+                  </property>
+                  <property name="focusPolicy">
+                   <enum>Qt::NoFocus</enum>
+                  </property>
+                  <property name="contextMenuPolicy">
+                   <enum>Qt::PreventContextMenu</enum>
+                  </property>
+                  <property name="acceptDrops">
+                   <bool>false</bool>
                   </property>
                   <property name="styleSheet">
                    <string notr="true">border: 1px solid rgb(180,180,180);</string>

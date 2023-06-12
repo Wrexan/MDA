@@ -189,6 +189,13 @@ class App(QMainWindow):
         self.ui.settings_button.clicked.connect(self.open_settings)
         self.ui.graph_button.clicked.connect(self.open_graphs)
 
+        self.ui.le_cash_name.installEventFilter(self)
+        self.ui.le_cash_name.selectionChanged.connect(lambda: self.ui.le_cash_name.setSelection(0, 0))
+        self.ui.le_cash_price.installEventFilter(self)
+        self.ui.le_cash_price.selectionChanged.connect(lambda: self.ui.le_cash_price.setSelection(0, 0))
+        self.ui.le_cash_descr.installEventFilter(self)
+        self.ui.le_cash_descr.selectionChanged.connect(lambda: self.ui.le_cash_descr.setSelection(0, 0))
+
         self.ui.table_parts.doubleClicked.connect(self.copy_web_table_items_connected)
         self.ui.table_accesory.doubleClicked.connect(self.copy_web_table_items_connected)
         self.ui.table_parts.itemSelectionChanged.connect(self.handle_web_table_item_selection_connected)
@@ -1368,7 +1375,12 @@ class App(QMainWindow):
 
     def eventFilter(self, source, event):
         if event.type() == QEvent.ContextMenu:
-            if source in (self.ui.table_parts, self.ui.table_accesory, self.ui.table_price):
+            if source in (
+                    self.ui.table_parts,
+                    self.ui.table_accesory,
+                    self.ui.table_price,
+            ):
+                print(f'{source=}')
                 row = source.selectedItems()
                 # print(f'{row=}')
                 if row:
@@ -1384,6 +1396,9 @@ class App(QMainWindow):
                             self.copy_table_items(source, 4)
                     if action == copy_full_row:
                         self.copy_table_items(source)
+        elif event.type() == QEvent.MouseButtonDblClick:
+            if source in (self.ui.le_cash_name, self.ui.le_cash_descr, self.ui.le_cash_price):
+                clipboard.setText(source.text())
         return super().eventFilter(source, event)
 
     def open_adv_search(self):
