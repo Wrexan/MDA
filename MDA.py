@@ -117,6 +117,7 @@ class App(QMainWindow):
                                             f"{self.web_table_stylesheet_template[1]}"
 
         self.upd_ui_static_texts()
+        self.upd_username()
         self.init_ui_statics()
         self.apply_window_size()
         self.init_ui_dynamics()
@@ -166,6 +167,12 @@ class App(QMainWindow):
         self.ui.table_price.setHorizontalHeaderLabels((L.table_price_HHL))
         self.ui.table_parts.setHorizontalHeaderLabels((L.table_parts_HHL))
         self.ui.table_accesory.setHorizontalHeaderLabels((L.table_accesory_HHL))
+
+    def upd_username(self):
+        if C.DK9_LOGIN:
+            self.ui.lb_username.setText(C.DK9_LOGIN)
+        else:
+            self.ui.lb_username.setText('*****')
 
     def init_ui_statics(self):
 

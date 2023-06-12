@@ -107,6 +107,7 @@ class ConfigWindow(QtWidgets.QDialog):
         if self.C.BRANCH == 0:
             self.Parent.reset_stat_timer()
         self.Parent.init_ui_dynamics()
+        self.Parent.upd_username()
         self.C.precalculate_color_diffs()
         try:
             self.C.save_user_config()
@@ -162,6 +163,7 @@ class FirstStartWindow(QtWidgets.QDialog):
     def apply_settings(self):
         print('Applying settings')
         login = False
+        self.Parent.upd_username()
         if self.ui.web_login.text() and self.ui.web_password.text():
             login = True
             self.C.DK9_LOGIN = self.ui.web_login.text()
