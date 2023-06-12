@@ -36,8 +36,10 @@ class ConfigWindow(QtWidgets.QDialog):
         self.L = L
         self.ui = Ui_settings_window()
         self.ui.setupUi(self)
-        self.ui.web_login.setText(C.DK9_LOGIN)
-        self.ui.web_password.setText(C.DK9_PASSWORD)
+        self.ui.web_login.setText(self.C.DK9_LOGIN)
+        self.ui.web_password.setText(self.C.DK9_PASSWORD)
+        self.ui.chb_dk9_caching.setCheckState(2 if self.C.DK9_CACHING else 0)
+        self.ui.dk9_caching_minutes.setValue(self.C.DK9_CACHING_PERIOD)
 
         self.ui.cb_branch.addItems(self.C.BRANCHES.values())
         self.ui.cb_branch.setCurrentIndex(self.C.BRANCH)
@@ -80,6 +82,8 @@ class ConfigWindow(QtWidgets.QDialog):
             login = True
         self.C.DK9_LOGIN = self.ui.web_login.text()
         self.C.DK9_PASSWORD = self.ui.web_password.text()
+        self.C.DK9_CACHING = True if self.ui.chb_dk9_caching.checkState() == 2 else False
+        self.C.DK9_CACHING_PERIOD = self.ui.dk9_caching_minutes.value()
         cbi = self.ui.cb_branch.currentIndex()
         self.C.BRANCH = cbi if self.C.BRANCHES.get(cbi) else 0
 
