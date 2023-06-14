@@ -125,6 +125,9 @@ class App(QMainWindow):
         self.stat_send_timer = QtCore.QTimer()
         self.stat_send_timer.timeout.connect(self.send_statistic)
 
+        # self.dk9_cache_timer = QtCore.QTimer()
+        # self.dk9_cache_timer.timeout.connect(self.dk9_update_cache)
+
         self.curr_manufacturer_idx: int = 0
         self.curr_manufacturer: str = ''
         # self.curr_manufacturers: tuple = ()
@@ -690,23 +693,23 @@ class App(QMainWindow):
                 self.search_again = False
 
             # ===========================  statistic  ==============================
-            elif manufacturer and self.curr_model and self.statify_next_request:  # -----test
-                # elif C.BRANCH > 0 and manufacturer and self.curr_model and self.statify_next_request:  # +++++prod
+            # elif manufacturer and self.curr_model and self.statify_next_request:  # -----test
+            elif C.BRANCH > 0 and manufacturer and self.curr_model and self.statify_next_request:  # +++++prod
                 # print(f'SCHEDULE TO SEND: {C.BRANCH} {manufacturer} {self.curr_model}')
                 print(f'Add request to statistic: {self.curr_model}')
                 self.statify_next_request = False
                 self.stat_send_timer.stop()
-                # cache_full = MDAS.cache_item(branch=C.BRANCH, brand=manufacturer, model=self.curr_model)  # +++++prod
-                # # self.stat_send_scheduled = True
-                # if cache_full == 0:  # Not full - standard delay
-                #     self.stat_send_timer.start(C.STAT_CACHE_DELAY)
-                # elif cache_full == 1:  # Full+ - time to send
-                #     self.stat_send_timer.stop()
-                #     signals = WorkerSignals()
-                #     signals.finished.connect(self.stat_send_finished)
-                #     self.request_worker.add_task(MDAS.send_statistic_cache, signals, 1)
-                # else:  # Overflowing or STOPPED Overflow - no connection to stat server, longer delay
-                #     self.stat_send_timer.start(C.STAT_RESEND_DELAY)
+                cache_full = MDAS.cache_item(branch=C.BRANCH, brand=manufacturer, model=self.curr_model)  # +++++prod
+                # self.stat_send_scheduled = True
+                if cache_full == 0:  # Not full - standard delay
+                    self.stat_send_timer.start(C.STAT_CACHE_DELAY)
+                elif cache_full == 1:  # Full+ - time to send
+                    self.stat_send_timer.stop()
+                    signals = WorkerSignals()
+                    signals.finished.connect(self.stat_send_finished)
+                    self.request_worker.add_task(MDAS.send_statistic_cache, signals, 1)
+                else:  # Overflowing or STOPPED Overflow - no connection to stat server, longer delay
+                    self.stat_send_timer.start(C.STAT_RESEND_DELAY)
 
             # ===========================  search in dk9  ==============================
             self.dk9_request_label.setText(self.curr_model)
@@ -725,7 +728,7 @@ class App(QMainWindow):
         self.request_worker = Worker()
         signals = WorkerSignals()
         signals.finished.connect(self.stat_send_finished)
-        self.request_worker.add_task(MDAS.send_statistic_cache, signals, 1)
+        self.request_worker.add_task(MDAS.send_statistic_cache, signals, 2)
         self.thread.start(self.request_worker)
 
     def stat_send_finished(self):
@@ -799,6 +802,25 @@ class App(QMainWindow):
         else:
             self.login_dk9()
         self.web_progress_bar(0) if use_old_soup else self.web_progress_bar(100)
+
+    # def dk9_update_cache(self):
+    #     self.dk9_parse_all()
+    #
+    # def dk9_parse_all(self):
+    #     signals = self.get_dk9_search_signals()
+    #     self.request_worker.add_task(DK9.adv_search,
+    #                                  signals,
+    #                                  0,
+    #                                  self.curr_type,
+    #                                  '',
+    #                                  '',
+    #                                  '')
+    #
+    # def dk9_load_tables_file(self):
+    #     ...
+    #
+    # def dk9_save_tables_file(self):
+    #     ...
 
     def dummy(self):
         pass

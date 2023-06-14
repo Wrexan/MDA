@@ -156,7 +156,8 @@ class Config:
         self.DK9_PASSWORD, self.PASSWORD = '', ''
         self.DK9_LOGIN_DATA = {}
 
-        self.DK9_CACHING, self.DK9_CACHING_PERIOD = True, 1800  # seconds
+        self.DK9_CACHING, self.DK9_CACHING_PERIOD = True, 1_800_000  # 1_800_000 ms = 30 min
+        self.DK9_CACHE_FILE = f'{self.CONTENT_PATH}dk_tables.cache'
 
         self.DK9_HEADERS = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
@@ -227,7 +228,7 @@ class Config:
                 self.DK9_LOGIN = config['WEB DATABASE']['DK9_LOGIN']
                 self.DK9_PASSWORD = config['WEB DATABASE']['DK9_PASSWORD']
                 self.DK9_CACHING = True if config['WEB DATABASE']['DK9_CACHING'] == 'True' else False
-                self.DK9_CACHING_PERIOD = int(config['WEB DATABASE']['DK9_CACHING_PERIOD'])
+                self.DK9_CACHING_PERIOD = int(config['WEB DATABASE']['DK9_CACHING_PERIOD']) * 60_000
 
                 self.CURRENT_LANG = int(config['CLIENT']['LANG'])
                 self.BRANCH = int(config['CLIENT']['BRANCH'])
@@ -272,7 +273,7 @@ class Config:
         config['WEB DATABASE']['DK9_LOGIN'] = str(self.DK9_LOGIN)
         config['WEB DATABASE']['DK9_PASSWORD'] = str(self.DK9_PASSWORD)
         config['WEB DATABASE']['DK9_CACHING'] = str(self.DK9_CACHING)
-        config['WEB DATABASE']['DK9_CACHING_PERIOD'] = str(self.DK9_CACHING_PERIOD)
+        config['WEB DATABASE']['DK9_CACHING_PERIOD'] = str(self.DK9_CACHING_PERIOD // 60_000)
 
         config['CLIENT'] = {}
         config['CLIENT']['LANG'] = str(self.CURRENT_LANG)
