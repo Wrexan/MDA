@@ -1,5 +1,6 @@
+import json
 import sys
-
+from datetime import datetime
 import bs4
 import traceback
 import os
@@ -69,6 +70,8 @@ class App(QMainWindow):
         self.model_buttons = {}
         self.manufacturer_wheel = None
         self.current_model_button_index = 0
+        self.dk9_cache = {}
+        self.dk9_cache_update_time = 0
         self.ui = Ui_MainWindow()
         # self.ui = MainUI()
         self.ui.setupUi(self)
@@ -123,10 +126,10 @@ class App(QMainWindow):
         self.init_ui_dynamics()
 
         self.stat_send_timer = QtCore.QTimer()
-        self.stat_send_timer.timeout.connect(self.send_statistic)
+        self.stat_send_timer.timeout.connect(self.stat_send_start_worker)
 
-        # self.dk9_cache_timer = QtCore.QTimer()
-        # self.dk9_cache_timer.timeout.connect(self.dk9_update_cache)
+        self.dk9_cache_timer = QtCore.QTimer()
+        self.dk9_cache_timer.timeout.connect(self.dk9_update_cache_start_worker)
 
         self.curr_manufacturer_idx: int = 0
         self.curr_manufacturer: str = ''
@@ -146,13 +149,13 @@ class App(QMainWindow):
         self.file_io_worker = None  # Worker(self.update_dk9_data, 'mi8 lite')
         self.Price = Price(C)
         self.soup = None
-        self.web_status = 0
+        self.web_status = DK9.STATUS.NO_CONN
         self.price_status = 0
 
         # self.themes = ('windowsvista', 'Fusion', 'Windows')
         self.themes = (*QStyleFactory.keys(),)
         self.current_theme = 0
-        # self.login_dk9()
+        # self.dk9_login_start_worker()
         self.update_web_status(0)
         # self.update_price_status()
         self.show()
@@ -181,8 +184,8 @@ class App(QMainWindow):
 
         self.resized.connect(self.init_ui_dynamics)
         self.search_input.textChanged[str].connect(self.prepare_and_search)
-        self.ui.bt_upd_web.clicked.connect(self.try_login_dk9)
-        self.ui.bt_upd_price.clicked.connect(self.read_price)
+        self.ui.bt_upd_web.clicked.connect(self.dk9_relog_or_update_cache_by_button)
+        self.ui.bt_upd_price.clicked.connect(self.read_price_start_worker)
         self.ui.chb_show_exact.stateChanged.connect(self.upd_dk9_on_rule_change)
         self.ui.chb_show_date.stateChanged.connect(self.switch_n_upd_dk9_tables_grid)
         self.ui.chb_price_name_only.stateChanged.connect(self.start_search_on_rule_change)
@@ -366,7 +369,7 @@ class App(QMainWindow):
             return
         C.FILTER_SEARCH_RESULT = True if self.ui.chb_show_exact.checkState() == 2 else False
         if self.soup:
-            self.update_dk9_data(use_old_soup=True)
+            self.dk9_parse_soups_to_tables_data(use_old_soup=True)
 
     def switch_n_upd_dk9_tables_grid(self):
         C.SHOW_DATE = True if self.ui.chb_show_date.checkState() == 2 else False
@@ -414,7 +417,7 @@ class App(QMainWindow):
 
     def on_ui_loaded(self):
         print('Loading Price')
-        self.read_price()
+        self.read_price_start_worker()
 
     def prepare_and_search(self, search_req: str, force_search: bool = False):
         # print(f'{search_req=} {self.search_input.isModified()=}')
@@ -550,15 +553,15 @@ class App(QMainWindow):
         self.current_model_button_index = 0
         for num, model in enumerate(model_names):
             self.model_buttons[num] = QPushButton(model)
-            self.model_buttons[num].clicked.connect(self.search_dk9_by_button)
+            self.model_buttons[num].clicked.connect(self.dk9_search_by_button)
             if num == 0:
                 self.model_buttons[num].setDefault(True)
                 # self.curr_model = model
-                # if self.web_status == 2:
+                # if self.web_status == DK9.STATUS.OK:
                 #     if DK9.LOGIN_SUCCESS:
-                #         self.search_dk9()
+                #         self.dk9_search_start_worker()
                 # else:
-                #     self.login_dk9()
+                #     self.dk9_login_start_worker()
             lay.addWidget(self.model_buttons[num], 0)
             le -= 1
         sp = QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -625,64 +628,134 @@ class App(QMainWindow):
             self.curr_model = models_for_buttons[0]
         else:
             self.curr_model = self.search_req_ruled
-        self.search_dk9_or_login()
+        self.dk9_search_or_login()
         self.upd_models_list(clear=True)
         self.upd_model_buttons(models_for_buttons)
         self.update_price_table(text_lower_orig, recursive_model)
         self.upd_tables_row_heights(price=True)
 
-    def update_web_status(self, status: int):
-        if status in C.WEB_STATUSES:
-            self.web_status = status
-            self.ui.web_status.setText(C.WEB_STATUSES[status])
-            # if status != 2:
-            #     self.curr_model = ''
-        else:
-            print(f'Error: status code {status} not present {C.WEB_STATUSES=}')
-
-    def read_price(self):
+    def read_price_start_worker(self):
         self.file_io_worker = Worker()
         signals = WorkerSignals()
         signals.finished.connect(self.price_read_progress_bar)
         signals.progress.connect(self.price_read_progress_bar)
-        signals.error.connect(self.error)
         signals.status.connect(self.update_price_status)
-        self.file_io_worker.add_task(self.Price.load_price, signals, 1)
+        signals.error.connect(self.error)
+        self.file_io_worker.add_task(self.Price.load_price, signals, 0)
         print('Starting thread to read price')
         self.thread.start(self.file_io_worker, priority=QtCore.QThread.Priority.HighestPriority)
 
-    # @QtCore.pyqtSlot
-    def search_dk9_by_button(self):
-        self.curr_model = self.sender().text()
-        # print(f'SEARCH BY BUTTON: {self.curr_model}')
-        self.search_dk9_or_login()
+    def stat_send_start_worker(self):
+        print('Starting thread to send stats')
+        self.request_worker = Worker()
+        signals = WorkerSignals()
+        signals.finished.connect(self.stat_send_finished)
+        self.request_worker.add_task(MDAS.send_statistic_cache, signals, 3)
+        self.thread.start(self.request_worker)
 
-    # @QtCore.pyqtSlot
-    def search_dk9_or_login(self):
-        if self.web_status == 2:
-            if DK9.LOGIN_SUCCESS:
-                self.search_dk9()
+    def stat_send_finished(self):
+        if MDAS.cache_to_send:
+            C.stat_delay = C.STAT_RESEND_DELAY
         else:
-            self.login_dk9()
+            self.reset_stat_timer()
 
-    def search_dk9(self, advanced: dict = None):
+    def reset_stat_timer(self):
+        C.stat_delay = C.STAT_CACHE_DELAY
+        self.stat_send_timer.stop()
+
+    # =========================== DK9 ==============================
+
+    def update_web_status(self, status: int):
+        if status in C.WEB_STATUSES:
+            self.web_status = status
+            if self.web_status in (DK9.STATUS.FILE_UPDATED, DK9.STATUS.FILE_USED):
+                datetime_formatted = self.dk9_cache['Updated']
+                self.ui.web_status.setText(f'{C.WEB_STATUSES[status]} - {datetime_formatted}')
+            else:
+                self.ui.web_status.setText(C.WEB_STATUSES[status])
+        else:
+            print(f'Error: status code {status} not present {C.WEB_STATUSES=}')
+
+    # @QtCore.pyqtSlot
+    def dk9_search_by_button(self):
+        if self.price_status == 6:
+            self.curr_model = self.sender().text()
+            self.dk9_search_or_login()
+
+    def dk9_relog_or_update_cache_by_button(self):
+        if self.price_status == 6 and self.web_status not in (
+                DK9.STATUS.CONNECTING,
+                DK9.STATUS.REDIRECT,
+                DK9.STATUS.FILE_READ,
+                DK9.STATUS.FILE_WRITE,
+                DK9.STATUS.UPDATING):
+            if C.DK9_CACHING:
+                self.dk9_search_or_login()
+            elif self.web_status != DK9.STATUS.OK:
+                self.dk9_login_start_worker()
+
+    # @QtCore.pyqtSlot
+    def dk9_search_or_login(self):
+        if self.web_status in (DK9.STATUS.OK, DK9.STATUS.FILE_UPDATED):
+            if DK9.LOGIN_SUCCESS:
+                self.dk9_search_start_worker()
+        else:
+            self.dk9_login_start_worker()
+
+    def dk9_get_search_signals(self):
+        signals = WorkerSignals()
+        signals.result.connect(self.dk9_parse_soups_to_tables_data)
+        signals.progress.connect(self.web_progress_bar)
+        signals.status.connect(self.update_web_status)
+        signals.finished.connect(self.dk9_finish_progress_bar_and_read_cash)
+        signals.error.connect(self.error)
+        return signals
+
+    def dk9_login_start_worker(self):
+        self.request_worker = Worker()
+        signals = WorkerSignals()
+        signals.progress.connect(self.web_progress_bar)
+        signals.status.connect(self.update_web_status)
+        signals.error.connect(self.error)
+        if self.curr_model:
+            self.search_again = True
+            signals.finished.connect(self.dk9_search_start_worker)
+        else:
+            signals.finished.connect(self.dk9_finish_progress_bar_and_read_cash)
+        print('Starting thread to login')
+        self.request_worker.add_task(DK9.login, signals, 2)
+        self.thread.start(self.request_worker)
+
+    def dk9_search_start_worker(self, advanced: dict = None):
+
+        print(f'STARTING SEARCH... {self.web_status=}  {self.price_status=} {DK9.LOGIN_SUCCESS=}')
+
+        if C.DK9_CACHING:
+            if not DK9.LOGIN_SUCCESS or self.web_status not in (DK9.STATUS.OK, DK9.STATUS.FILE_UPDATED):
+                if os.path.exists(f'{C.DK9_CACHE_FILE}'):
+                    self.dk9_read_cache_start_worker()
+            else:
+                self.dk9_update_cache_start_worker()
+            return
+
+        if not DK9.LOGIN_SUCCESS or self.web_status != DK9.STATUS.OK:
+            return
+
         # Auto reset filter on search
         C.FILTER_SEARCH_RESULT = False
         self.ui.chb_show_exact.setCheckState(2 if C.FILTER_SEARCH_RESULT else 0)
         self.request_worker = Worker()
 
         if advanced:
-            signals = self.get_dk9_search_signals()
+            signals = self.dk9_get_search_signals()
             self.request_worker.add_task(DK9.adv_search,
                                          signals,
-                                         0,
+                                         2,
                                          advanced['_type'],
                                          advanced['_manufacturer'],
                                          advanced['_model'],
                                          advanced['_description'])
         else:
-            if not DK9.LOGIN_SUCCESS or self.web_status != 2:
-                return
             if not C.SEARCH_BY_PRICE_MODEL or 'asus' in self.curr_manufacturer.lower():  # -------------------ASUS
                 manufacturer = ''
             else:
@@ -695,8 +768,8 @@ class App(QMainWindow):
             # ===========================  statistic  ==============================
             # elif manufacturer and self.curr_model and self.statify_next_request:  # -----test
             elif C.BRANCH > 0 and manufacturer and self.curr_model and self.statify_next_request:  # +++++prod
-                # print(f'SCHEDULE TO SEND: {C.BRANCH} {manufacturer} {self.curr_model}')
-                print(f'Add request to statistic: {self.curr_model}')
+                print(f'SCHEDULE TO SEND: {C.BRANCH} {manufacturer} {self.curr_model}')
+                # print(f'Add request to statistic: {self.curr_model}')
                 self.statify_next_request = False
                 self.stat_send_timer.stop()
                 cache_full = MDAS.cache_item(branch=C.BRANCH, brand=manufacturer, model=self.curr_model)  # +++++prod
@@ -713,63 +786,18 @@ class App(QMainWindow):
 
             # ===========================  search in dk9  ==============================
             self.dk9_request_label.setText(self.curr_model)
-            signals = self.get_dk9_search_signals()
+            self.request_worker = Worker()
+            signals = self.dk9_get_search_signals()
             self.request_worker.add_task(DK9.adv_search,
                                          signals,
-                                         0,
+                                         2,
                                          self.curr_type,
                                          manufacturer,
                                          self.curr_model,
                                          self.curr_description)
         self.thread.start(self.request_worker)
 
-    def send_statistic(self):
-        print('Starting thread to send stats')
-        self.request_worker = Worker()
-        signals = WorkerSignals()
-        signals.finished.connect(self.stat_send_finished)
-        self.request_worker.add_task(MDAS.send_statistic_cache, signals, 2)
-        self.thread.start(self.request_worker)
-
-    def stat_send_finished(self):
-        if MDAS.cache_to_send:
-            C.stat_delay = C.STAT_RESEND_DELAY
-        else:
-            self.reset_stat_timer()
-
-    def reset_stat_timer(self):
-        C.stat_delay = C.STAT_CACHE_DELAY
-        self.stat_send_timer.stop()
-
-    def get_dk9_search_signals(self):
-        signals = WorkerSignals()
-        signals.result.connect(self.update_dk9_data)
-        signals.progress.connect(self.web_progress_bar)
-        signals.finished.connect(self.web_progress_bar)
-        signals.error.connect(self.error)
-        signals.status.connect(self.update_web_status)
-        return signals
-
-    def try_login_dk9(self):
-        if self.web_status != 2 and self.price_status == 6:
-            self.login_dk9()
-
-    def login_dk9(self):
-        self.request_worker = Worker()
-        signals = WorkerSignals()
-        signals.progress.connect(self.web_progress_bar)
-        signals.status.connect(self.update_web_status)
-        signals.error.connect(self.error)
-        if self.curr_model:
-            self.search_again = True
-            signals.finished.connect(self.search_dk9)
-        else:
-            signals.finished.connect(self.web_progress_bar)
-        print('Starting thread to login')
-        self.request_worker.add_task(DK9.login, signals, 0)
-        self.thread.start(self.request_worker)
-
-    def update_dk9_data(self, table_soups: type(bs4.BeautifulSoup) = None, use_old_soup: bool = False):
+    def dk9_parse_soups_to_tables_data(self, table_soups: type(bs4.BeautifulSoup) = None, use_old_soup: bool = False):
         if not use_old_soup:
             self.soup = table_soups
             if not self.soup:
@@ -777,7 +805,7 @@ class App(QMainWindow):
             elif not self.soup[0]:
                 self.update_web_status(2)
 
-        if self.web_status == 2:
+        if self.web_status == DK9.STATUS.OK:
             self.web_progress_bar(70)
             self.ui.table_parts.setSortingEnabled(False)
             self.fill_dk9_table_from_soup(self.soup, self.ui.table_parts, 0,
@@ -800,27 +828,167 @@ class App(QMainWindow):
 
             self.upd_tables_row_heights(dk9=True)
         else:
-            self.login_dk9()
+            self.dk9_login_start_worker()
         self.web_progress_bar(0) if use_old_soup else self.web_progress_bar(100)
 
-    # def dk9_update_cache(self):
-    #     self.dk9_parse_all()
-    #
-    # def dk9_parse_all(self):
-    #     signals = self.get_dk9_search_signals()
-    #     self.request_worker.add_task(DK9.adv_search,
-    #                                  signals,
-    #                                  0,
-    #                                  self.curr_type,
-    #                                  '',
-    #                                  '',
-    #                                  '')
-    #
-    # def dk9_load_tables_file(self):
-    #     ...
-    #
-    # def dk9_save_tables_file(self):
-    #     ...
+    # ========== CACHE WEB DATABASE (DK9) ============
+
+    def dk9_get_cache_update_signals(self, result_to=None):
+        signals = WorkerSignals()
+        if result_to:
+            signals.result.connect(result_to)
+        signals.progress.connect(self.web_progress_bar)
+        signals.finished.connect(self.dk9_finish_progress_bar_and_read_cash)
+        signals.error.connect(self.error)
+        signals.status.connect(self.update_web_status)
+        return signals
+
+    def dk9_update_cache_start_worker(self):
+        self.request_worker = Worker()
+        signals = self.dk9_get_cache_update_signals(self.dk9_parse_and_start_saving)
+        self.request_worker.add_task(DK9.adv_search, signals, 2, '', '', '', '')  # Empty request to get all
+        self.thread.start(self.request_worker)
+
+    def dk9_read_cache_start_worker(self):
+        self.file_io_worker = Worker()
+        signals = self.dk9_get_cache_update_signals()
+        self.file_io_worker.add_task(self.dk9_read_cache_file, signals, 1)
+        print('Starting thread to read dk9 cache')
+        self.thread.start(self.file_io_worker, priority=QtCore.QThread.Priority.HighestPriority)
+
+    def dk9_write_cache_start_worker(self):
+        self.file_io_worker = Worker()
+        signals = self.dk9_get_cache_update_signals()
+        self.file_io_worker.add_task(self.dk9_write_cache_file, signals, 1)
+        print('Starting thread to write dk9 cache')
+        self.thread.start(self.file_io_worker, priority=QtCore.QThread.Priority.HighestPriority)
+
+    def dk9_parse_and_start_saving(self, soups):
+        if not soups:
+            return
+        self.dk9_parse_soups_to_dict(soups)
+        self.dk9_write_cache_start_worker()
+
+    def dk9_parse_soups_to_dict(self, soups):
+        self.dk9_cache['Updated'] = datetime.now().strftime("%H:%M %d.%m")
+        for num, table_name in enumerate(('parts', 'accessories')):
+            try:
+                temp_cache = []
+                if not soups[num]:  # ERROR - Empty database
+                    print(f'ERROR: Empty database page for {table_name}')
+                    self.error((f'Error parsing web database page to cache.:\n'
+                                f'This page is empty: {table_name}',
+                                f'{traceback.format_exc()}'))
+                    return
+                print(f'Start parsing database page for {table_name}')
+                for dk9_row in soups[num].tr.next_siblings:
+                    if repr(dk9_row)[0] == "'":
+                        # print(f'Excluded row: {dk9_row}')
+                        # if C.DK9_COLORED and dk9_row.attrs:
+                        continue
+                    row_style = dk9_row.get('style')
+                    row_palette = self.get_color_from_style(row_style) if row_style else 0
+                    row = dk9_row.findAll('td')
+                    row_data = [row_palette]
+                    for dk9_td in row:
+                        current_cell_text = str(dk9_td.string)
+                        # current_cell_text = current_cell_text.encode().decode('utf-8')
+                        if row_palette:
+                            row_data.append(current_cell_text)
+                        elif dk9_td.attrs and 'style' in dk9_td.attrs:
+                            style = str(dk9_td['style'])
+                            cell_palette = self.get_color_from_style(style)
+                            row_data.append((current_cell_text, cell_palette))
+                        else:
+                            row_data.append(current_cell_text)
+                    temp_cache.append(row_data)
+                    # temp_cache.append((*row_data,))
+                self.dk9_cache[table_name] = temp_cache
+            except Exception as _err:
+                self.error((f'Error parsing web database page to cache.:\n'
+                            f'Page: {table_name}',
+                            f'{traceback.format_exc()}'))
+
+        print(f'Done parsing database')
+
+    def dk9_read_cache_file(self, progress, status, error):
+        status.emit(DK9.STATUS.FILE_READ)
+        progress.emit(10)
+        try:
+            with open(f'{C.DK9_CACHE_FILE}', 'r', encoding='utf-8') as cache_file:
+                progress.emit(30)
+                temp_cache = json.load(cache_file)
+                progress.emit(50)
+            self.dk9_cache.clear()
+            progress.emit(70)
+            self.dk9_cache = temp_cache
+            progress.emit(100)
+            status.emit(DK9.STATUS.FILE_USED)
+        except Exception as _err:
+            status.emit(DK9.STATUS.FILE_READ_ERR)
+            self.ui.web_status.setToolTip(f'Error while trying to load database cache: '
+                                          f'{C.DK9_CACHE_FILE} '
+                                          f'{traceback.format_exc()}')
+            # error.emit((f'Error while trying to load database cache:\n'
+            #             f'{C.DK9_CACHE_FILE}',
+            #             f'{traceback.format_exc()}'))
+
+    def dk9_write_cache_file(self, progress, status, error):
+        status.emit(DK9.STATUS.FILE_WRITE)
+        progress.emit(10)
+        try:
+            with open(f'{C.DK9_CACHE_FILE}', 'w', encoding='utf-8') as cache_file:
+                progress.emit(50)
+                json.dump(self.dk9_cache, cache_file, ensure_ascii=False)
+            progress.emit(100)
+            status.emit(DK9.STATUS.FILE_UPDATED)
+        except Exception as _err:
+            status.emit(DK9.STATUS.FILE_WRITE_ERR)
+            error.emit((f'Error while trying to save database cache:\n'
+                        f'{C.DK9_CACHE_FILE}',
+                        f'{traceback.format_exc()}'))
+
+    def dk9_finish_progress_bar_and_read_cash(self):
+        bar = self.ui.web_progress_bar
+        if C.DK9_CACHING and self.web_status in (DK9.STATUS.NO_CONN,
+                                                 DK9.STATUS.CLI_ERR,
+                                                 DK9.STATUS.SERV_ERR,
+                                                 DK9.STATUS.CONN_ERROR):
+            if os.path.exists(f'{C.DK9_CACHE_FILE}'):
+                self.dk9_read_cache_start_worker()
+        if self.web_status in (DK9.STATUS.OK, DK9.STATUS.FILE_UPDATED):
+            # if self.web_status in (DK9.STATUS.CONNECTING, DK9.STATUS.OK):
+            bar.setValue(0)
+            # bar.setStyleSheet("QProgressBar::chunk {background-color: rgb(230, 230, 230);}")
+        elif self.web_status == DK9.STATUS.FILE_USED:
+            bar.setValue(100)
+            bar.setStyleSheet("QProgressBar::chunk {background-color: yellow;}")
+            self.ui.web_status.setToolTip(f'Loaded from file: '
+                                          f'{C.DK9_CACHE_FILE}')
+        else:
+            bar.setValue(100)
+            bar.setStyleSheet("QProgressBar::chunk {background-color: orangered;}")
+
+    def web_progress_bar(self, progress):
+        bar = self.ui.web_progress_bar
+        # if progress:
+        if self.web_status == DK9.STATUS.FILE_READ:
+            style = "QProgressBar::chunk {background-color: yellow;}"
+        elif self.web_status == DK9.STATUS.FILE_WRITE:
+            style = "QProgressBar::chunk {background-color: cyan;}"
+        else:
+            style = ""
+        bar.setStyleSheet(style)
+        bar.setValue(progress)
+        # else:
+        #     if self.web_status in (DK9.STATUS.OK, DK9.STATUS.FILE_UPDATED):
+        #         # if self.web_status in (DK9.STATUS.CONNECTING, DK9.STATUS.OK):
+        #         bar.setValue(0)
+        #         print(f'{self.dk9_cache=}')
+        #         # bar.setStyleSheet("QProgressBar::chunk {background-color: rgb(230, 230, 230);}")
+        #     else:
+        #         bar.setValue(100)
+        #         bar.setStyleSheet("QProgressBar::chunk {background-color: orangered;}")
 
     def dummy(self):
         pass
@@ -829,6 +997,10 @@ class App(QMainWindow):
         self.copied_table_items = {}
         table.clearContents()
         table.setRowCount(0)
+
+    @staticmethod
+    def get_color_from_style(style):
+        return C.DK9_BG_COLORS[style[style.find(':') + 1: style.find(';')]]
 
     def update_price_table(self, model, recursive_model: str = ''):  # 'xiaomi mi a2 m1804d2sg'
         try:
@@ -1000,19 +1172,6 @@ class App(QMainWindow):
             if bold:
                 table.item(t_row_num, c).setFont(self.tab_font_bold if bold else self.tab_font)
 
-    def web_progress_bar(self, progress=None):
-        bar = self.ui.web_progress_bar
-        if progress:
-            bar.setStyleSheet("")
-            bar.setValue(progress)
-        else:
-            if self.web_status in (1, 2):
-                bar.setValue(0)
-                # bar.setStyleSheet("QProgressBar::chunk {background-color: rgb(230, 230, 230);}")
-            else:
-                bar.setValue(100)
-                bar.setStyleSheet("QProgressBar::chunk {background-color: orangered;}")
-
     def price_read_progress_bar(self, progress=None):
         bar = self.ui.price_progress_bar
         if progress:
@@ -1024,7 +1183,7 @@ class App(QMainWindow):
                 print(f'{bar.style()=}')
                 # bar.setStyleSheet("")
                 # bar.setStyleSheet("QProgressBar::chunk {background-color: rgb(230, 230, 230);}")
-                self.try_login_dk9()
+                self.dk9_relog_or_update_cache_by_button()
             else:
                 bar.setValue(100)
                 bar.setStyleSheet("QProgressBar::chunk {background-color: orangered;}")

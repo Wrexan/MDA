@@ -38,7 +38,7 @@ class Worker(QThread):
     @pyqtSlot()
     def run(self):
 
-        print('Starting worker')
+        # print('Starting worker')
         for priority in range(self.max_priority + 1):
             tasks = self.queue.get(priority)
             if tasks:

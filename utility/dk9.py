@@ -4,9 +4,8 @@ from bs4 import BeautifulSoup
 
 
 class DK9Parser:
-    S_NO_CONN, S_PROCESS, S_OK, S_REDIRECT, S_CLI_ERR, S_SERV_ERR, S_NO_LOGIN, S_CONN_ERROR = 0, 1, 2, 3, 4, 5, 6, 7
-
     def __init__(self, C):
+        self.STATUS = DK9Status
         self.LOGIN_URL = C.DK9_LOGIN_URL
         self.LOGGED_IN_URL = C.DK9_LOGGED_IN_URL
         self.SEARCH_URL = C.DK9_SEARCH_URL
@@ -41,8 +40,8 @@ class DK9Parser:
     def login(self, progress, status, error):
         progress.emit(10)
         try:
-            print('GETTING RESPONSE')
-            status.emit(self.S_PROCESS)
+            print('GETTING LOGIN RESPONSE')
+            status.emit(self.STATUS.CONNECTING)
             # =============================================== LOGIN PAGE ==============================================
             r = self._get_response(self.LOGIN_URL, status)
             if r and r.__dict__['url'] == self.LOGIN_URL:
@@ -66,15 +65,16 @@ class DK9Parser:
                         print('LOGIN OK')
                         self.validation_data = self._get_validation_data(BeautifulSoup(r.content, 'html.parser'))
                         self.LOGIN_SUCCESS = True
-                        status.emit(self.S_OK)
+                        status.emit(self.STATUS.OK)
                     else:
                         print('LOGIN FAIL')
                         self.validation_data = {'__VIEWSTATE': 'C78cd8ds6csC^dc7s',
                                                 '__VIEWSTATEGENERATOR': '567Ddc67DS57s&&dtc',
                                                 '__EVENTVALIDATION': 'cdc9796cjlmckdmjNCydc565nysdi'}
                         self.LOGIN_SUCCESS = False
-                        status.emit(self.S_NO_LOGIN)
+                        status.emit(self.STATUS.NO_LOGIN)
                     progress.emit(100)
+                    return
                 else:
                     self._error_handler(progress, status, err=f'Cannot connect to: {str(self.SEARCH_URL)}')
                     return
@@ -82,7 +82,7 @@ class DK9Parser:
                 self._error_handler(progress, status, err=f'Cannot connect to: {str(self.LOGIN_URL)}')
                 return
         except requests.exceptions.Timeout as err:
-            self._error_handler(progress, status, err=f'Timeout on CONNECT Message:\n{str(err)}', emit=self.S_NO_CONN)
+            self._error_handler(progress, status, err=f'Timeout on CONNECT Message:\n{str(err)}', emit=self.STATUS.NO_CONN)
             return
         except Exception as err:
             if '[Errno 110' in err.__str__():
@@ -94,9 +94,10 @@ class DK9Parser:
     def adv_search(self, type_: str, firm_: str, model_: str, description_: str, progress, status, error) -> tuple:
         if not self.LOGIN_SUCCESS:
             return ()
+        status.emit(self.STATUS.UPDATING)
+        progress.emit(10)
         print(f'Searching: {type_=}  {firm_=}  {model_=}  {description_=}\n')
         # print(f'+++++++++: {self.validation_data=}')
-        progress.emit(10)
         try:
             # ===============================================================================================
             data_to_send = {
@@ -137,7 +138,7 @@ class DK9Parser:
             # <input name="ctl00$ContentPlaceHolder1$TextBoxDescription_new" type="text"
             # id="ctl00_ContentPlaceHolder1_TextBoxDescription_new" style="width:64%;">
         except requests.exceptions.Timeout as err:
-            self._error_handler(progress, status, err=f'Timeout on CONNECT Message:\n{str(err)}', emit=self.S_NO_CONN)
+            self._error_handler(progress, status, err=f'Timeout on CONNECT Message:\n{str(err)}', emit=self.STATUS.NO_CONN)
             return ()
         except Exception as err:
             if '[Errno 110' in err.__str__():
@@ -154,23 +155,41 @@ class DK9Parser:
         response = self.SESSION.get(url, headers=self.HEADERS, timeout=self.TIMEOUT)
         # print(f'{response.__dict__=}')
         if 100 <= response.status_code < 200:
-            status.emit(self.S_PROCESS)
+            status.emit(self.STATUS.CONNECTING)
             return response
         elif 200 <= response.status_code < 300:
-            status.emit(self.S_PROCESS)
+            status.emit(self.STATUS.CONNECTING)
             return response
         elif 300 <= response.status_code < 400:
-            status.emit(self.S_REDIRECT)
+            status.emit(self.STATUS.REDIRECT)
         elif 400 <= response.status_code < 500:
-            status.emit(self.S_CLI_ERR)
+            status.emit(self.STATUS.CLI_ERR)
         elif 500 <= response.status_code < 600:
-            status.emit(self.S_SERV_ERR)
+            status.emit(self.STATUS.SERV_ERR)
 
     def _error_handler(self, progress, status, err=None, emit=None):
         if err and '[Errno 11001]' in err.__str__():
-            status.emit(self.S_NO_CONN)
+            status.emit(self.STATUS.NO_CONN)
             print(f'Error: (No connection) Message :\n - {str(err)}')
         else:
-            status.emit(emit or self.S_CONN_ERROR)
+            status.emit(emit or self.STATUS.CONN_ERROR)
             print(f'Error: (Connection error) Message :\n - {str(err)}')
         progress.emit(100)
+
+
+class DK9Status:
+    NO_CONN = 0
+    CONNECTING = 1
+    OK = 2
+    REDIRECT = 3
+    CLI_ERR = 4
+    SERV_ERR = 5
+    NO_LOGIN = 6
+    CONN_ERROR = 7
+    FILE_READ = 8
+    FILE_WRITE = 9
+    FILE_READ_ERR = 10
+    FILE_WRITE_ERR = 11
+    FILE_UPDATED = 12
+    FILE_USED = 13
+    UPDATING = 14
