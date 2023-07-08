@@ -1,3 +1,5 @@
+import json
+
 import requests
 import traceback
 from bs4 import BeautifulSoup
@@ -6,6 +8,7 @@ from bs4 import BeautifulSoup
 class DK9Parser:
     def __init__(self, C):
         self.STATUS = DK9Status
+        self.CACHE = DK9Cache(C, self)
         self.LOGIN_URL = C.DK9_LOGIN_URL
         self.LOGGED_IN_URL = C.DK9_LOGGED_IN_URL
         self.SEARCH_URL = C.DK9_SEARCH_URL
@@ -82,7 +85,8 @@ class DK9Parser:
                 self._error_handler(progress, status, err=f'Cannot connect to: {str(self.LOGIN_URL)}')
                 return
         except requests.exceptions.Timeout as err:
-            self._error_handler(progress, status, err=f'Timeout on CONNECT Message:\n{str(err)}', emit=self.STATUS.NO_CONN)
+            self._error_handler(progress, status, err=f'Timeout on CONNECT Message:\n{str(err)}',
+                                emit=self.STATUS.NO_CONN)
             return
         except Exception as err:
             if '[Errno 110' in err.__str__():
@@ -138,7 +142,8 @@ class DK9Parser:
             # <input name="ctl00$ContentPlaceHolder1$TextBoxDescription_new" type="text"
             # id="ctl00_ContentPlaceHolder1_TextBoxDescription_new" style="width:64%;">
         except requests.exceptions.Timeout as err:
-            self._error_handler(progress, status, err=f'Timeout on CONNECT Message:\n{str(err)}', emit=self.STATUS.NO_CONN)
+            self._error_handler(progress, status, err=f'Timeout on CONNECT Message:\n{str(err)}',
+                                emit=self.STATUS.NO_CONN)
             return ()
         except Exception as err:
             if '[Errno 110' in err.__str__():
@@ -191,5 +196,87 @@ class DK9Status:
     FILE_READ_ERR = 10
     FILE_WRITE_ERR = 11
     FILE_UPDATED = 12
-    FILE_USED = 13
+    FILE_USED_OFFLINE = 13
     UPDATING = 14
+
+
+class DK9Cache:
+    def __init__(self, Config, DK9):
+        self.cache = {}
+        self.cache_update_time = 0
+        self.C = Config
+        self.DK9 = DK9
+        self.app = None
+
+    def set_app(self, app):
+        self.app = app
+
+    def read_cache_file(self, progress, status, error):
+        status.emit(self.DK9.STATUS.FILE_READ)
+        progress.emit(10)
+        try:
+            with open(f'{self.C.DK9_CACHE_FILE}', 'r', encoding='utf-8') as cache_file:
+                progress.emit(30)
+                temp_cache = json.load(cache_file)
+                progress.emit(50)
+            if not self.cache_is_valid(temp_cache):
+                raise Exception('Database cache file is not valid')
+            self.cache.clear()
+            progress.emit(70)
+            self.cache = temp_cache
+            progress.emit(100)
+            status.emit(self.DK9.STATUS.FILE_USED_OFFLINE)
+        except Exception as _err:
+            status.emit(self.DK9.STATUS.FILE_READ_ERR)
+            if self.app.ui:
+                self.app.ui.web_status.setToolTip(f'Error while trying to load database cache: '
+                                                  f'{self.C.DK9_CACHE_FILE} '
+                                                  f'{traceback.format_exc()}')
+            # error.emit((f'Error while trying to load database cache:\n'
+            #             f'{C.DK9_CACHE_FILE}',
+            #             f'{traceback.format_exc()}'))
+
+    @staticmethod
+    def cache_is_valid(cache):
+        if not isinstance(cache, dict):
+            return False
+        for key, value_type in {'updated': str, 'parts': list, 'accessories': list}:
+            if key not in cache:
+                return False
+            if not isinstance(cache[key], value_type):
+                return False
+        return True
+
+    def write_cache_file(self, progress, status, error):
+        status.emit(self.DK9.STATUS.FILE_WRITE)
+        progress.emit(10)
+        try:
+            with open(f'{self.C.DK9_CACHE_FILE}', 'w', encoding='utf-8') as cache_file:
+                progress.emit(50)
+                json.dump(self.cache, cache_file, ensure_ascii=False)
+            progress.emit(100)
+            status.emit(self.DK9.STATUS.FILE_UPDATED)
+        except Exception as _err:
+            status.emit(self.DK9.STATUS.FILE_WRITE_ERR)
+            error.emit((f'Error while trying to save database cache:\n'
+                        f'{self.C.DK9_CACHE_FILE}',
+                        f'{traceback.format_exc()}'))
+
+    def search_rows_in_cache_dict(self):
+        print(f'Searching in cache: {self.app.curr_manufacturer} {self.app.curr_model}')
+        if self.app.curr_model and self.app.curr_manufacturer:
+            return \
+                self.search_rows_in_cache_table(self.cache['parts']), \
+                self.search_rows_in_cache_table(self.cache['accessories'])
+        else:
+            return \
+                self.cache['parts'], \
+                self.cache['accessories']
+
+    def search_rows_in_cache_table(self, table: list):
+        rows = []
+        for row in table:
+            if self.app.curr_manufacturer.lower() == row[2].lower() \
+                    and self.app.curr_model.lower() in row[3].lower():
+                rows.append(row)
+        return rows
