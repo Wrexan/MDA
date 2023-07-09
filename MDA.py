@@ -831,7 +831,7 @@ class App(QMainWindow):
         else:  # Overflowing or STOPPED Overflow - no connection to stat server, longer delay
             self.stat_send_timer.start(C.STAT_RESEND_DELAY)
 
-    def dk9_upd_cache_restart_timer(self, period=C.DK9_CACHING_PERIOD * 1_000):  # * 60_000
+    def dk9_upd_cache_restart_timer(self, period=C.DK9_CACHING_PERIOD * 60_000):  # * 60_000
         print(f'dk9_upd_cache_restart_timer: {period//1000}sec')
         self.dk9_cache_timer.stop()
         self.dk9_cache_updater_start_worker()
