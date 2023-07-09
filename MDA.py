@@ -130,7 +130,7 @@ class App(QMainWindow):
         self.stat_send_timer.timeout.connect(self.stat_send_start_worker)
 
         self.dk9_cache_timer = QtCore.QTimer()
-        self.dk9_cache_timer.timeout.connect(self.dk9_update_cache_start_worker)
+        self.dk9_cache_timer.timeout.connect(self.dk9_cache_updater_start_worker)
 
         self.curr_manufacturer_idx: int = 0
         self.curr_manufacturer: str = ''
@@ -146,6 +146,7 @@ class App(QMainWindow):
         self.search_again = False
         # self.old_search = ''
         self.thread = QtCore.QThread
+        self.dk9_cache_handler_worker = None  # Worker(self.update_dk9_data, 'mi8 lite')
         self.request_worker = None  # Worker(self.update_dk9_data, 'mi8 lite')
         self.file_io_worker = None  # Worker(self.update_dk9_data, 'mi8 lite')
         self.Price = Price(C)
@@ -694,7 +695,7 @@ class App(QMainWindow):
                 DK9.STATUS.UPDATING,
                 DK9.STATUS.FILE_USED_OFFLINE):  # Keep on, if manual cache reload is needed
             if C.DK9_CACHING:
-                self.dk9_upd_caching_schedule()
+                self.dk9_upd_cache_restart_timer()
             elif self.web_status != DK9.STATUS.OK:
                 self.dk9_login_start_worker()
 
@@ -702,7 +703,8 @@ class App(QMainWindow):
     def dk9_login_or_update_cache(self):
         print('dk9_login_or_update_cache')
         if C.DK9_CACHING:
-            self.dk9_login_start_worker(self.dk9_upd_caching_schedule())
+            self.dk9_read_cache_if_exist()
+            self.dk9_login_start_worker(self.dk9_upd_cache_restart_timer)
         elif self.web_status != DK9.STATUS.OK:
             self.dk9_login_start_worker()
 
@@ -715,7 +717,10 @@ class App(QMainWindow):
         elif self.web_status == DK9.STATUS.FILE_USED_OFFLINE:
             self.dk9_search_start_worker()
         else:
-            self.dk9_login_start_worker()
+            if C.DK9_CACHING:
+                self.dk9_login_start_worker(next_method=self.dk9_upd_cache_restart_timer)
+            else:
+                self.dk9_login_start_worker()
 
     def dk9_get_search_signals(self):
         signals = WorkerSignals()
@@ -753,10 +758,10 @@ class App(QMainWindow):
             else:
                 if os.path.exists(f'{C.DK9_CACHE_FILE}'):
                     self.dk9_read_cache_start_worker()
-                elif DK9.LOGIN_SUCCESS:
-                    self.dk9_upd_caching_schedule()
+                elif not DK9.LOGIN_SUCCESS:
+                    self.dk9_login_start_worker(self.dk9_upd_cache_restart_timer)
                 else:
-                    self.dk9_login_start_worker()
+                    self.dk9_upd_cache_restart_timer()
             return
 
         if not DK9.LOGIN_SUCCESS or self.web_status != DK9.STATUS.OK:
@@ -826,11 +831,12 @@ class App(QMainWindow):
         else:  # Overflowing or STOPPED Overflow - no connection to stat server, longer delay
             self.stat_send_timer.start(C.STAT_RESEND_DELAY)
 
-    def dk9_upd_caching_schedule(self):
-        print(f'dk9_upd_caching_schedule')
+    def dk9_upd_cache_restart_timer(self, period=C.DK9_CACHING_PERIOD * 1_000):  # * 60_000
+        print(f'dk9_upd_cache_restart_timer: {period//1000}sec')
         self.dk9_cache_timer.stop()
-        self.dk9_update_cache_start_worker()
-        self.dk9_cache_timer.start(C.DK9_CACHING_PERIOD * 1_000)  # * 60_000
+        self.dk9_cache_updater_start_worker()
+        # self.dk9_update_cache_start_worker()
+        self.dk9_cache_timer.start(period)  # * 60_000
 
     # def dk9_restart_caching_schedule(self):
     #     self.dk9_cache_timer.stop()
@@ -913,34 +919,41 @@ class App(QMainWindow):
         signals.status.connect(self.update_web_status)
         return signals
 
-    def dk9_update_cache_start_worker(self):
-        self.request_worker = Worker()
-        signals = self.dk9_get_cache_update_signals(self.dk9_parse_and_start_saving)
-        self.request_worker.add_task(DK9.adv_search, signals, 2, '', '', '', '')  # Empty request to get all
-        print('Starting thread to search for dk9 cache')
-        self.thread.start(self.request_worker)
+    def dk9_cache_updater_start_worker(self):
+        self.dk9_cache_handler_worker = Worker()
+        signals = self.dk9_get_cache_update_signals()
+        self.dk9_cache_handler_worker.add_task(DK9.CACHE.cache_search_parse_save_handler, signals, 2)
+        print('Starting cache handler thread')
+        self.thread.start(self.dk9_cache_handler_worker, priority=QtCore.QThread.Priority.HighestPriority)
 
-    def dk9_read_cache_start_worker(self):
+    # def dk9_update_cache_start_worker(self):
+    #     self.request_worker = Worker()
+    #     signals = self.dk9_get_cache_update_signals(result_to=self.dk9_parse_and_start_saving)
+    #     self.request_worker.add_task(DK9.adv_search, signals, 2, '', '', '', '')  # Empty request to get all
+    #     print('Starting thread to search for dk9 cache')
+    #     self.thread.start(self.request_worker, priority=QtCore.QThread.Priority.HighestPriority)
+
+    def dk9_read_cache_start_worker(self, next=None):
         self.file_io_worker = Worker()
         signals = self.dk9_get_cache_update_signals()
         self.file_io_worker.add_task(DK9.CACHE.read_cache_file, signals, 1)
         print('Starting thread to read dk9 cache')
         self.thread.start(self.file_io_worker, priority=QtCore.QThread.Priority.HighestPriority)
 
-    def dk9_write_cache_start_worker(self):
-        self.file_io_worker = Worker()
-        signals = self.dk9_get_cache_update_signals()
-        self.file_io_worker.add_task(DK9.CACHE.write_cache_file, signals, 1)
-        print('Starting thread to write dk9 cache')
-        self.thread.start(self.file_io_worker, priority=QtCore.QThread.Priority.HighestPriority)
+    # def dk9_write_cache_start_worker(self):
+    #     self.file_io_worker = Worker()
+    #     signals = self.dk9_get_cache_update_signals()
+    #     self.file_io_worker.add_task(DK9.CACHE.write_cache_file, signals, 1)
+    #     print('Starting thread to write dk9 cache')
+    #     self.thread.start(self.file_io_worker, priority=QtCore.QThread.Priority.HighestPriority)
 
-    def dk9_parse_and_start_saving(self, soups):
-        print(f'dk9_parse_and_start_saving. soups exist? {not not soups}')
-        # self.dk9_restart_caching_schedule()
-        if not soups:
-            return
-        self.dk9_parse_soups_to_dict(soups)
-        self.dk9_write_cache_start_worker()
+    # def dk9_parse_and_start_saving(self, soups):
+    #     print(f'dk9_parse_and_start_saving. soups exist? {not not soups}')
+    #     # self.dk9_restart_caching_schedule()
+    #     if not soups:
+    #         return
+    #     self.dk9_parse_soups_to_dict(soups)
+    #     self.dk9_write_cache_start_worker()
 
     def dk9_read_cache_if_exist(self):
         print(f'dk9_read_cache_if_exist')
@@ -950,48 +963,6 @@ class App(QMainWindow):
                                                                          DK9.STATUS.CONN_ERROR):
             if os.path.exists(f'{C.DK9_CACHE_FILE}'):
                 self.dk9_read_cache_start_worker()
-
-    def dk9_parse_soups_to_dict(self, soups):
-        DK9.CACHE.cache['updated'] = datetime.now().strftime("%H:%M %d.%m")
-        for num, table_name in enumerate(('parts', 'accessories')):
-            try:
-                temp_cache = []
-                if not soups[num]:  # ERROR - Empty database
-                    print(f'ERROR: Empty database page for {table_name}')
-                    self.error((f'Error parsing web database page to cache.:\n'
-                                f'This page is empty: {table_name}',
-                                f'{traceback.format_exc()}'))
-                    return
-                print(f'Start parsing database page for {table_name}')
-                for dk9_row in soups[num].tr.next_siblings:
-                    if repr(dk9_row)[0] == "'":
-                        # print(f'Excluded row: {dk9_row}')
-                        # if C.DK9_COLORED and dk9_row.attrs:
-                        continue
-                    row_style = dk9_row.get('style')
-                    row_palette = self.get_color_from_style(row_style) if row_style else 0
-                    row = dk9_row.findAll('td')
-                    row_data = [row_palette]
-                    for dk9_td in row:
-                        current_cell_text = str(dk9_td.string)
-                        # current_cell_text = current_cell_text.encode().decode('utf-8')
-                        if row_palette:
-                            row_data.append(current_cell_text)
-                        elif dk9_td.attrs and 'style' in dk9_td.attrs:
-                            style = str(dk9_td['style'])
-                            cell_palette = self.get_color_from_style(style)
-                            row_data.append((current_cell_text, cell_palette))
-                        else:
-                            row_data.append(current_cell_text)
-                    temp_cache.append(row_data)
-                    # temp_cache.append((*row_data,))
-                DK9.CACHE.cache[table_name] = temp_cache
-            except Exception as _err:
-                self.error((f'Error parsing web database page to cache.:\n'
-                            f'Page: {table_name}',
-                            f'{traceback.format_exc()}'))
-
-        print(f'Done parsing database to cache')
 
     def dk9_fill_one_table_from_dict(self, rows: list, table, tab_num: int, tab_names: tuple,
                                      def_bg_color1: tuple, def_bg_color2: tuple,
@@ -1235,9 +1206,9 @@ class App(QMainWindow):
         table.clearContents()
         table.setRowCount(0)
 
-    @staticmethod
-    def get_color_from_style(style):
-        return C.DK9_BG_COLORS[style[style.find(':') + 1: style.find(';')]]
+    # @staticmethod
+    # def get_color_from_style(style):
+    #     return C.DK9_BG_COLORS[style[style.find(':') + 1: style.find(';')]]
 
     def update_price_table(self, model, recursive_model: str = ''):  # 'xiaomi mi a2 m1804d2sg'
         try:

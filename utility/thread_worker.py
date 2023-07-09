@@ -34,6 +34,7 @@ class Worker(QThread):
         kwargs['error'] = signals.error
         kwargs['status'] = signals.status
         self.queue[priority].append({'func': func, 'args': args, 'signals': signals, 'kwargs': kwargs})
+        # print(f'Add task with priority: {priority} |Queue: {self.queue}')
 
     @pyqtSlot()
     def run(self):
@@ -52,7 +53,7 @@ class Worker(QThread):
                         result = func(*args, **kwargs)
                         # print(f'<- thread[{priority}]: "{func.__name__}" finishing')
                     except Exception as _err:
-                        print(_err)
+                        print(f'Worker error: {_err}')
                         # traceback.print_exc()
                         # App.error(f'Error while executing thread using:\n{self.args}\n{self.kwargs}', err)
                         exc_type, value = sys.exc_info()[:2]
@@ -60,6 +61,7 @@ class Worker(QThread):
                     else:
                         signals.result.emit(result)  # Return the result of the processing
                     finally:
+                        # print(f'Worker finished')
                         signals.finished.emit()  # Done
 
 

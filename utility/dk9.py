@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 
 import requests
 import traceback
@@ -240,7 +241,7 @@ class DK9Cache:
     def cache_is_valid(cache):
         if not isinstance(cache, dict):
             return False
-        for key, value_type in {'updated': str, 'parts': list, 'accessories': list}:
+        for key, value_type in {'updated': str, 'parts': list, 'accessories': list}.items():
             if key not in cache:
                 return False
             if not isinstance(cache[key], value_type):
@@ -280,3 +281,91 @@ class DK9Cache:
                     and self.app.curr_model.lower() in row[3].lower():
                 rows.append(row)
         return rows
+
+    # def get_cache_update_signals(self, result_to=None):
+    #     signals = WorkerSignals()
+    #     if result_to:
+    #         signals.result.connect(result_to)
+    #     signals.progress.connect(self.web_progress_bar)
+    #     signals.finished.connect(self.dk9_finish_progress_bar)
+    #     signals.error.connect(self.error)
+    #     signals.status.connect(self.update_web_status)
+    #     return signals
+    #
+    # def update_cache_start_worker(self):
+    #     self.request_worker = Worker()
+    #     signals = self.get_cache_update_signals(result_to=self.dk9_parse_and_start_saving)
+    #     self.request_worker.add_task(DK9.adv_search, signals, 2, '', '', '', '')  # Empty request to get all
+    #     print('Starting thread to search for dk9 cache')
+    #     self.thread.start(self.request_worker, priority=QtCore.QThread.Priority.HighestPriority)
+    #
+    # def read_cache_start_worker(self):
+    #     self.file_io_worker = Worker()
+    #     signals = self.get_cache_update_signals()
+    #     self.file_io_worker.add_task(DK9.CACHE.read_cache_file, signals, 1)
+    #     print('Starting thread to read dk9 cache')
+    #     self.thread.start(self.file_io_worker, priority=QtCore.QThread.Priority.HighestPriority)
+    #
+    # def write_cache_start_worker(self):
+    #     self.file_io_worker = Worker()
+    #     signals = self.get_cache_update_signals()
+    #     self.file_io_worker.add_task(DK9.CACHE.write_cache_file, signals, 1)
+    #     print('Starting thread to write dk9 cache')
+    #     self.thread.start(self.file_io_worker, priority=QtCore.QThread.Priority.HighestPriority)
+
+    def cache_search_parse_save_handler(self, progress, status, error):
+        soups = self.DK9.adv_search('', '', '', '', progress, status, error)
+        print(f'dk9_parse_and_start_saving. soups exist? {not not soups}')
+        # self.dk9_restart_caching_schedule()
+        if not soups:
+            return
+        self.parse_soups_to_dict(soups, progress, status, error)
+        self.write_cache_file(progress, status, error)
+
+    def parse_soups_to_dict(self, soups, progress, status, error):
+        self.cache['updated'] = datetime.now().strftime("%H:%M %d.%m")
+        for num, table_name in enumerate(('parts', 'accessories')):
+            try:
+                temp_cache = []
+                if not soups[num]:  # ERROR - Empty database
+                    print(f'ERROR: Empty database page for {table_name}')
+                    error.emit((f'Error parsing web database page to cache.:\n'
+                                f'This page is empty: {table_name}',
+                                f'{traceback.format_exc()}'))
+                    return
+                print(f'Start parsing database page for {table_name}')
+                for dk9_row in soups[num].tr.next_siblings:
+                    if repr(dk9_row)[0] == "'":
+                        # print(f'Excluded row: {dk9_row}')
+                        # if C.DK9_COLORED and dk9_row.attrs:
+                        continue
+                    row_style = dk9_row.get('style')
+                    row_palette = self.C.get_color_from_style(row_style) if row_style else 0
+                    row = dk9_row.findAll('td')
+                    row_data = [row_palette]
+                    for dk9_td in row:
+                        current_cell_text = str(dk9_td.string)
+                        # current_cell_text = current_cell_text.encode().decode('utf-8')
+                        if row_palette:
+                            row_data.append(current_cell_text)
+                        elif dk9_td.attrs and 'style' in dk9_td.attrs:
+                            style = str(dk9_td['style'])
+                            cell_palette = self.C.get_color_from_style(style)
+                            row_data.append((current_cell_text, cell_palette))
+                        else:
+                            row_data.append(current_cell_text)
+                    temp_cache.append(row_data)
+                    # temp_cache.append((*row_data,))
+                self.cache[table_name] = temp_cache
+            except Exception as _err:
+                error.emit((f'Error parsing web database page to cache.:\n'
+                            f'Page: {table_name}',
+                            f'{traceback.format_exc()}'))
+
+        print(f'Done parsing database to cache')
+
+    # def dk9_upd_caching_schedule(self, period=C.DK9_CACHING_PERIOD * 60_000):
+    #     print(f'dk9_upd_caching_schedule')
+    #     self.dk9_cache_timer.stop()
+    #     self.dk9_update_cache_start_worker()
+    #     self.dk9_cache_timer.start(C.DK9_CACHING_PERIOD * 1_000)  # * 60_000

@@ -207,6 +207,9 @@ class Config:
             self.PRICE_SEARCH_COLUMN_NUMBERS[list_name] = *(ord(letter.upper()) - 65 for letter in columns),
         # print(self.PRICE_SEARCH_COLUMN_NUMBERS)
 
+    def get_color_from_style(self, style):
+        return self.DK9_BG_COLORS[style[style.find(':') + 1: style.find(';')]]
+
     # @staticmethod
     # def set_desktop_path():
     #     return os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop\\')
