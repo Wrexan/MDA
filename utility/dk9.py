@@ -18,7 +18,7 @@ class DK9Parser:
         self.RDATA = C.r_data()
         self.SESSION = requests.Session()
         self.validation_data: dict = {}
-        self.TIMEOUT = 5
+        self.TIMEOUT = 30
         self.LOGIN_SUCCESS = False
 
         # self.WEB_STATUSES = {0: 'Нет соединения', 1: 'Не залогинен', 2: 'Подключен',
@@ -93,6 +93,9 @@ class DK9Parser:
             if '[Errno 110' in err.__str__():
                 self._error_handler(progress, status, err)
                 return
+            elif 'Read timed out' in err.__str__():
+                self._error_handler(progress, status, err)
+                return ()
             error.emit((f'Error while trying to login',
                         f'{traceback.format_exc()}'))
 
@@ -148,6 +151,9 @@ class DK9Parser:
             return ()
         except Exception as err:
             if '[Errno 110' in err.__str__():
+                self._error_handler(progress, status, err)
+                return ()
+            elif 'Read timed out' in err.__str__():
                 self._error_handler(progress, status, err)
                 return ()
             error.emit((f'Error while trying to search:\n'

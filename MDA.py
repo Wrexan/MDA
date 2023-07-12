@@ -687,21 +687,23 @@ class App(QMainWindow):
     # start by reconnect|reload button
     def dk9_relog_or_update_cache_by_button(self):
         print('dk9_relog_or_update_cache_by_button')
-        if self.price_status == 6 and self.web_status not in (
-                DK9.STATUS.CONNECTING,
-                DK9.STATUS.REDIRECT,
-                DK9.STATUS.FILE_READ,
-                DK9.STATUS.FILE_WRITE,
-                DK9.STATUS.UPDATING,
-                DK9.STATUS.FILE_USED_OFFLINE):  # Keep on, if manual cache reload is needed
+        if self.price_status == 6 and self.web_status not in \
+                (
+                        DK9.STATUS.CONNECTING,
+                        DK9.STATUS.REDIRECT,
+                        DK9.STATUS.FILE_READ,
+                        DK9.STATUS.FILE_WRITE,
+                        DK9.STATUS.UPDATING,
+                        # DK9.STATUS.FILE_USED_OFFLINE
+                ):  # Keep on, if manual cache reload is needed
             if C.DK9_CACHING:
                 self.dk9_upd_cache_restart_timer()
             elif self.web_status != DK9.STATUS.OK:
                 self.dk9_login_start_worker()
 
     # start on app start
-    def dk9_login_or_update_cache(self):
-        print('dk9_login_or_update_cache')
+    def dk9_login_or_update_cache_on_start(self):
+        print('dk9_login_or_update_cache_on_start')
         if C.DK9_CACHING:
             self.dk9_read_cache_if_exist()
             self.dk9_login_start_worker(self.dk9_upd_cache_restart_timer)
@@ -711,16 +713,18 @@ class App(QMainWindow):
     # @QtCore.pyqtSlot
     def dk9_search_or_login(self):
         print(f'dk9_search_or_login. {DK9.STATUS=}')
-        if self.web_status in (DK9.STATUS.OK, DK9.STATUS.FILE_UPDATED):
+        if C.DK9_CACHING and DK9.CACHE.cache:
+            self.dk9_search_start_worker()
+        elif self.web_status in (DK9.STATUS.OK, DK9.STATUS.FILE_UPDATED):
             if DK9.LOGIN_SUCCESS:
                 self.dk9_search_start_worker()
         elif self.web_status == DK9.STATUS.FILE_USED_OFFLINE:
             self.dk9_search_start_worker()
         else:
-            if C.DK9_CACHING:
-                self.dk9_login_start_worker(next_method=self.dk9_upd_cache_restart_timer)
-            else:
-                self.dk9_login_start_worker()
+            # if C.DK9_CACHING:
+            #     self.dk9_login_start_worker(next_method=self.dk9_upd_cache_restart_timer)
+            # else:
+            self.dk9_login_start_worker()
 
     def dk9_get_search_signals(self):
         signals = WorkerSignals()
@@ -752,7 +756,7 @@ class App(QMainWindow):
 
         if C.DK9_CACHING:
             if DK9.CACHE.cache:
-                self.dk9_fill_tables_from_dict()
+                self.dk9_fill_tables_from_cache_dict()
                 if not C.SEARCH_BY_PRICE_MODEL:
                     self.add_to_statistic(branch=C.BRANCH, brand=self.curr_manufacturer, model=self.curr_model)
             else:
@@ -831,8 +835,8 @@ class App(QMainWindow):
         else:  # Overflowing or STOPPED Overflow - no connection to stat server, longer delay
             self.stat_send_timer.start(C.STAT_RESEND_DELAY)
 
-    def dk9_upd_cache_restart_timer(self, period=C.DK9_CACHING_PERIOD * 60_000):  # * 60_000
-        print(f'dk9_upd_cache_restart_timer: {period//1000}sec')
+    def dk9_upd_cache_restart_timer(self, period=C.DK9_CACHING_PERIOD * 1_000):  # * 60_000===============================
+        print(f'dk9_upd_cache_restart_timer: {period // 1000}sec')
         self.dk9_cache_timer.stop()
         self.dk9_cache_updater_start_worker()
         # self.dk9_update_cache_start_worker()
@@ -842,8 +846,8 @@ class App(QMainWindow):
     #     self.dk9_cache_timer.stop()
     #     self.dk9_cache_timer.start(C.DK9_CACHING_PERIOD)
 
-    def dk9_fill_tables_from_dict(self):
-        print(f'dk9_fill_tables_from_dict. {self.web_status=}')
+    def dk9_fill_tables_from_cache_dict(self):
+        print(f'dk9_fill_tables_from_cache_dict. {self.web_status=}')
         # if self.web_status == DK9.STATUS.FILE_USED_OFFLINE:
         self.web_progress_bar(70)
         self.ui.table_parts.setSortingEnabled(False)
@@ -854,7 +858,7 @@ class App(QMainWindow):
                                           C.DK9_TABLE_NAMES, C.DK9_BG_P_COLOR1, C.DK9_BG_P_COLOR2, 5,
                                           align={4: Qt.AlignRight | Qt.AlignVCenter})
         self.dk9_fill_one_table_from_dict(found_accessories, self.ui.table_accesory, 1,
-                                          C.DK9_TABLE_NAMES, C.DK9_BG_P_COLOR1, C.DK9_BG_P_COLOR2, 5,
+                                          C.DK9_TABLE_NAMES, C.DK9_BG_A_COLOR1, C.DK9_BG_A_COLOR2, 5,
                                           align={4: Qt.AlignRight | Qt.AlignVCenter})
 
         self.web_progress_bar(85)
@@ -890,7 +894,7 @@ class App(QMainWindow):
                                           C.DK9_TABLE_NAMES, C.DK9_BG_P_COLOR1, C.DK9_BG_P_COLOR2, 5,
                                           align={4: Qt.AlignRight | Qt.AlignVCenter})
             self.dk9_fill_table_from_soup(self.soup, self.ui.table_accesory, 1,
-                                          C.DK9_TABLE_NAMES, C.DK9_BG_P_COLOR1, C.DK9_BG_P_COLOR2, 5,
+                                          C.DK9_TABLE_NAMES, C.DK9_BG_A_COLOR1, C.DK9_BG_A_COLOR2, 5,
                                           align={4: Qt.AlignRight | Qt.AlignVCenter})
             self.web_progress_bar(85)
             self.ui.table_parts.sortByColumn(3, Qt.SortOrder(0))
@@ -1008,7 +1012,7 @@ class App(QMainWindow):
                     item_counter += int(amount)
 
                 table.insertRow(r)
-                for cell_value in row[1:-1]:
+                for cell_value in row[1:]:
                     cell_bg_color = None
                     # print(f'{dk9_td.string} {self.curr_model=}')
                     if isinstance(cell_value, (list, tuple)):
@@ -1165,12 +1169,28 @@ class App(QMainWindow):
         if self.web_status in (DK9.STATUS.UPDATING, DK9.STATUS.OK, DK9.STATUS.FILE_UPDATED):
             # if self.web_status in (DK9.STATUS.CONNECTING, DK9.STATUS.OK):
             if self.web_status != DK9.STATUS.FILE_UPDATED:
-                self.update_web_status(DK9.STATUS.OK)
+                if C.DK9_CACHING and DK9.CACHE.cache:
+                    self.update_web_status(DK9.STATUS.FILE_UPDATED)
+                    self.ui.web_status.setToolTip(f'Loaded from file: '
+                                                  f'{C.DK9_CACHE_FILE}')
+                else:
+                    self.update_web_status(DK9.STATUS.OK)
             bar.setValue(0)
             # bar.setStyleSheet("QProgressBar::chunk {background-color: rgb(230, 230, 230);}")
-        elif self.web_status == DK9.STATUS.FILE_USED_OFFLINE:
+        # elif self.web_status == DK9.STATUS.FILE_USED_OFFLINE:
+        #     bar.setValue(100)
+        #     bar.setStyleSheet("QProgressBar::chunk {background-color: orange;}")
+        #     self.ui.web_status.setToolTip(f'Loaded from file: '
+        #                                   f'{C.DK9_CACHE_FILE}')
+        elif (C.DK9_CACHING and DK9.CACHE.cache) or self.web_status == DK9.STATUS.FILE_USED_OFFLINE:
             bar.setValue(100)
-            bar.setStyleSheet("QProgressBar::chunk {background-color: yellow;}")
+            cache_day = int(DK9.CACHE.cache['updated'].split(' ')[1][0:2])
+            current_day = datetime.now().day
+            if cache_day == current_day:
+                bar.setStyleSheet("QProgressBar::chunk {background-color: orange;}")
+            else:
+                bar.setStyleSheet("QProgressBar::chunk {background-color: orangered;}")
+            self.update_web_status(DK9.STATUS.FILE_USED_OFFLINE)
             self.ui.web_status.setToolTip(f'Loaded from file: '
                                           f'{C.DK9_CACHE_FILE}')
         else:
@@ -1391,7 +1411,7 @@ class App(QMainWindow):
                 # print(f'{bar.style()=}')
                 # bar.setStyleSheet("")
                 # bar.setStyleSheet("QProgressBar::chunk {background-color: rgb(230, 230, 230);}")
-                self.dk9_login_or_update_cache()
+                self.dk9_login_or_update_cache_on_start()
             else:
                 bar.setValue(100)
                 bar.setStyleSheet("QProgressBar::chunk {background-color: orangered;}")
@@ -1430,6 +1450,9 @@ class App(QMainWindow):
             else:
                 last_cell_bg_color = (200, 200, 200)
             # print(f'{row=} {last_cell_bg_color=}')
+            # print(f"{self.web_table_stylesheet_template[0]}"
+            #       f"{last_cell_bg_color}"
+            #       f"{self.web_table_stylesheet_template[1]}")
             table.setStyleSheet(f"{self.web_table_stylesheet_template[0]}"
                                 f"{last_cell_bg_color}"
                                 f"{self.web_table_stylesheet_template[1]}")
