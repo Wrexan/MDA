@@ -106,6 +106,10 @@ class ConfigWindow(QtWidgets.QDialog):
         # C.TABLE_COLUMN_SIZE_MAX = self.ui.column_width_max.value()
         if self.C.BRANCH == 0:
             self.Parent.reset_stat_timer()
+        if self.C.DK9_CACHING:
+            self.Parent.dk9_upd_cache_restart_timer()
+        else:
+            self.Parent.dk9_cache_timer.stop()
         self.Parent.init_ui_dynamics()
         self.Parent.upd_username()
         self.C.precalculate_color_diffs()

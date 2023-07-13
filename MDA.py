@@ -768,7 +768,14 @@ class App(QMainWindow):
                     self.dk9_upd_cache_restart_timer()
             return
 
-        if not DK9.LOGIN_SUCCESS or self.web_status != DK9.STATUS.OK:
+        if not DK9.LOGIN_SUCCESS or self.web_status not in \
+                (
+                        DK9.STATUS.OK,
+                        DK9.STATUS.FILE_UPDATED,
+                        DK9.STATUS.FILE_USED_OFFLINE,
+                        DK9.STATUS.FILE_READ_ERR,
+                        DK9.STATUS.FILE_WRITE_ERR,
+                ):
             return
 
         # Auto reset filter on search
@@ -835,8 +842,8 @@ class App(QMainWindow):
         else:  # Overflowing or STOPPED Overflow - no connection to stat server, longer delay
             self.stat_send_timer.start(C.STAT_RESEND_DELAY)
 
-    def dk9_upd_cache_restart_timer(self, period=C.DK9_CACHING_PERIOD * 1_000):  # * 60_000===============================
-        print(f'dk9_upd_cache_restart_timer: {period // 1000}sec')
+    def dk9_upd_cache_restart_timer(self, period=C.DK9_CACHING_PERIOD * 60_000):  # * 60_000============================
+        print(f'dk9_upd_cache_restart_timer: {period // 60_000}minutes')
         self.dk9_cache_timer.stop()
         self.dk9_cache_updater_start_worker()
         # self.dk9_update_cache_start_worker()
