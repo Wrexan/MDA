@@ -120,7 +120,7 @@ class ConfigWindow(QtWidgets.QDialog):
         if login:
             self.DK9.change_data(self.C.c_data())
             print(f'{self.DK9.CDATA=}')
-            self.Parent.login_dk9()
+            self.Parent.dk9_login_start_worker()
 
 
 class FirstStartWindow(QtWidgets.QDialog):
@@ -180,7 +180,8 @@ class FirstStartWindow(QtWidgets.QDialog):
         if login:
             self.DK9.change_data(self.C.c_data())
             print(f'{self.DK9.CDATA=}')
-            self.Parent.login_dk9()
+            self.Parent.dk9_login_start_worker()
+            # self.Parent.dk9_login_or_update_cache_on_start()
         self.close()
 
 
