@@ -1697,7 +1697,7 @@ class App(QMainWindow):
                     self.ui.table_accesory,
                     self.ui.table_price,
             ):
-                print(f'{source=}')
+                # print(f'{source=}')
                 row = source.selectedItems()
                 # print(f'{row=}')
                 if row:
