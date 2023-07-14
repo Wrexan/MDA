@@ -860,7 +860,7 @@ class App(QMainWindow):
         self.ui.table_parts.setSortingEnabled(False)
         self.ui.table_accesory.setSortingEnabled(False)
         found_parts, found_accessories = DK9.CACHE.search_rows_in_cache_dict()
-        print(f'search result:\n{found_parts=}\n{found_accessories=}')
+        # print(f'search result:\n{found_parts=}\n{found_accessories=}')
         self.dk9_fill_one_table_from_dict(found_parts, self.ui.table_parts, 0,
                                           C.DK9_TABLE_NAMES, C.DK9_BG_P_COLOR1, C.DK9_BG_P_COLOR2, 5,
                                           align={4: Qt.AlignRight | Qt.AlignVCenter})

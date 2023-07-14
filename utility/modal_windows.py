@@ -167,12 +167,11 @@ class FirstStartWindow(QtWidgets.QDialog):
     def apply_settings(self):
         print('Applying settings')
         login = False
-        self.Parent.upd_username()
         if self.ui.web_login.text() and self.ui.web_password.text():
             login = True
             self.C.DK9_LOGIN = self.ui.web_login.text()
             self.C.DK9_PASSWORD = self.ui.web_password.text()
-
+            self.Parent.upd_username()
         try:
             self.C.save_user_config()
         except Exception as _err:
