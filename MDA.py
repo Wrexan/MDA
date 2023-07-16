@@ -862,10 +862,10 @@ class App(QMainWindow):
         found_parts, found_accessories = DK9.CACHE.search_rows_in_cache_dict()
         # print(f'search result:\n{found_parts=}\n{found_accessories=}')
         self.dk9_fill_one_table_from_dict(found_parts, self.ui.table_parts, 0,
-                                          C.DK9_TABLE_NAMES, C.DK9_BG_P_COLOR1, C.DK9_BG_P_COLOR2, 5,
+                                          C.DK9_TABLE_NAMES, C.DK9_BG_P_COLOR1, C.DK9_BG_P_COLOR2, 6,
                                           align={4: Qt.AlignRight | Qt.AlignVCenter})
         self.dk9_fill_one_table_from_dict(found_accessories, self.ui.table_accesory, 1,
-                                          C.DK9_TABLE_NAMES, C.DK9_BG_A_COLOR1, C.DK9_BG_A_COLOR2, 5,
+                                          C.DK9_TABLE_NAMES, C.DK9_BG_A_COLOR1, C.DK9_BG_A_COLOR2, 6,
                                           align={4: Qt.AlignRight | Qt.AlignVCenter})
 
         self.web_progress_bar(85)
