@@ -239,7 +239,7 @@ class App(QMainWindow):
         self.model_list_widget.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.model_list_widget.setFixedWidth(self.search_input.width())
         self.model_list_widget.setMinimumSize(20, 20)
-        self.model_list_widget.itemClicked.connect(self.scheduler)
+        self.model_list_widget.itemClicked.connect(self.filter_item_text_search_visualise)
         self.model_list_widget.hide()
 
     def apply_window_size(self):
@@ -579,25 +579,16 @@ class App(QMainWindow):
 
     def schedule_statify(self, item):
         self.statify_next_request = True
-        self.scheduler(item)
+        self.filter_item_text_search_visualise(item)
 
     # @QtCore.pyqtSlot
-    def scheduler(self, item):
+    def filter_item_text_search_visualise(self, item):
         if item.text():
             self.statify_next_request = True
         text_lower: str = item.data(1).lower()
         text_lower_orig = text_lower[:]
         # print(f'Scheduler: {text_lower=}')
-        for i in range(len(text_lower) - 2):
-            remark_start = text_lower.find('(')
-            if remark_start >= 0:
-                remark_end = text_lower[remark_start:].find(')')
-                # print(f'{text_lower[:remark_start]=}  {text_lower[ + remark_end:]=}')
-                # print(f'{remark_start=}  {remark_end=}')
-                text_lower = f'{text_lower[:remark_start]}' \
-                             f'{text_lower[remark_start + remark_end + 1:]}'
-            else:
-                break
+        text_lower = self.filter_trash_from_models_string(text_lower)
         # print(f'CUT: {text_lower=}')
         manufacturer_lower = self.curr_manufacturer.lower()
         if 'asus' in manufacturer_lower:  # -------------------ASUS
@@ -635,6 +626,20 @@ class App(QMainWindow):
         self.upd_model_buttons(models_for_buttons)
         self.update_price_table(text_lower_orig, recursive_model)
         self.upd_tables_row_heights(price=True)
+
+    def filter_trash_from_models_string(self, _string: str):
+        result_string = _string
+        for i in range(len(result_string) - 2):
+            remark_start = result_string.find('(')
+            if remark_start >= 0:
+                remark_end = result_string[remark_start:].find(')')
+                # print(f'{text_lower[:remark_start]=}  {text_lower[ + remark_end:]=}')
+                # print(f'{remark_start=}  {remark_end=}')
+                result_string = f'{result_string[:remark_start]}' \
+                                f'{result_string[remark_start + remark_end + 1:]}'
+            else:
+                break
+        return result_string
 
     def read_price_start_worker(self):
         self.file_io_worker = Worker()
@@ -1418,7 +1423,14 @@ class App(QMainWindow):
                 # print(f'{bar.style()=}')
                 # bar.setStyleSheet("")
                 # bar.setStyleSheet("QProgressBar::chunk {background-color: rgb(230, 230, 230);}")
-                self.dk9_login_or_update_cache_on_start()
+                if self.web_status in \
+                        (
+                                DK9.STATUS.NO_CONN,
+                                DK9.STATUS.CLI_ERR,
+                                DK9.STATUS.SERV_ERR,
+                                DK9.STATUS.CONN_ERROR,
+                        ):
+                    self.dk9_login_or_update_cache_on_start()
             else:
                 bar.setValue(100)
                 bar.setStyleSheet("QProgressBar::chunk {background-color: orangered;}")
@@ -1811,7 +1823,7 @@ class SearchInput(QLineEdit):
                 if self.app.model_list_widget.isHidden():
                     self.app.upd_models_list()
                     return
-                self.app.scheduler(self.app.model_list_widget.currentItem())
+                self.app.filter_item_text_search_visualise(self.app.model_list_widget.currentItem())
 
             elif event.key() == Qt.Key_Up:
                 idx = self.app.model_list_widget.currentRow() - 1
