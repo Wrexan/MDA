@@ -282,10 +282,13 @@ class DK9Cache:
 
     def search_rows_in_cache_table(self, table: list):
         rows = []
+        brand_lowercase = self.app.curr_manufacturer.lower()
+        model_lowercase = self.app.curr_model.lower()
         for row in table:
-            if self.app.curr_manufacturer.lower() == row[2].lower() \
-                    and self.app.curr_model.lower() in row[3].lower():
-                rows.append(row)
+            if brand_lowercase == row[2].lower():
+                if model_lowercase in row[3].lower() \
+                        or model_lowercase in row[4].lower():
+                    rows.append(row)
         return rows
 
     # def get_cache_update_signals(self, result_to=None):
