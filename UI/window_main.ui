@@ -351,13 +351,13 @@
                            </property>
                            <property name="minimumSize">
                             <size>
-                             <width>240</width>
+                             <width>200</width>
                              <height>26</height>
                             </size>
                            </property>
                            <property name="maximumSize">
                             <size>
-                             <width>240</width>
+                             <width>200</width>
                              <height>26</height>
                             </size>
                            </property>
@@ -507,20 +507,20 @@
                          <item>
                           <widget class="QLabel" name="price_status">
                            <property name="sizePolicy">
-                            <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+                            <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
                              <horstretch>0</horstretch>
                              <verstretch>0</verstretch>
                             </sizepolicy>
                            </property>
                            <property name="minimumSize">
                             <size>
-                             <width>240</width>
+                             <width>200</width>
                              <height>26</height>
                             </size>
                            </property>
                            <property name="maximumSize">
                             <size>
-                             <width>240</width>
+                             <width>200</width>
                              <height>26</height>
                             </size>
                            </property>
@@ -909,19 +909,13 @@
                </property>
                <property name="minimumSize">
                 <size>
-                 <width>128</width>
+                 <width>120</width>
                  <height>30</height>
                 </size>
                </property>
                <property name="maximumSize">
                 <size>
-                 <width>128</width>
-                 <height>30</height>
-                </size>
-               </property>
-               <property name="baseSize">
-                <size>
-                 <width>128</width>
+                 <width>120</width>
                  <height>30</height>
                 </size>
                </property>
@@ -943,19 +937,13 @@
                </property>
                <property name="minimumSize">
                 <size>
-                 <width>128</width>
+                 <width>120</width>
                  <height>30</height>
                 </size>
                </property>
                <property name="maximumSize">
                 <size>
-                 <width>128</width>
-                 <height>30</height>
-                </size>
-               </property>
-               <property name="baseSize">
-                <size>
-                 <width>128</width>
+                 <width>120</width>
                  <height>30</height>
                 </size>
                </property>
@@ -982,19 +970,13 @@
                </property>
                <property name="minimumSize">
                 <size>
-                 <width>128</width>
+                 <width>120</width>
                  <height>30</height>
                 </size>
                </property>
                <property name="maximumSize">
                 <size>
-                 <width>128</width>
-                 <height>30</height>
-                </size>
-               </property>
-               <property name="baseSize">
-                <size>
-                 <width>128</width>
+                 <width>120</width>
                  <height>30</height>
                 </size>
                </property>
@@ -1021,19 +1003,13 @@
                </property>
                <property name="minimumSize">
                 <size>
-                 <width>128</width>
+                 <width>120</width>
                  <height>30</height>
                 </size>
                </property>
                <property name="maximumSize">
                 <size>
-                 <width>128</width>
-                 <height>30</height>
-                </size>
-               </property>
-               <property name="baseSize">
-                <size>
-                 <width>128</width>
+                 <width>120</width>
                  <height>30</height>
                 </size>
                </property>
@@ -1062,19 +1038,13 @@
                </property>
                <property name="minimumSize">
                 <size>
-                 <width>128</width>
+                 <width>120</width>
                  <height>30</height>
                 </size>
                </property>
                <property name="maximumSize">
                 <size>
-                 <width>128</width>
-                 <height>30</height>
-                </size>
-               </property>
-               <property name="baseSize">
-                <size>
-                 <width>128</width>
+                 <width>120</width>
                  <height>30</height>
                 </size>
                </property>
@@ -1101,19 +1071,13 @@
                </property>
                <property name="minimumSize">
                 <size>
-                 <width>128</width>
+                 <width>120</width>
                  <height>30</height>
                 </size>
                </property>
                <property name="maximumSize">
                 <size>
-                 <width>128</width>
-                 <height>30</height>
-                </size>
-               </property>
-               <property name="baseSize">
-                <size>
-                 <width>128</width>
+                 <width>120</width>
                  <height>30</height>
                 </size>
                </property>
@@ -1140,19 +1104,13 @@
                </property>
                <property name="minimumSize">
                 <size>
-                 <width>128</width>
+                 <width>120</width>
                  <height>30</height>
                 </size>
                </property>
                <property name="maximumSize">
                 <size>
-                 <width>128</width>
-                 <height>30</height>
-                </size>
-               </property>
-               <property name="baseSize">
-                <size>
-                 <width>128</width>
+                 <width>120</width>
                  <height>30</height>
                 </size>
                </property>
@@ -1321,14 +1279,14 @@
                 <item>
                  <widget class="QWidget" name="search_widget" native="true">
                   <property name="sizePolicy">
-                   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                   <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                     <horstretch>0</horstretch>
                     <verstretch>0</verstretch>
                    </sizepolicy>
                   </property>
                   <property name="minimumSize">
                    <size>
-                    <width>540</width>
+                    <width>80</width>
                     <height>30</height>
                    </size>
                   </property>
@@ -1628,6 +1586,12 @@
        </item>
        <item>
         <widget class="QWidget" name="price_widget" native="true">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <layout class="QVBoxLayout" name="verticalLayout_4">
           <property name="spacing">
            <number>2</number>
@@ -1646,12 +1610,6 @@
           </property>
           <item>
            <widget class="QWidget" name="model_widget" native="true">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-              <horstretch>0</horstretch>
-              <verstretch>20</verstretch>
-             </sizepolicy>
-            </property>
             <property name="minimumSize">
              <size>
               <width>0</width>

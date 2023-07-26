@@ -20,6 +20,7 @@ class DK9Parser:
         self.validation_data: dict = {}
         self.TIMEOUT = 30
         self.LOGIN_SUCCESS = False
+        self.LAST_ERROR_PAGE_TEXT = ''
 
         # self.WEB_STATUSES = {0: 'Нет соединения', 1: 'Не залогинен', 2: 'Подключен',
         #                      3: 'Перенаправление', 4: 'Запрос отклонен', 5: 'Ошибка сервера'}
@@ -76,6 +77,7 @@ class DK9Parser:
                                                 '__VIEWSTATEGENERATOR': '567Ddc67DS57s&&dtc',
                                                 '__EVENTVALIDATION': 'cdc9796cjlmckdmjNCydc565nysdi'}
                         self.LOGIN_SUCCESS = False
+                        self.LAST_ERROR_PAGE_TEXT = soup.prettify()
                         status.emit(self.STATUS.NO_LOGIN)
                     progress.emit(100)
                     return
@@ -104,7 +106,7 @@ class DK9Parser:
             return ()
         status.emit(self.STATUS.UPDATING)
         progress.emit(10)
-        print(f'Searching: {type_=}  {firm_=}  {model_=}  {description_=}\n')
+        print(f'Searching: {type_=}  {firm_=}  {model_=}  {description_=}')
         # print(f'+++++++++: {self.validation_data=}')
         try:
             # ===============================================================================================
@@ -130,6 +132,13 @@ class DK9Parser:
             part_table_soup = soup.find("table", attrs={"id": "ctl00_ContentPlaceHolder1_GridView1"})
             progress.emit(60)
             accessory_table_soup = soup.find("table", attrs={"id": "ctl00_ContentPlaceHolder1_GridView2"})
+            if part_table_soup is None or accessory_table_soup is None:
+                title = soup.title.string
+                if title and 'login' in title.lower():
+                    self.LOGIN_SUCCESS = False
+                else:
+                    self.LAST_ERROR_PAGE_TEXT = soup.prettify()
+                    status.emit(self.STATUS.SERV_ERR)
 
             return part_table_soup, accessory_table_soup
             # ctl00$ContentPlaceHolder1$ButtonSearch   кнопка поиска submit
@@ -324,24 +333,25 @@ class DK9Cache:
 
     def cache_search_parse_save_handler(self, progress, status, error):
         soups = self.DK9.adv_search('', '', '', '', progress, status, error)
-        print(f'dk9_parse_and_start_saving. soups exist? {not not soups}')
+        print(f'dk9_parse_and_start_saving. soups exist? {not not soups[0]} {not not soups[1]}')
         # self.dk9_restart_caching_schedule()
-        if not soups:
+        if soups[0] is None or soups[1] is None:
             return
         self.parse_soups_to_dict(soups, progress, status, error)
         self.write_cache_file(progress, status, error)
 
     def parse_soups_to_dict(self, soups, progress, status, error):
+        print(f'parse_soups_to_dict')
         self.cache['updated'] = datetime.now().strftime("%H:%M %d.%m")
         for num, table_name in enumerate(('parts', 'accessories')):
             try:
                 temp_cache = []
-                if not soups[num]:  # ERROR - Empty database
-                    print(f'ERROR: Empty database page for {table_name}')
-                    error.emit((f'Error parsing web database page to cache.:\n'
-                                f'This page is empty: {table_name}',
-                                f'{traceback.format_exc()}'))
-                    return
+                # if not soups[num]:  # ERROR - Empty database
+                #     print(f'ERROR: Empty database page for {table_name}')
+                #     error.emit((f'Error parsing web database page to cache.:\n'
+                #                 f'This page is empty: {table_name}',
+                #                 f'{traceback.format_exc()}'))
+                #     return
                 print(f'Start parsing database page for {table_name}')
                 for dk9_row in soups[num].tr.next_siblings:
                     if repr(dk9_row)[0] == "'":

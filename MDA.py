@@ -88,12 +88,12 @@ class App(QMainWindow):
         # self.model_list_widget.setHorizontalHeaderLabels('f')
         self.model_list_widget.verticalHeader().hide()
         self.model_list_widget.horizontalHeader().hide()
-        widget_width = self.search_input.width()
-        self.model_list_widget.setMaximumWidth(widget_width)
-        column_0_width = int(widget_width * 0.9)
-        self.model_list_widget.setColumnWidth(0, column_0_width)
-        self.model_list_widget.setColumnWidth(1, widget_width - column_0_width - 2)
-        self.model_list_widget.setHorizontalScrollBarPolicy(1)  # Allways off
+        # widget_width = self.search_input.width()
+        # self.model_list_widget.setMaximumWidth(widget_width)
+        # column_0_width = int(widget_width * 0.9)
+        # self.model_list_widget.setColumnWidth(0, column_0_width)
+        # self.model_list_widget.setColumnWidth(1, widget_width - column_0_width - 2)
+        # self.model_list_widget.setHorizontalScrollBarPolicy(1)  # Allways off
 
         L.Parent = self.ui
         L.apply_lang()
@@ -144,6 +144,7 @@ class App(QMainWindow):
         self.statify_next_request: bool = False
         self.search_req_ruled: str = ''
         self.search_again = False
+        self.got_login_on_search_try_relog = False
         # self.old_search = ''
         self.thread = QtCore.QThread
         self.dk9_cache_handler_worker = None  # Worker(self.update_dk9_data, 'mi8 lite')
@@ -291,6 +292,8 @@ class App(QMainWindow):
         self.work_cost_label.move(self.ui.table_parts.width() - 340, 3)
         self.work_cost_label.setFont(self.ui_font_bold)
 
+        self.ui.model_widget.setFixedWidth((self.width() - 6) // 2)  # model_buttons layout
+
         self.model_list_widget.setStyleSheet(
             "QTableWidget::item"
             "{"
@@ -355,6 +358,11 @@ class App(QMainWindow):
     # =============================================================================================================
 
     def fix_models_list_position(self):
+        widget_width = self.search_input.width()
+        self.model_list_widget.setFixedWidth(widget_width)
+        column_0_width = int(widget_width * 0.9)
+        self.model_list_widget.setColumnWidth(0, column_0_width)
+        self.model_list_widget.setColumnWidth(1, widget_width - column_0_width - 2)
         self.model_list_widget.move(int(self.ui.search_widget.x() + 12),
                                     int(self.ui.HEAD.height() - 6))
 
@@ -566,8 +574,9 @@ class App(QMainWindow):
                 #     self.dk9_login_start_worker()
             lay.addWidget(self.model_buttons[num], 0)
             le -= 1
-        sp = QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Expanding)
-        lay.addItem(sp)
+        self.ui.model_widget.setFixedWidth((self.width() - 6)//2)
+        # sp = QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Expanding)
+        # lay.addItem(sp)
 
     def update_price_status(self, status: int):
         self.price_status = status
@@ -680,6 +689,10 @@ class App(QMainWindow):
                 self.ui.web_status.setText(f'{C.WEB_STATUSES[status]} - {datetime_formatted}')
             else:
                 self.ui.web_status.setText(C.WEB_STATUSES[status])
+            if DK9.LAST_ERROR_PAGE_TEXT:
+                self.ui.web_status.setToolTip(f'Error Page: '
+                                              f'{DK9.LAST_ERROR_PAGE_TEXT}')
+                DK9.LAST_ERROR_PAGE_TEXT = ''
         else:
             print(f'Error: status code {status} not present {C.WEB_STATUSES=}')
 
@@ -736,7 +749,7 @@ class App(QMainWindow):
         signals.result.connect(self.dk9_fill_tables_from_soup)
         signals.progress.connect(self.web_progress_bar)
         signals.status.connect(self.update_web_status)
-        signals.finished.connect(self.dk9_finish_progress_bar)
+        signals.finished.connect(self.dk9_finish_progress_bar_status)
         signals.error.connect(self.error)
         return signals
 
@@ -746,11 +759,11 @@ class App(QMainWindow):
         signals.progress.connect(self.web_progress_bar)
         signals.status.connect(self.update_web_status)
         signals.error.connect(self.error)
-        if self.curr_model:
+        if not C.DK9_CACHING and self.curr_model:
             self.search_again = True
             signals.finished.connect(self.dk9_search_start_worker)
         else:
-            signals.finished.connect(next_method or self.dk9_finish_progress_bar)
+            signals.finished.connect(next_method or self.dk9_finish_progress_bar_status)
         print('Starting thread to login')
         self.request_worker.add_task(DK9.login, signals, 2)
         self.thread.start(self.request_worker)
@@ -804,7 +817,6 @@ class App(QMainWindow):
                 manufacturer = self.curr_manufacturer
 
             if self.search_again:
-                # print(f'SEARCH AGAIN: {self.curr_model}')
                 self.search_again = False
 
             # ===========================  statistic  ==============================
@@ -847,10 +859,11 @@ class App(QMainWindow):
         else:  # Overflowing or STOPPED Overflow - no connection to stat server, longer delay
             self.stat_send_timer.start(C.STAT_RESEND_DELAY)
 
-    def dk9_upd_cache_restart_timer(self, period=C.DK9_CACHING_PERIOD * 60_000):  # * 60_000============================
+    def dk9_upd_cache_restart_timer(self, period=C.DK9_CACHING_PERIOD * 60_000, allow_update = True):  # * 60_000============================
         print(f'dk9_upd_cache_restart_timer: {period // 60_000}minutes')
         self.dk9_cache_timer.stop()
-        self.dk9_cache_updater_start_worker()
+        if allow_update:
+            self.dk9_cache_updater_start_worker()
         # self.dk9_update_cache_start_worker()
         self.dk9_cache_timer.start(period)  # * 60_000
 
@@ -887,7 +900,7 @@ class App(QMainWindow):
         # else:
         #     self.dk9_login_start_worker()
         self.web_progress_bar(100)
-        self.dk9_finish_progress_bar()
+        self.dk9_finish_progress_bar_status()
 
     def dk9_fill_tables_from_soup(self, table_soups: type(bs4.BeautifulSoup) = None, use_old_soup: bool = False):
         print(f'dk9_fill_tables_from_soup {self.web_status=} {use_old_soup=}')
@@ -925,12 +938,15 @@ class App(QMainWindow):
 
     # ========== CACHE WEB DATABASE (DK9) ============
 
-    def dk9_get_cache_update_signals(self, result_to=None):
+    def dk9_get_cache_update_signals(self, result_to=None, next_method=None):
         signals = WorkerSignals()
         if result_to:
             signals.result.connect(result_to)
         signals.progress.connect(self.web_progress_bar)
-        signals.finished.connect(self.dk9_finish_progress_bar)
+        if next_method:
+            signals.finished.connect(next_method)
+        else:
+            signals.finished.connect(self.dk9_finish_search_worker)
         signals.error.connect(self.error)
         signals.status.connect(self.update_web_status)
         return signals
@@ -949,9 +965,9 @@ class App(QMainWindow):
     #     print('Starting thread to search for dk9 cache')
     #     self.thread.start(self.request_worker, priority=QtCore.QThread.Priority.HighestPriority)
 
-    def dk9_read_cache_start_worker(self, next=None):
+    def dk9_read_cache_start_worker(self):
         self.file_io_worker = Worker()
-        signals = self.dk9_get_cache_update_signals()
+        signals = self.dk9_get_cache_update_signals(next_method=self.dk9_finish_progress_bar_status)
         self.file_io_worker.add_task(DK9.CACHE.read_cache_file, signals, 1)
         print('Starting thread to read dk9 cache')
         self.thread.start(self.file_io_worker, priority=QtCore.QThread.Priority.HighestPriority)
@@ -1169,8 +1185,22 @@ class App(QMainWindow):
                         f'{table}',
                         f'{traceback.format_exc()}'))
 
-    def dk9_finish_progress_bar(self):
-        print(f'dk9_finish_progress_bar {self.web_status=}')
+    def dk9_finish_search_worker(self):
+        if self.web_status == DK9.STATUS.SERV_ERR:
+            self.dk9_upd_cache_restart_timer(allow_update=False)
+        if not DK9.LOGIN_SUCCESS:
+            if not self.got_login_on_search_try_relog:
+                self.got_login_on_search_try_relog = True
+                self.dk9_login_start_worker(self.dk9_upd_cache_restart_timer)
+                return
+            else:
+                self.got_login_on_search_try_relog = True
+                self.ui.web_status.setToolTip(f'Can`t relogin to DK9')
+                self.dk9_upd_cache_restart_timer(allow_update=False)
+        self.dk9_finish_progress_bar_status()
+
+    def dk9_finish_progress_bar_status(self):
+        print(f'dk9_finish_progress_bar_status {self.web_status=}')
         bar = self.ui.web_progress_bar
         # if not DK9.CACHE.cache and C.DK9_CACHING and self.web_status in (DK9.STATUS.NO_CONN,
         #                                                                 DK9.STATUS.CLI_ERR,
@@ -1793,7 +1823,7 @@ class SearchInput(QLineEdit):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.sizePolicy().hasHeightForWidth())
         self.setSizePolicy(sizePolicy)
-        self.setMinimumSize(QtCore.QSize(540, 30))
+        self.setMinimumSize(QtCore.QSize(80, 30))
         self.setMaximumSize(QtCore.QSize(540, 30))
         self.setBaseSize(QtCore.QSize(540, 30))
 
