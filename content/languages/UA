@@ -52,7 +52,7 @@
 "chb_price_name_only": "Модель прайса",
 "chb_search_eng": "Латиниця",
 "chb_search_narrow": "Два символи",
-"le_cash_name_placeholder": "Даблклік для копіювання"
+"le_cash_name_placeholder": "Строка прайса в розширеному вигляді"
 },
 "AdvSearchDialog":
 {

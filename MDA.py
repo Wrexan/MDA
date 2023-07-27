@@ -574,7 +574,7 @@ class App(QMainWindow):
                 #     self.dk9_login_start_worker()
             lay.addWidget(self.model_buttons[num], 0)
             le -= 1
-        self.ui.model_widget.setFixedWidth((self.width() - 6)//2)
+        self.ui.model_widget.setFixedWidth((self.width() - 6) // 2)
         # sp = QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Expanding)
         # lay.addItem(sp)
 
@@ -859,7 +859,8 @@ class App(QMainWindow):
         else:  # Overflowing or STOPPED Overflow - no connection to stat server, longer delay
             self.stat_send_timer.start(C.STAT_RESEND_DELAY)
 
-    def dk9_upd_cache_restart_timer(self, period=C.DK9_CACHING_PERIOD * 60_000, allow_update = True):  # * 60_000============================
+    def dk9_upd_cache_restart_timer(self, period=C.DK9_CACHING_PERIOD * 60_000,
+                                    allow_update=True):  # * 60_000============================
         print(f'dk9_upd_cache_restart_timer: {period // 60_000}minutes')
         self.dk9_cache_timer.stop()
         if allow_update:
@@ -1194,8 +1195,8 @@ class App(QMainWindow):
                 self.dk9_login_start_worker(self.dk9_upd_cache_restart_timer)
                 return
             else:
-                self.got_login_on_search_try_relog = True
-                self.ui.web_status.setToolTip(f'Can`t relogin to DK9')
+                self.got_login_on_search_try_relog = False
+                # self.ui.web_status.setToolTip(f'Can`t relogin to DK9')
                 self.dk9_upd_cache_restart_timer(allow_update=False)
         self.dk9_finish_progress_bar_status()
 
@@ -1213,10 +1214,11 @@ class App(QMainWindow):
             if self.web_status != DK9.STATUS.FILE_UPDATED:
                 if C.DK9_CACHING and DK9.CACHE.cache:
                     self.update_web_status(DK9.STATUS.FILE_UPDATED)
-                    self.ui.web_status.setToolTip(f'Loaded from file: '
-                                                  f'{C.DK9_CACHE_FILE}')
                 else:
                     self.update_web_status(DK9.STATUS.OK)
+            if self.web_status == DK9.STATUS.FILE_UPDATED:
+                self.ui.web_status.setToolTip(f'Using file: '
+                                              f'{C.DK9_CACHE_FILE}')
             bar.setValue(0)
             # bar.setStyleSheet("QProgressBar::chunk {background-color: rgb(230, 230, 230);}")
         # elif self.web_status == DK9.STATUS.FILE_USED_OFFLINE:
@@ -1224,17 +1226,20 @@ class App(QMainWindow):
         #     bar.setStyleSheet("QProgressBar::chunk {background-color: orange;}")
         #     self.ui.web_status.setToolTip(f'Loaded from file: '
         #                                   f'{C.DK9_CACHE_FILE}')
-        elif (C.DK9_CACHING and DK9.CACHE.cache) or self.web_status == DK9.STATUS.FILE_USED_OFFLINE:
+        elif C.DK9_CACHING or self.web_status == DK9.STATUS.FILE_USED_OFFLINE:
             bar.setValue(100)
-            cache_day = int(DK9.CACHE.cache['updated'].split(' ')[1][0:2])
-            current_day = datetime.now().day
-            if cache_day == current_day:
-                bar.setStyleSheet("QProgressBar::chunk {background-color: orange;}")
+            if DK9.CACHE.cache:
+                cache_day = int(DK9.CACHE.cache['updated'].split(' ')[1][0:2])
+                current_day = datetime.now().day
+                if cache_day == current_day:
+                    bar.setStyleSheet("QProgressBar::chunk {background-color: orange;}")
+                else:
+                    bar.setStyleSheet("QProgressBar::chunk {background-color: orangered;}")
+                self.update_web_status(DK9.STATUS.FILE_USED_OFFLINE)
+                self.ui.web_status.setToolTip(f'Loaded from file: '
+                                              f'{C.DK9_CACHE_FILE}')
             else:
                 bar.setStyleSheet("QProgressBar::chunk {background-color: orangered;}")
-            self.update_web_status(DK9.STATUS.FILE_USED_OFFLINE)
-            self.ui.web_status.setToolTip(f'Loaded from file: '
-                                          f'{C.DK9_CACHE_FILE}')
         else:
             bar.setValue(100)
             bar.setStyleSheet("QProgressBar::chunk {background-color: orangered;}")
