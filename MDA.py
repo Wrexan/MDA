@@ -636,6 +636,7 @@ class App(QMainWindow):
         self.update_price_table(text_lower_orig, recursive_model)
         self.upd_tables_row_heights(price=True)
 
+    @staticmethod
     def filter_trash_from_models_string(self, _string: str):
         result_string = _string
         for i in range(len(result_string) - 2):
@@ -661,6 +662,8 @@ class App(QMainWindow):
         print('Starting thread to read price')
         self.thread.start(self.file_io_worker, priority=QtCore.QThread.Priority.HighestPriority)
 
+    # =========================== MDAS ==============================
+
     def stat_send_start_worker(self):
         print('Starting thread to send stats')
         self.request_worker = Worker()
@@ -678,6 +681,28 @@ class App(QMainWindow):
     def reset_stat_timer(self):
         C.stat_delay = C.STAT_CACHE_DELAY
         self.stat_send_timer.stop()
+
+    def add_to_statistic(self, branch, brand, model):
+        if branch == 0 \
+                or not self.statify_next_request \
+                or not brand \
+                or not self.curr_model:  # +++++prod
+            return
+        print(f'MDAS SCHEDULE TO SEND: {branch} {brand} {model}')
+        # print(f'Add request to statistic: {self.curr_model}')
+        self.statify_next_request = False
+        self.stat_send_timer.stop()
+        cache_full = MDAS.cache_item(branch=branch, brand=brand, model=model)  # +++++prod
+        # self.stat_send_scheduled = True
+        if cache_full == 0:  # Not full - standard delay
+            self.stat_send_timer.start(C.STAT_CACHE_DELAY)
+        elif cache_full == 1:  # Full+ - time to send
+            self.stat_send_timer.stop()
+            signals = WorkerSignals()
+            signals.finished.connect(self.stat_send_finished)
+            self.request_worker.add_task(MDAS.send_statistic_cache, signals, 1)
+        else:  # Overflowing or STOPPED Overflow - no connection to stat server, longer delay
+            self.stat_send_timer.start(C.STAT_RESEND_DELAY)
 
     # =========================== DK9 ==============================
 
@@ -771,12 +796,14 @@ class App(QMainWindow):
     def dk9_search_start_worker(self, advanced: dict = None):
 
         print(f'STARTING SEARCH... {self.web_status=}  {self.price_status=} {DK9.LOGIN_SUCCESS=}')
+        # -------------------ASUS brand name filter
+        manufacturer = 'Asus' if 'asus' in self.curr_manufacturer.lower() else self.curr_manufacturer
 
         if C.DK9_CACHING:
             if DK9.CACHE.cache:
                 self.dk9_fill_tables_from_cache_dict()
-                if not C.SEARCH_BY_PRICE_MODEL:
-                    self.add_to_statistic(branch=C.BRANCH, brand=self.curr_manufacturer, model=self.curr_model)
+                if C.SEARCH_BY_PRICE_MODEL:
+                    self.add_to_statistic(branch=C.BRANCH, brand=manufacturer, model=self.curr_model)
             else:
                 if os.path.exists(f'{C.DK9_CACHE_FILE}'):
                     self.dk9_read_cache_start_worker()
@@ -811,10 +838,10 @@ class App(QMainWindow):
                                          advanced['_model'],
                                          advanced['_description'])
         else:
-            if not C.SEARCH_BY_PRICE_MODEL or 'asus' in self.curr_manufacturer.lower():  # -------------------ASUS
-                manufacturer = ''
-            else:
-                manufacturer = self.curr_manufacturer
+            # if not C.SEARCH_BY_PRICE_MODEL or 'asus' in self.curr_manufacturer.lower():  # -------------------ASUS
+            #     manufacturer = ''
+            # else:
+            #     manufacturer = self.curr_manufacturer
 
             if self.search_again:
                 self.search_again = False
@@ -822,7 +849,8 @@ class App(QMainWindow):
             # ===========================  statistic  ==============================
             # elif manufacturer and self.curr_model and self.statify_next_request:  # -----test
             # elif C.BRANCH > 0 and manufacturer and self.curr_model and self.statify_next_request:  # +++++prod
-            self.add_to_statistic(branch=C.BRANCH, brand=manufacturer, model=self.curr_model)
+            if C.SEARCH_BY_PRICE_MODEL:
+                self.add_to_statistic(branch=C.BRANCH, brand=manufacturer, model=self.curr_model)
 
             # ===========================  search in dk9  ==============================
             self.dk9_request_label.setText(self.curr_model)
@@ -836,28 +864,6 @@ class App(QMainWindow):
                                          self.curr_model,
                                          self.curr_description)
         self.thread.start(self.request_worker)
-
-    def add_to_statistic(self, branch, brand, model):
-        if branch == 0 \
-                or not self.statify_next_request \
-                or not brand \
-                or not self.curr_model:  # +++++prod
-            return
-        print(f'MDAS SCHEDULE TO SEND: {branch} {brand} {model}')
-        # print(f'Add request to statistic: {self.curr_model}')
-        self.statify_next_request = False
-        self.stat_send_timer.stop()
-        cache_full = MDAS.cache_item(branch=branch, brand=brand, model=model)  # +++++prod
-        # self.stat_send_scheduled = True
-        if cache_full == 0:  # Not full - standard delay
-            self.stat_send_timer.start(C.STAT_CACHE_DELAY)
-        elif cache_full == 1:  # Full+ - time to send
-            self.stat_send_timer.stop()
-            signals = WorkerSignals()
-            signals.finished.connect(self.stat_send_finished)
-            self.request_worker.add_task(MDAS.send_statistic_cache, signals, 1)
-        else:  # Overflowing or STOPPED Overflow - no connection to stat server, longer delay
-            self.stat_send_timer.start(C.STAT_RESEND_DELAY)
 
     def dk9_upd_cache_restart_timer(self, period=C.DK9_CACHING_PERIOD * 60_000,
                                     allow_update=True):  # * 60_000============================
