@@ -1235,9 +1235,10 @@ class App(QMainWindow):
                     bar.setStyleSheet("QProgressBar::chunk {background-color: orange;}")
                 else:
                     bar.setStyleSheet("QProgressBar::chunk {background-color: orangered;}")
+                if self.web_status not in (DK9.STATUS.CLI_ERR, DK9.STATUS.SERV_ERR, DK9.STATUS.NO_LOGIN):
+                    self.ui.web_status.setToolTip(f'Loaded from file: '
+                                                  f'{C.DK9_CACHE_FILE}')
                 self.update_web_status(DK9.STATUS.FILE_USED_OFFLINE)
-                self.ui.web_status.setToolTip(f'Loaded from file: '
-                                              f'{C.DK9_CACHE_FILE}')
             else:
                 bar.setStyleSheet("QProgressBar::chunk {background-color: orangered;}")
         else:

@@ -77,7 +77,7 @@ class DK9Parser:
                                                 '__VIEWSTATEGENERATOR': '567Ddc67DS57s&&dtc',
                                                 '__EVENTVALIDATION': 'cdc9796cjlmckdmjNCydc565nysdi'}
                         self.LOGIN_SUCCESS = False
-                        self.LAST_ERROR_PAGE_TEXT = soup.prettify()
+                        self.LAST_ERROR_PAGE_TEXT = self.get_text_from_html_body(soup)
                         status.emit(self.STATUS.NO_LOGIN)
                     progress.emit(100)
                     return
@@ -137,7 +137,7 @@ class DK9Parser:
                 if title and 'login' in title.lower():
                     self.LOGIN_SUCCESS = False
                 else:
-                    self.LAST_ERROR_PAGE_TEXT = soup.prettify()
+                    self.LAST_ERROR_PAGE_TEXT = self.get_text_from_html_body(soup)
                     status.emit(self.STATUS.SERV_ERR)
 
             return part_table_soup, accessory_table_soup
@@ -168,6 +168,14 @@ class DK9Parser:
             error.emit((f'Error while trying to search:\n'
                         f'{model_}',
                         f'{traceback.format_exc()}'))
+
+    def get_text_from_html_body(self, soup, letters_num=3000):
+        body = soup.find('body')
+        for junk in body.find_all('input'):
+            junk.extract()
+        if body:
+            return body.text[:letters_num]
+        return ''
 
     def change_data(self, data):
         self.CDATA = data
