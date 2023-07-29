@@ -637,7 +637,7 @@ class App(QMainWindow):
         self.upd_tables_row_heights(price=True)
 
     @staticmethod
-    def filter_trash_from_models_string(self, _string: str):
+    def filter_trash_from_models_string(_string: str):
         result_string = _string
         for i in range(len(result_string) - 2):
             remark_start = result_string.find('(')
@@ -874,6 +874,10 @@ class App(QMainWindow):
         # self.dk9_update_cache_start_worker()
         self.dk9_cache_timer.start(period)  # * 60_000
 
+    def dk9_upd_cache_stop_timer(self):
+        print(f'dk9_upd_cache_stop_timer')
+        self.dk9_cache_timer.stop()
+
     # def dk9_restart_caching_schedule(self):
     #     self.dk9_cache_timer.stop()
     #     self.dk9_cache_timer.start(C.DK9_CACHING_PERIOD)
@@ -912,11 +916,13 @@ class App(QMainWindow):
     def dk9_fill_tables_from_soup(self, table_soups: type(bs4.BeautifulSoup) = None, use_old_soup: bool = False):
         print(f'dk9_fill_tables_from_soup {self.web_status=} {use_old_soup=}')
         if not use_old_soup:
+            if DK9.check_soups_is_broken(table_soups):
+                return
             self.soup = table_soups
-            if not self.soup:
-                self.update_web_status(DK9.STATUS.NO_CONN)
-            elif not self.soup[0]:
-                self.update_web_status(DK9.STATUS.OK)
+            # if not self.soup:
+            #     self.update_web_status(DK9.STATUS.NO_CONN)
+            # elif not self.soup[0]:
+            #     self.update_web_status(DK9.STATUS.OK)
 
         if self.web_status in (DK9.STATUS.OK, DK9.STATUS.UPDATING):
             self.web_progress_bar(70)
@@ -1204,6 +1210,8 @@ class App(QMainWindow):
                 self.got_login_on_search_try_relog = False
                 # self.ui.web_status.setToolTip(f'Can`t relogin to DK9')
                 self.dk9_upd_cache_restart_timer(allow_update=False)
+            if self.web_status == DK9.STATUS.LOGIN_FAIL:
+                self.dk9_upd_cache_stop_timer()
         self.dk9_finish_progress_bar_status()
 
     def dk9_finish_progress_bar_status(self):
@@ -1241,9 +1249,11 @@ class App(QMainWindow):
                     bar.setStyleSheet("QProgressBar::chunk {background-color: orange;}")
                 else:
                     bar.setStyleSheet("QProgressBar::chunk {background-color: orangered;}")
-                if self.web_status not in (DK9.STATUS.CLI_ERR, DK9.STATUS.SERV_ERR, DK9.STATUS.NO_LOGIN):
-                    self.ui.web_status.setToolTip(f'Loaded from file: '
-                                                  f'{C.DK9_CACHE_FILE}')
+                if self.web_status == DK9.STATUS.LOGIN_FAIL:
+                    self.ui.web_status.setToolTip(C.WEB_STATUSES[DK9.STATUS.LOGIN_FAIL])
+                elif self.web_status not in (DK9.STATUS.CLI_ERR, DK9.STATUS.SERV_ERR, DK9.STATUS.NO_LOGIN):
+                    self.ui.web_status.setToolTip(f'Loaded from file: {C.DK9_CACHE_FILE}\n'
+                                                  f'{C.WEB_STATUSES[self.web_status]}')
                 self.update_web_status(DK9.STATUS.FILE_USED_OFFLINE)
             else:
                 bar.setStyleSheet("QProgressBar::chunk {background-color: orangered;}")

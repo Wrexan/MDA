@@ -78,7 +78,7 @@ class DK9Parser:
                                                 '__EVENTVALIDATION': 'cdc9796cjlmckdmjNCydc565nysdi'}
                         self.LOGIN_SUCCESS = False
                         self.LAST_ERROR_PAGE_TEXT = self.get_text_from_html_body(soup)
-                        status.emit(self.STATUS.NO_LOGIN)
+                        status.emit(self.STATUS.LOGIN_FAIL)
                     progress.emit(100)
                     return
                 else:
@@ -92,18 +92,18 @@ class DK9Parser:
                                 emit=self.STATUS.NO_CONN)
             return
         except Exception as err:
-            if '[Errno 110' in err.__str__():
-                self._error_handler(progress, status, err)
-                return
-            elif 'Read timed out' in err.__str__():
-                self._error_handler(progress, status, err)
-                return ()
+            print(err.__str__())
+            for err_type in ('[Errno 110', 'Read timed out', 'Connection aborted'):
+                if err_type in err.__str__():
+                    self._error_handler(progress, status, err)
+                    return
             error.emit((f'Error while trying to login',
                         f'{traceback.format_exc()}'))
 
-    def adv_search(self, type_: str, firm_: str, model_: str, description_: str, progress, status, error) -> tuple:
+    def adv_search(self, type_: str, firm_: str, model_: str, description_: str, progress, status, error)\
+            -> tuple or None:
         if not self.LOGIN_SUCCESS:
-            return ()
+            return
         status.emit(self.STATUS.UPDATING)
         progress.emit(10)
         print(f'Searching: {type_=}  {firm_=}  {model_=}  {description_=}')
@@ -157,25 +157,36 @@ class DK9Parser:
         except requests.exceptions.Timeout as err:
             self._error_handler(progress, status, err=f'Timeout on CONNECT Message:\n{str(err)}',
                                 emit=self.STATUS.NO_CONN)
-            return ()
+            return
         except Exception as err:
-            if '[Errno 110' in err.__str__():
-                self._error_handler(progress, status, err)
-                return ()
-            elif 'Read timed out' in err.__str__():
-                self._error_handler(progress, status, err)
-                return ()
+            print(err.__str__())
+            for err_type in ('[Errno 110', 'Read timed out', 'Connection aborted'):
+                if err_type in err.__str__():
+                    self._error_handler(progress, status, err)
+                    return
             error.emit((f'Error while trying to search:\n'
                         f'{model_}',
                         f'{traceback.format_exc()}'))
 
-    def get_text_from_html_body(self, soup, letters_num=3000):
+    @staticmethod
+    def get_text_from_html_body(soup):
         body = soup.find('body')
         for junk in body.find_all('input'):
             junk.extract()
         if body:
-            return body.text[:letters_num]
+            return " ".join(body.text.split())[:2000]
         return ''
+
+    @staticmethod
+    def check_soups_is_broken(soups):
+        if isinstance(soups, tuple):
+            for soup in soups:
+                if not soup:
+                    print(f'one of soups is empty:{soup}')
+                    return True
+        else:
+            print(f'soups is empty:{soups}')
+            return True
 
     def change_data(self, data):
         self.CDATA = data
@@ -222,6 +233,7 @@ class DK9Status:
     FILE_UPDATED = 12
     FILE_USED_OFFLINE = 13
     UPDATING = 14
+    LOGIN_FAIL = 15
 
 
 class DK9Cache:
@@ -341,9 +353,9 @@ class DK9Cache:
 
     def cache_search_parse_save_handler(self, progress, status, error):
         soups = self.DK9.adv_search('', '', '', '', progress, status, error)
-        print(f'dk9_parse_and_start_saving. soups exist? {not not soups[0]} {not not soups[1]}')
-        # self.dk9_restart_caching_schedule()
-        if soups[0] is None or soups[1] is None:
+        print(f'dk9_parse_and_start_saving')
+        # return if any part of answear is empty
+        if self.DK9.check_soups_is_broken(soups):
             return
         self.parse_soups_to_dict(soups, progress, status, error)
         self.write_cache_file(progress, status, error)
