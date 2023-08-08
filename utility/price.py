@@ -17,13 +17,17 @@ class Price:
 
     def load_price(self, progress, status, error) -> None:
         status.emit(self.S_READING)
+        progress.emit(10)
         try:
             price_path_name, self.NAME = self.search_price_in_path_tuple((self.C.PRICE_PATH,
                                                                           self.C.PRICE_PATH_ALT,
                                                                           self.C.PATH))
+            progress.emit(30)
 
             if price_path_name:
+                progress.emit(50)
                 self.DB = xlrd.open_workbook(price_path_name, formatting_info=True)
+                progress.emit(90)
                 status.emit(self.S_OK)
                 print(f'Price loaded: {price_path_name}')
             else:

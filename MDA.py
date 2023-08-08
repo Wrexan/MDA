@@ -1,5 +1,6 @@
+import json
 import sys
-
+from datetime import datetime
 import bs4
 import traceback
 import os
@@ -69,9 +70,12 @@ class App(QMainWindow):
         self.model_buttons = {}
         self.manufacturer_wheel = None
         self.current_model_button_index = 0
+        # self.dk9_cache = {}
+        # self.dk9_cache_update_time = 0
         self.ui = Ui_MainWindow()
         # self.ui = MainUI()
         self.ui.setupUi(self)
+        DK9.CACHE.set_app(self)
         self.dk9_request_label = QLabel()
         self.work_cost_label = QLabel()
 
@@ -79,17 +83,17 @@ class App(QMainWindow):
         self.search_input.setParent(self.ui.frame_3)
         self.ui.search_layout.addWidget(self.search_input)
 
-        self.model_list_widget = QTableWidget()#QListWidget()
+        self.model_list_widget = QTableWidget()  # QListWidget()
         self.model_list_widget.setColumnCount(2)
         # self.model_list_widget.setHorizontalHeaderLabels('f')
         self.model_list_widget.verticalHeader().hide()
         self.model_list_widget.horizontalHeader().hide()
-        widget_width = self.search_input.width()
-        self.model_list_widget.setMaximumWidth(widget_width)
-        column_0_width = int(widget_width * 0.9)
-        self.model_list_widget.setColumnWidth(0, column_0_width)
-        self.model_list_widget.setColumnWidth(1, widget_width - column_0_width - 2)
-        self.model_list_widget.setHorizontalScrollBarPolicy(1)  # Allways off
+        # widget_width = self.search_input.width()
+        # self.model_list_widget.setMaximumWidth(widget_width)
+        # column_0_width = int(widget_width * 0.9)
+        # self.model_list_widget.setColumnWidth(0, column_0_width)
+        # self.model_list_widget.setColumnWidth(1, widget_width - column_0_width - 2)
+        # self.model_list_widget.setHorizontalScrollBarPolicy(1)  # Allways off
 
         L.Parent = self.ui
         L.apply_lang()
@@ -117,12 +121,16 @@ class App(QMainWindow):
                                             f"{self.web_table_stylesheet_template[1]}"
 
         self.upd_ui_static_texts()
+        self.upd_username()
         self.init_ui_statics()
         self.apply_window_size()
         self.init_ui_dynamics()
 
         self.stat_send_timer = QtCore.QTimer()
-        self.stat_send_timer.timeout.connect(self.send_statistic)
+        self.stat_send_timer.timeout.connect(self.stat_send_start_worker)
+
+        self.dk9_cache_timer = QtCore.QTimer()
+        self.dk9_cache_timer.timeout.connect(self.dk9_cache_updater_start_worker)
 
         self.curr_manufacturer_idx: int = 0
         self.curr_manufacturer: str = ''
@@ -136,19 +144,21 @@ class App(QMainWindow):
         self.statify_next_request: bool = False
         self.search_req_ruled: str = ''
         self.search_again = False
+        self.got_login_on_search_try_relog = False
         # self.old_search = ''
         self.thread = QtCore.QThread
+        self.dk9_cache_handler_worker = None  # Worker(self.update_dk9_data, 'mi8 lite')
         self.request_worker = None  # Worker(self.update_dk9_data, 'mi8 lite')
         self.file_io_worker = None  # Worker(self.update_dk9_data, 'mi8 lite')
         self.Price = Price(C)
         self.soup = None
-        self.web_status = 0
+        self.web_status = DK9.STATUS.NO_CONN
         self.price_status = 0
 
         # self.themes = ('windowsvista', 'Fusion', 'Windows')
         self.themes = (*QStyleFactory.keys(),)
         self.current_theme = 0
-        # self.login_dk9()
+        # self.dk9_login_start_worker()
         self.update_web_status(0)
         # self.update_price_status()
         self.show()
@@ -167,10 +177,18 @@ class App(QMainWindow):
         self.ui.table_parts.setHorizontalHeaderLabels((L.table_parts_HHL))
         self.ui.table_accesory.setHorizontalHeaderLabels((L.table_accesory_HHL))
 
+    def upd_username(self):
+        if C.DK9_LOGIN:
+            self.ui.lb_username.setText(C.DK9_LOGIN)
+        else:
+            self.ui.lb_username.setText('*****')
+
     def init_ui_statics(self):
 
         self.resized.connect(self.init_ui_dynamics)
         self.search_input.textChanged[str].connect(self.prepare_and_search)
+        self.ui.bt_upd_web.clicked.connect(self.dk9_relog_or_update_cache_by_button)
+        self.ui.bt_upd_price.clicked.connect(self.read_price_start_worker)
         self.ui.chb_show_exact.stateChanged.connect(self.upd_dk9_on_rule_change)
         self.ui.chb_show_date.stateChanged.connect(self.switch_n_upd_dk9_tables_grid)
         self.ui.chb_price_name_only.stateChanged.connect(self.start_search_on_rule_change)
@@ -179,6 +197,13 @@ class App(QMainWindow):
         self.ui.pb_adv_search.clicked.connect(self.open_adv_search)
         self.ui.settings_button.clicked.connect(self.open_settings)
         self.ui.graph_button.clicked.connect(self.open_graphs)
+
+        self.ui.le_cash_name.installEventFilter(self)
+        self.ui.le_cash_name.selectionChanged.connect(lambda: self.ui.le_cash_name.setSelection(0, 0))
+        self.ui.le_cash_price.installEventFilter(self)
+        self.ui.le_cash_price.selectionChanged.connect(lambda: self.ui.le_cash_price.setSelection(0, 0))
+        self.ui.le_cash_descr.installEventFilter(self)
+        self.ui.le_cash_descr.selectionChanged.connect(lambda: self.ui.le_cash_descr.setSelection(0, 0))
 
         self.ui.table_parts.doubleClicked.connect(self.copy_web_table_items_connected)
         self.ui.table_accesory.doubleClicked.connect(self.copy_web_table_items_connected)
@@ -215,7 +240,7 @@ class App(QMainWindow):
         self.model_list_widget.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.model_list_widget.setFixedWidth(self.search_input.width())
         self.model_list_widget.setMinimumSize(20, 20)
-        self.model_list_widget.itemClicked.connect(self.scheduler)
+        self.model_list_widget.itemClicked.connect(self.filter_item_text_search_visualise)
         self.model_list_widget.hide()
 
     def apply_window_size(self):
@@ -234,9 +259,9 @@ class App(QMainWindow):
         self.ui.table_price.setFont(self.tab_font)
         self.ui.table_parts.setFont(self.tab_font)
         self.ui.table_accesory.setFont(self.tab_font)
-        self.ui.pt_cash_name.setFont(self.tab_font)
-        self.ui.pt_cash_descr.setFont(self.tab_font)
-        self.ui.pt_cash_price.setFont(self.tab_font)
+        self.ui.le_cash_name.setFont(self.tab_font)
+        self.ui.le_cash_descr.setFont(self.tab_font)
+        self.ui.le_cash_price.setFont(self.tab_font)
         self._update_dk9_tooltip(tab_widget=self.ui.tab_widget,
                                  num=0, tab_names=C.DK9_TABLE_NAMES, count_1=0, count_2=0)
         self._update_dk9_tooltip(tab_widget=self.ui.tab_widget,
@@ -266,6 +291,8 @@ class App(QMainWindow):
 
         self.work_cost_label.move(self.ui.table_parts.width() - 340, 3)
         self.work_cost_label.setFont(self.ui_font_bold)
+
+        self.ui.model_widget.setFixedWidth((self.width() - 6) // 2)  # model_buttons layout
 
         self.model_list_widget.setStyleSheet(
             "QTableWidget::item"
@@ -314,23 +341,28 @@ class App(QMainWindow):
 
         self.ui.table_accesory.setStyleSheet(self.default_web_table_stylesheet)
 
-        self.ui.pt_cash_name.setStyleSheet(
-            "QPlainTextEdit"
-            "{selection-background-color: #b5BfF3;"
-            # "selection-color:white;"
-            "}")
-
-        self.ui.pt_cash_price.setStyleSheet(
-            "QPlainTextEdit"
-            "{selection-background-color: #b5BfF3;}")
-
-        self.ui.pt_cash_descr.setStyleSheet(
-            "QPlainTextEdit"
-            "{selection-background-color: #b5BfF3;}")
+        # self.ui.le_cash_name.setStyleSheet(
+        #     "QPlainTextEdit"
+        #     "{selection-background-color: #b5BfF3;"
+        #     # "selection-color:white;"
+        #     "}")
+        #
+        # self.ui.le_cash_price.setStyleSheet(
+        #     "QPlainTextEdit"
+        #     "{selection-background-color: #b5BfF3;}")
+        #
+        # self.ui.le_cash_descr.setStyleSheet(
+        #     "QPlainTextEdit"
+        #     "{selection-background-color: #b5BfF3;}")
 
     # =============================================================================================================
 
     def fix_models_list_position(self):
+        widget_width = self.search_input.width()
+        self.model_list_widget.setFixedWidth(widget_width)
+        column_0_width = int(widget_width * 0.9)
+        self.model_list_widget.setColumnWidth(0, column_0_width)
+        self.model_list_widget.setColumnWidth(1, widget_width - column_0_width - 2)
         self.model_list_widget.move(int(self.ui.search_widget.x() + 12),
                                     int(self.ui.HEAD.height() - 6))
 
@@ -347,7 +379,7 @@ class App(QMainWindow):
             return
         C.FILTER_SEARCH_RESULT = True if self.ui.chb_show_exact.checkState() == 2 else False
         if self.soup:
-            self.update_dk9_data(use_old_soup=True)
+            self.dk9_fill_tables_from_soup(use_old_soup=True)
 
     def switch_n_upd_dk9_tables_grid(self):
         C.SHOW_DATE = True if self.ui.chb_show_date.checkState() == 2 else False
@@ -395,7 +427,7 @@ class App(QMainWindow):
 
     def on_ui_loaded(self):
         print('Loading Price')
-        self.read_price()
+        self.read_price_start_worker()
 
     def prepare_and_search(self, search_req: str, force_search: bool = False):
         # print(f'{search_req=} {self.search_input.isModified()=}')
@@ -531,19 +563,20 @@ class App(QMainWindow):
         self.current_model_button_index = 0
         for num, model in enumerate(model_names):
             self.model_buttons[num] = QPushButton(model)
-            self.model_buttons[num].clicked.connect(self.search_dk9_by_button)
+            self.model_buttons[num].clicked.connect(self.dk9_search_by_button)
             if num == 0:
                 self.model_buttons[num].setDefault(True)
                 # self.curr_model = model
-                # if self.web_status == 2:
+                # if self.web_status == DK9.STATUS.OK:
                 #     if DK9.LOGIN_SUCCESS:
-                #         self.search_dk9()
+                #         self.dk9_search_start_worker()
                 # else:
-                #     self.login_dk9()
+                #     self.dk9_login_start_worker()
             lay.addWidget(self.model_buttons[num], 0)
             le -= 1
-        sp = QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Expanding)
-        lay.addItem(sp)
+        self.ui.model_widget.setFixedWidth((self.width() - 6) // 2)
+        # sp = QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Expanding)
+        # lay.addItem(sp)
 
     def update_price_status(self, status: int):
         self.price_status = status
@@ -555,25 +588,16 @@ class App(QMainWindow):
 
     def schedule_statify(self, item):
         self.statify_next_request = True
-        self.scheduler(item)
+        self.filter_item_text_search_visualise(item)
 
     # @QtCore.pyqtSlot
-    def scheduler(self, item):
+    def filter_item_text_search_visualise(self, item):
         if item.text():
             self.statify_next_request = True
         text_lower: str = item.data(1).lower()
         text_lower_orig = text_lower[:]
         # print(f'Scheduler: {text_lower=}')
-        for i in range(len(text_lower) - 2):
-            remark_start = text_lower.find('(')
-            if remark_start >= 0:
-                remark_end = text_lower[remark_start:].find(')')
-                # print(f'{text_lower[:remark_start]=}  {text_lower[ + remark_end:]=}')
-                # print(f'{remark_start=}  {remark_end=}')
-                text_lower = f'{text_lower[:remark_start]}' \
-                             f'{text_lower[remark_start + remark_end + 1:]}'
-            else:
-                break
+        text_lower = self.filter_trash_from_models_string(text_lower)
         # print(f'CUT: {text_lower=}')
         manufacturer_lower = self.curr_manufacturer.lower()
         if 'asus' in manufacturer_lower:  # -------------------ASUS
@@ -606,109 +630,46 @@ class App(QMainWindow):
             self.curr_model = models_for_buttons[0]
         else:
             self.curr_model = self.search_req_ruled
-        self.search_dk9_or_login()
+        self.dk9_search_or_login()
         self.upd_models_list(clear=True)
         self.upd_model_buttons(models_for_buttons)
         self.update_price_table(text_lower_orig, recursive_model)
         self.upd_tables_row_heights(price=True)
 
-    def update_web_status(self, status: int):
-        if status in C.WEB_STATUSES:
-            self.web_status = status
-            self.ui.web_status.setText(C.WEB_STATUSES[status])
-            # if status != 2:
-            #     self.curr_model = ''
-        else:
-            print(f'Error: status code {status} not present {C.WEB_STATUSES=}')
+    @staticmethod
+    def filter_trash_from_models_string(_string: str):
+        result_string = _string
+        for i in range(len(result_string) - 2):
+            remark_start = result_string.find('(')
+            if remark_start >= 0:
+                remark_end = result_string[remark_start:].find(')')
+                # print(f'{text_lower[:remark_start]=}  {text_lower[ + remark_end:]=}')
+                # print(f'{remark_start=}  {remark_end=}')
+                result_string = f'{result_string[:remark_start]}' \
+                                f'{result_string[remark_start + remark_end + 1:]}'
+            else:
+                break
+        return result_string
 
-    def read_price(self):
+    def read_price_start_worker(self):
         self.file_io_worker = Worker()
         signals = WorkerSignals()
-        signals.finished.connect(self.login_dk9)
-        signals.error.connect(self.error)
+        signals.finished.connect(self.price_read_progress_bar)
+        signals.progress.connect(self.price_read_progress_bar)
         signals.status.connect(self.update_price_status)
-        self.file_io_worker.add_task(self.Price.load_price, signals, 1)
+        signals.error.connect(self.error)
+        self.file_io_worker.add_task(self.Price.load_price, signals, 0)
         print('Starting thread to read price')
         self.thread.start(self.file_io_worker, priority=QtCore.QThread.Priority.HighestPriority)
 
-    # @QtCore.pyqtSlot
-    def search_dk9_by_button(self):
-        self.curr_model = self.sender().text()
-        # print(f'SEARCH BY BUTTON: {self.curr_model}')
-        self.search_dk9_or_login()
+    # =========================== MDAS ==============================
 
-    # @QtCore.pyqtSlot
-    def search_dk9_or_login(self):
-        if self.web_status == 2:
-            if DK9.LOGIN_SUCCESS:
-                self.search_dk9()
-        else:
-            self.login_dk9()
-
-    def search_dk9(self, advanced: dict = None):
-        # Auto reset filter on search
-        C.FILTER_SEARCH_RESULT = False
-        self.ui.chb_show_exact.setCheckState(2 if C.FILTER_SEARCH_RESULT else 0)
-        self.request_worker = Worker()
-
-        if advanced:
-            signals = self.get_dk9_search_signals()
-            self.request_worker.add_task(DK9.adv_search,
-                                         signals,
-                                         0,
-                                         advanced['_type'],
-                                         advanced['_manufacturer'],
-                                         advanced['_model'],
-                                         advanced['_description'])
-        else:
-            if not DK9.LOGIN_SUCCESS or self.web_status != 2:
-                return
-            if not C.SEARCH_BY_PRICE_MODEL or 'asus' in self.curr_manufacturer.lower():  # -------------------ASUS
-                manufacturer = ''
-            else:
-                manufacturer = self.curr_manufacturer
-
-            if self.search_again:
-                print(f'SEARCH AGAIN: {self.curr_model}')
-                self.search_again = False
-
-            # ===========================  statistic  ==============================
-            elif manufacturer and self.curr_model and self.statify_next_request:  # -----test
-            # elif C.BRANCH > 0 and manufacturer and self.curr_model and self.statify_next_request:  # +++++prod
-                # print(f'SCHEDULE TO SEND: {C.BRANCH} {manufacturer} {self.curr_model}')
-                print(f'Add request to statistic: {self.curr_model}')
-                self.statify_next_request = False
-                self.stat_send_timer.stop()
-                # cache_full = MDAS.cache_item(branch=C.BRANCH, brand=manufacturer, model=self.curr_model)  # +++++prod
-                # # self.stat_send_scheduled = True
-                # if cache_full == 0:  # Not full - standard delay
-                #     self.stat_send_timer.start(C.STAT_CACHE_DELAY)
-                # elif cache_full == 1:  # Full+ - time to send
-                #     self.stat_send_timer.stop()
-                #     signals = WorkerSignals()
-                #     signals.finished.connect(self.stat_send_finished)
-                #     self.request_worker.add_task(MDAS.send_statistic_cache, signals, 1)
-                # else:  # Overflowing or STOPPED Overflow - no connection to stat server, longer delay
-                #     self.stat_send_timer.start(C.STAT_RESEND_DELAY)
-
-            # ===========================  search in dk9  ==============================
-            self.dk9_request_label.setText(self.curr_model)
-            signals = self.get_dk9_search_signals()
-            self.request_worker.add_task(DK9.adv_search,
-                                         signals,
-                                         0,
-                                         self.curr_type,
-                                         manufacturer,
-                                         self.curr_model,
-                                         self.curr_description)
-        self.thread.start(self.request_worker)
-
-    def send_statistic(self):
+    def stat_send_start_worker(self):
         print('Starting thread to send stats')
         self.request_worker = Worker()
         signals = WorkerSignals()
         signals.finished.connect(self.stat_send_finished)
-        self.request_worker.add_task(MDAS.send_statistic_cache, signals, 1)
+        self.request_worker.add_task(MDAS.send_statistic_cache, signals, 3)
         self.thread.start(self.request_worker)
 
     def stat_send_finished(self):
@@ -721,54 +682,263 @@ class App(QMainWindow):
         C.stat_delay = C.STAT_CACHE_DELAY
         self.stat_send_timer.stop()
 
-    def get_dk9_search_signals(self):
+    def add_to_statistic(self, branch, brand, model):
+        if branch == 0 \
+                or not self.statify_next_request \
+                or not brand \
+                or not self.curr_model:  # +++++prod
+            return
+        print(f'MDAS SCHEDULE TO SEND: {branch} {brand} {model}')
+        # print(f'Add request to statistic: {self.curr_model}')
+        self.statify_next_request = False
+        self.stat_send_timer.stop()
+        cache_full = MDAS.cache_item(branch=branch, brand=brand, model=model)  # +++++prod
+        # self.stat_send_scheduled = True
+        if cache_full == 0:  # Not full - standard delay
+            self.stat_send_timer.start(C.STAT_CACHE_DELAY)
+        elif cache_full == 1:  # Full+ - time to send
+            self.stat_send_timer.stop()
+            signals = WorkerSignals()
+            signals.finished.connect(self.stat_send_finished)
+            self.request_worker.add_task(MDAS.send_statistic_cache, signals, 1)
+        else:  # Overflowing or STOPPED Overflow - no connection to stat server, longer delay
+            self.stat_send_timer.start(C.STAT_RESEND_DELAY)
+
+    # =========================== DK9 ==============================
+
+    def update_web_status(self, status: int):
+        if status in C.WEB_STATUSES:
+            self.web_status = status
+            if self.web_status in (DK9.STATUS.FILE_UPDATED, DK9.STATUS.FILE_USED_OFFLINE):
+                datetime_formatted = DK9.CACHE.cache['updated']
+                self.ui.web_status.setText(f'{C.WEB_STATUSES[status]} - {datetime_formatted}')
+            else:
+                self.ui.web_status.setText(C.WEB_STATUSES[status])
+            if DK9.LAST_ERROR_PAGE_TEXT:
+                self.ui.web_status.setToolTip(f'Error Page: '
+                                              f'{DK9.LAST_ERROR_PAGE_TEXT}')
+                DK9.LAST_ERROR_PAGE_TEXT = ''
+        else:
+            print(f'Error: status code {status} not present {C.WEB_STATUSES=}')
+
+    # start by model button
+    def dk9_search_by_button(self):
+        if self.price_status == 6:
+            self.curr_model = self.sender().text()
+            self.dk9_search_or_login()
+
+    # start by reconnect|reload button
+    def dk9_relog_or_update_cache_by_button(self):
+        print('dk9_relog_or_update_cache_by_button')
+        if self.price_status == 6 and self.web_status not in \
+                (
+                        DK9.STATUS.CONNECTING,
+                        DK9.STATUS.REDIRECT,
+                        DK9.STATUS.FILE_READ,
+                        DK9.STATUS.FILE_WRITE,
+                        DK9.STATUS.UPDATING,
+                        # DK9.STATUS.FILE_USED_OFFLINE
+                ):  # Keep on, if manual cache reload is needed
+            if C.DK9_CACHING:
+                self.dk9_upd_cache_restart_timer()
+            elif self.web_status != DK9.STATUS.OK:
+                self.dk9_login_start_worker()
+
+    # start on app start
+    def dk9_login_or_update_cache_on_start(self):
+        print('dk9_login_or_update_cache_on_start')
+        if C.DK9_CACHING:
+            self.dk9_read_cache_if_exist()
+            self.dk9_login_start_worker(self.dk9_upd_cache_restart_timer)
+        elif self.web_status != DK9.STATUS.OK:
+            self.dk9_login_start_worker()
+
+    # @QtCore.pyqtSlot
+    def dk9_search_or_login(self):
+        print(f'dk9_search_or_login. {DK9.STATUS=}')
+        if C.DK9_CACHING and DK9.CACHE.cache:
+            self.dk9_search_start_worker()
+        elif self.web_status in (DK9.STATUS.OK, DK9.STATUS.FILE_UPDATED):
+            if DK9.LOGIN_SUCCESS:
+                self.dk9_search_start_worker()
+        elif self.web_status == DK9.STATUS.FILE_USED_OFFLINE:
+            self.dk9_search_start_worker()
+        else:
+            # if C.DK9_CACHING:
+            #     self.dk9_login_start_worker(next_method=self.dk9_upd_cache_restart_timer)
+            # else:
+            self.dk9_login_start_worker()
+
+    def dk9_get_search_signals(self):
         signals = WorkerSignals()
-        signals.result.connect(self.update_dk9_data)
-        signals.progress.connect(self.load_progress)
-        signals.finished.connect(self.thread_finished)
-        signals.error.connect(self.error)
+        signals.result.connect(self.dk9_fill_tables_from_soup)
+        signals.progress.connect(self.web_progress_bar)
         signals.status.connect(self.update_web_status)
+        signals.finished.connect(self.dk9_finish_progress_bar_status)
+        signals.error.connect(self.error)
         return signals
 
-    def login_dk9(self):
+    def dk9_login_start_worker(self, next_method=None):
         self.request_worker = Worker()
         signals = WorkerSignals()
-        signals.progress.connect(self.load_progress)
+        signals.progress.connect(self.web_progress_bar)
         signals.status.connect(self.update_web_status)
         signals.error.connect(self.error)
-        if self.curr_model:
+        if not C.DK9_CACHING and self.curr_model:
             self.search_again = True
-            signals.finished.connect(self.search_dk9)
+            signals.finished.connect(self.dk9_search_start_worker)
         else:
-            signals.finished.connect(self.thread_finished)
+            signals.finished.connect(next_method or self.dk9_finish_progress_bar_status)
         print('Starting thread to login')
-        self.request_worker.add_task(DK9.login, signals, 0)
+        self.request_worker.add_task(DK9.login, signals, 2)
         self.thread.start(self.request_worker)
 
-    def update_dk9_data(self, table_soups: type(bs4.BeautifulSoup) = None, use_old_soup: bool = False):
-        if not use_old_soup:
-            self.soup = table_soups
-            if not self.soup:
-                self.update_web_status(0)
-            elif not self.soup[0]:
-                self.update_web_status(2)
+    def dk9_search_start_worker(self, advanced: dict = None):
 
-        if self.web_status == 2:
-            self.load_progress(70)
+        print(f'STARTING SEARCH... {self.web_status=}  {self.price_status=} {DK9.LOGIN_SUCCESS=}')
+        # -------------------ASUS brand name filter
+        manufacturer = 'Asus' if 'asus' in self.curr_manufacturer.lower() else self.curr_manufacturer
+
+        if C.DK9_CACHING:
+            if DK9.CACHE.cache:
+                self.dk9_fill_tables_from_cache_dict()
+                if C.SEARCH_BY_PRICE_MODEL:
+                    self.add_to_statistic(branch=C.BRANCH, brand=manufacturer, model=self.curr_model)
+            else:
+                if os.path.exists(f'{C.DK9_CACHE_FILE}'):
+                    self.dk9_read_cache_start_worker()
+                elif not DK9.LOGIN_SUCCESS:
+                    self.dk9_login_start_worker(self.dk9_upd_cache_restart_timer)
+                else:
+                    self.dk9_upd_cache_restart_timer()
+            return
+
+        if not DK9.LOGIN_SUCCESS or self.web_status not in \
+                (
+                        DK9.STATUS.OK,
+                        DK9.STATUS.FILE_UPDATED,
+                        DK9.STATUS.FILE_USED_OFFLINE,
+                        DK9.STATUS.FILE_READ_ERR,
+                        DK9.STATUS.FILE_WRITE_ERR,
+                ):
+            return
+
+        # Auto reset filter on search
+        C.FILTER_SEARCH_RESULT = False
+        self.ui.chb_show_exact.setCheckState(2 if C.FILTER_SEARCH_RESULT else 0)
+        self.request_worker = Worker()
+
+        if advanced:
+            signals = self.dk9_get_search_signals()
+            self.request_worker.add_task(DK9.adv_search,
+                                         signals,
+                                         2,
+                                         advanced['_type'],
+                                         advanced['_manufacturer'],
+                                         advanced['_model'],
+                                         advanced['_description'])
+        else:
+            # if not C.SEARCH_BY_PRICE_MODEL or 'asus' in self.curr_manufacturer.lower():  # -------------------ASUS
+            #     manufacturer = ''
+            # else:
+            #     manufacturer = self.curr_manufacturer
+
+            if self.search_again:
+                self.search_again = False
+
+            # ===========================  statistic  ==============================
+            # elif manufacturer and self.curr_model and self.statify_next_request:  # -----test
+            # elif C.BRANCH > 0 and manufacturer and self.curr_model and self.statify_next_request:  # +++++prod
+            if C.SEARCH_BY_PRICE_MODEL:
+                self.add_to_statistic(branch=C.BRANCH, brand=manufacturer, model=self.curr_model)
+
+            # ===========================  search in dk9  ==============================
+            self.dk9_request_label.setText(self.curr_model)
+            self.request_worker = Worker()
+            signals = self.dk9_get_search_signals()
+            self.request_worker.add_task(DK9.adv_search,
+                                         signals,
+                                         2,
+                                         self.curr_type,
+                                         manufacturer,
+                                         self.curr_model,
+                                         self.curr_description)
+        self.thread.start(self.request_worker)
+
+    def dk9_upd_cache_restart_timer(self, period=C.DK9_CACHING_PERIOD * 60_000,
+                                    allow_update=True):  # * 60_000============================
+        print(f'dk9_upd_cache_restart_timer: {period // 60_000}minutes')
+        self.dk9_cache_timer.stop()
+        if allow_update:
+            self.dk9_cache_updater_start_worker()
+        # self.dk9_update_cache_start_worker()
+        self.dk9_cache_timer.start(period)  # * 60_000
+
+    def dk9_upd_cache_stop_timer(self):
+        print(f'dk9_upd_cache_stop_timer')
+        self.dk9_cache_timer.stop()
+
+    # def dk9_restart_caching_schedule(self):
+    #     self.dk9_cache_timer.stop()
+    #     self.dk9_cache_timer.start(C.DK9_CACHING_PERIOD)
+
+    def dk9_fill_tables_from_cache_dict(self):
+        print(f'dk9_fill_tables_from_cache_dict. {self.web_status=}')
+        # if self.web_status == DK9.STATUS.FILE_USED_OFFLINE:
+        self.web_progress_bar(70)
+        self.ui.table_parts.setSortingEnabled(False)
+        self.ui.table_accesory.setSortingEnabled(False)
+        found_parts, found_accessories = DK9.CACHE.search_rows_in_cache_dict()
+        # print(f'search result:\n{found_parts=}\n{found_accessories=}')
+        self.dk9_fill_one_table_from_dict(found_parts, self.ui.table_parts, 0,
+                                          C.DK9_TABLE_NAMES, C.DK9_BG_P_COLOR1, C.DK9_BG_P_COLOR2, 6,
+                                          align={4: Qt.AlignRight | Qt.AlignVCenter})
+        self.dk9_fill_one_table_from_dict(found_accessories, self.ui.table_accesory, 1,
+                                          C.DK9_TABLE_NAMES, C.DK9_BG_A_COLOR1, C.DK9_BG_A_COLOR2, 6,
+                                          align={4: Qt.AlignRight | Qt.AlignVCenter})
+
+        self.web_progress_bar(85)
+        self.ui.table_parts.sortByColumn(3, Qt.SortOrder(0))
+        self.ui.table_parts.sortByColumn(2, Qt.SortOrder(0))
+        self.ui.table_parts.sortByColumn(0, Qt.SortOrder(0))
+        self.ui.table_parts.setSortingEnabled(True)
+        self.ui.table_accesory.sortByColumn(3, Qt.SortOrder(0))
+        self.ui.table_accesory.sortByColumn(2, Qt.SortOrder(0))
+        self.ui.table_accesory.sortByColumn(0, Qt.SortOrder(0))
+        self.ui.table_accesory.setSortingEnabled(True)
+
+        self.upd_tables_row_heights(dk9=True)
+        # else:
+        #     self.dk9_login_start_worker()
+        self.web_progress_bar(100)
+        self.dk9_finish_progress_bar_status()
+
+    def dk9_fill_tables_from_soup(self, table_soups: type(bs4.BeautifulSoup) = None, use_old_soup: bool = False):
+        print(f'dk9_fill_tables_from_soup {self.web_status=} {use_old_soup=}')
+        if not use_old_soup:
+            if DK9.check_soups_is_broken(table_soups):
+                return
+            self.soup = table_soups
+            # if not self.soup:
+            #     self.update_web_status(DK9.STATUS.NO_CONN)
+            # elif not self.soup[0]:
+            #     self.update_web_status(DK9.STATUS.OK)
+
+        if self.web_status in (DK9.STATUS.OK, DK9.STATUS.UPDATING):
+            self.web_progress_bar(70)
             self.ui.table_parts.setSortingEnabled(False)
-            self.fill_dk9_table_from_soup(self.soup, self.ui.table_parts, 0,
+            self.ui.table_accesory.setSortingEnabled(False)
+            self.dk9_fill_table_from_soup(self.soup, self.ui.table_parts, 0,
                                           C.DK9_TABLE_NAMES, C.DK9_BG_P_COLOR1, C.DK9_BG_P_COLOR2, 5,
                                           align={4: Qt.AlignRight | Qt.AlignVCenter})
+            self.dk9_fill_table_from_soup(self.soup, self.ui.table_accesory, 1,
+                                          C.DK9_TABLE_NAMES, C.DK9_BG_A_COLOR1, C.DK9_BG_A_COLOR2, 5,
+                                          align={4: Qt.AlignRight | Qt.AlignVCenter})
+            self.web_progress_bar(85)
             self.ui.table_parts.sortByColumn(3, Qt.SortOrder(0))
             self.ui.table_parts.sortByColumn(2, Qt.SortOrder(0))
             self.ui.table_parts.sortByColumn(0, Qt.SortOrder(0))
             self.ui.table_parts.setSortingEnabled(True)
-
-            self.ui.table_accesory.setSortingEnabled(False)
-            self.load_progress(85)
-            self.fill_dk9_table_from_soup(self.soup, self.ui.table_accesory, 1,
-                                          C.DK9_TABLE_NAMES, C.DK9_BG_A_COLOR1, C.DK9_BG_A_COLOR2, 5,
-                                          align={4: Qt.AlignRight | Qt.AlignVCenter})
             self.ui.table_accesory.sortByColumn(3, Qt.SortOrder(0))
             self.ui.table_accesory.sortByColumn(2, Qt.SortOrder(0))
             self.ui.table_accesory.sortByColumn(0, Qt.SortOrder(0))
@@ -776,8 +946,341 @@ class App(QMainWindow):
 
             self.upd_tables_row_heights(dk9=True)
         else:
-            self.login_dk9()
-        self.load_progress(0) if use_old_soup else self.load_progress(100)
+            self.dk9_login_start_worker()
+        self.web_progress_bar(0) if use_old_soup else self.web_progress_bar(100)
+
+    # ========== CACHE WEB DATABASE (DK9) ============
+
+    def dk9_get_cache_update_signals(self, result_to=None, next_method=None):
+        signals = WorkerSignals()
+        if result_to:
+            signals.result.connect(result_to)
+        signals.progress.connect(self.web_progress_bar)
+        if next_method:
+            signals.finished.connect(next_method)
+        else:
+            signals.finished.connect(self.dk9_finish_search_worker)
+        signals.error.connect(self.error)
+        signals.status.connect(self.update_web_status)
+        return signals
+
+    def dk9_cache_updater_start_worker(self):
+        self.dk9_cache_handler_worker = Worker()
+        signals = self.dk9_get_cache_update_signals()
+        self.dk9_cache_handler_worker.add_task(DK9.CACHE.cache_search_parse_save_handler, signals, 2)
+        print('Starting cache handler thread')
+        self.thread.start(self.dk9_cache_handler_worker, priority=QtCore.QThread.Priority.HighestPriority)
+
+    # def dk9_update_cache_start_worker(self):
+    #     self.request_worker = Worker()
+    #     signals = self.dk9_get_cache_update_signals(result_to=self.dk9_parse_and_start_saving)
+    #     self.request_worker.add_task(DK9.adv_search, signals, 2, '', '', '', '')  # Empty request to get all
+    #     print('Starting thread to search for dk9 cache')
+    #     self.thread.start(self.request_worker, priority=QtCore.QThread.Priority.HighestPriority)
+
+    def dk9_read_cache_start_worker(self):
+        self.file_io_worker = Worker()
+        signals = self.dk9_get_cache_update_signals(next_method=self.dk9_finish_progress_bar_status)
+        self.file_io_worker.add_task(DK9.CACHE.read_cache_file, signals, 1)
+        print('Starting thread to read dk9 cache')
+        self.thread.start(self.file_io_worker, priority=QtCore.QThread.Priority.HighestPriority)
+
+    # def dk9_write_cache_start_worker(self):
+    #     self.file_io_worker = Worker()
+    #     signals = self.dk9_get_cache_update_signals()
+    #     self.file_io_worker.add_task(DK9.CACHE.write_cache_file, signals, 1)
+    #     print('Starting thread to write dk9 cache')
+    #     self.thread.start(self.file_io_worker, priority=QtCore.QThread.Priority.HighestPriority)
+
+    # def dk9_parse_and_start_saving(self, soups):
+    #     print(f'dk9_parse_and_start_saving. soups exist? {not not soups}')
+    #     # self.dk9_restart_caching_schedule()
+    #     if not soups:
+    #         return
+    #     self.dk9_parse_soups_to_dict(soups)
+    #     self.dk9_write_cache_start_worker()
+
+    def dk9_read_cache_if_exist(self):
+        print(f'dk9_read_cache_if_exist')
+        if not DK9.CACHE.cache and C.DK9_CACHING and self.web_status in (DK9.STATUS.NO_CONN,
+                                                                         DK9.STATUS.CLI_ERR,
+                                                                         DK9.STATUS.SERV_ERR,
+                                                                         DK9.STATUS.CONN_ERROR):
+            if os.path.exists(f'{C.DK9_CACHE_FILE}'):
+                self.dk9_read_cache_start_worker()
+
+    def dk9_fill_one_table_from_dict(self, rows: list, table, tab_num: int, tab_names: tuple,
+                                     def_bg_color1: tuple, def_bg_color2: tuple,
+                                     count_column: int = None, align: dict = None):
+        try:
+            item_counter = 0
+            r = 0
+            zebra_colors = (def_bg_color1, def_bg_color2)
+            current_zebra_color = 0
+            dbgc = zebra_colors[current_zebra_color]
+            first_cell_previous_text = ''
+            self.clear_table(table)
+            if count_column is not None:
+                self._update_dk9_tooltip(tab_widget=self.ui.tab_widget,
+                                         num=tab_num, tab_names=tab_names, count_1=0, count_2=0)
+            for row in rows:
+                row_palette = row[0]
+                r = 0
+                c = 0
+                if C.FILTER_SEARCH_RESULT:
+                    # print(f'{self.curr_model=}{row[2].string.lower()=}{row[3].string.lower()=}')
+                    # Filter models different more than 1 symbol
+                    curr_model_len = len(self.curr_model)
+                    model_cell = row[3].string.lower()
+                    model_cell_len = len(model_cell)
+                    description_cell = row[4].string.lower()
+                    description_cell_len = len(description_cell)
+                    model_idx_in_desc = description_cell.find(self.curr_model)
+                    # print(f'{description_cell=} {description_cell[model_idx_in_desc + curr_model_len]=} ')
+                    if self.curr_model not in model_cell \
+                            or model_cell_len > curr_model_len + 1 \
+                            or 4 > model_cell_len > curr_model_len:
+                        if model_idx_in_desc == -1:
+                            continue
+                        if model_idx_in_desc > 0 and description_cell[model_idx_in_desc - 1].isalpha():
+                            continue
+                        if model_idx_in_desc + curr_model_len < description_cell_len - 1:
+                            _right_symbol = description_cell[model_idx_in_desc + curr_model_len]
+                            if _right_symbol not in ' /,.)':
+                                continue
+                amount = row[count_column]
+                if count_column is not None and amount.isdigit():
+                    item_counter += int(amount)
+
+                table.insertRow(r)
+                for cell_value in row[1:]:
+                    cell_bg_color = None
+                    # print(f'{dk9_td.string} {self.curr_model=}')
+                    if isinstance(cell_value, (list, tuple)):
+                        cell_text = cell_value[0]
+                        cell_bg_color = cell_value[1]
+                    else:
+                        cell_text = cell_value
+                    table.setItem(r, c, QTableWidgetItem(cell_text))
+                    table.item(r, c).setToolTip(cell_text)
+                    if align and c in align:
+                        table.item(r, c).setTextAlignment(align[c])
+                    if 'ориг' in cell_text and 'вк ' not in cell_text:
+                        table.item(r, c).setFont(self.tab_font_bold)
+                    if C.DK9_COLORED:
+                        if row_palette:
+                            table.item(r, c).setBackground(QtGui.QColor(
+                                row_palette[0], row_palette[1], row_palette[2]
+                            ))
+                        elif cell_bg_color:
+                            table.item(r, c).setBackground(QtGui.QColor(
+                                cell_bg_color[0], cell_bg_color[1], cell_bg_color[2]
+                            ))
+                        else:
+                            if c == 0:
+                                _text = cell_text.lower()
+                                if _text != first_cell_previous_text:
+                                    first_cell_previous_text = _text
+                                    current_zebra_color = abs(current_zebra_color - 1)
+                                    dbgc = zebra_colors[current_zebra_color]
+
+                            # dbgc = def_bg_color1 if r % 2 else def_bg_color2
+                            table.item(r, c).setBackground(QtGui.QColor(dbgc[0], dbgc[1], dbgc[2]))
+                    c += 1
+                r += 1
+            if count_column is not None:
+                self._update_dk9_tooltip(tab_widget=self.ui.tab_widget,
+                                         num=tab_num, tab_names=tab_names, count_1=r - 1, count_2=item_counter)
+        except Exception as _err:
+            self.error((f'Error updating table:\n'
+                        f'{table}',
+                        f'{traceback.format_exc()}'))
+
+    def dk9_fill_table_from_soup(self, soup, table, num: int, tab_names: tuple,
+                                 def_bg_color1: tuple, def_bg_color2: tuple,
+                                 count_column: int = None, align: dict = None):
+        try:
+            item_counter = 0
+            r = 0
+            zebra_colors = (def_bg_color1, def_bg_color2)
+            current_zebra_color = 0
+            dbgc = zebra_colors[current_zebra_color]
+            first_cell_previous_text = ''
+            self.clear_table(table)
+            if not soup[num]:
+                if count_column is not None:
+                    self._update_dk9_tooltip(tab_widget=self.ui.tab_widget,
+                                             num=num, tab_names=tab_names, count_1=0, count_2=0)
+                return
+            for dk9_row in soup[num].tr.next_siblings:
+                row_palette = None
+                if repr(dk9_row)[0] != "'":
+                    # print(dk9_row)
+                    if C.DK9_COLORED and dk9_row.attrs:
+                        if 'style' in dk9_row.attrs:
+                            style = str(dk9_row['style'])
+                            row_palette = C.DK9_BG_COLORS[style[style.find(':') + 1: style.find(';')]]
+                    c = 0
+                    row = dk9_row.findAll('td')
+                    if C.FILTER_SEARCH_RESULT:
+                        # print(f'{self.curr_model=}{row[2].string.lower()=}{row[3].string.lower()=}')
+                        # Filter models different more than 1 symbol
+                        curr_model_len = len(self.curr_model)
+                        model_cell = row[2].string.lower()
+                        model_cell_len = len(model_cell)
+                        description_cell = row[3].string.lower()
+                        description_cell_len = len(description_cell)
+                        model_idx_in_desc = description_cell.find(self.curr_model)
+                        # print(f'{description_cell=} {description_cell[model_idx_in_desc + curr_model_len]=} ')
+                        if self.curr_model not in model_cell \
+                                or model_cell_len > curr_model_len + 1 \
+                                or 4 > model_cell_len > curr_model_len:
+                            if model_idx_in_desc == -1:
+                                continue
+                            if model_idx_in_desc > 0 and description_cell[model_idx_in_desc - 1].isalpha():
+                                continue
+                            if model_idx_in_desc + curr_model_len < description_cell_len - 1:
+                                _right_symbol = description_cell[model_idx_in_desc + curr_model_len]
+                                if _right_symbol not in ' /,.)':
+                                    continue
+                        # elif model_cell_len > curr_model_len + 1:
+                        #     continue
+
+                        # if self.curr_model not in model_cell \
+                        #         or (4 > model_cell_len > curr_model_len) \
+                        #         or curr_model_len + 1 < model_cell_len:
+                        #     if model_idx_in_desc == -1 \
+                        #             or (model_idx_in_desc > 0
+                        #                 and description_cell[model_idx_in_desc - 1].isalpha()) \
+                        #             or (model_idx_in_desc + curr_model_len < description_cell_len - 1
+                        #                 and (description_cell[model_idx_in_desc + curr_model_len] not in '/,.')):
+                        #         continue
+                    amt = row[count_column].string
+                    if count_column is not None and amt.isdigit():
+                        item_counter += int(amt)
+
+                    table.insertRow(r)
+                    for dk9_td in row:
+                        # print(f'{dk9_td.string} {self.curr_model=}')
+                        current_cell_text = dk9_td.string
+                        table.setItem(r, c, QTableWidgetItem(current_cell_text))
+                        table.item(r, c).setToolTip(current_cell_text)
+                        if align and c in align:
+                            table.item(r, c).setTextAlignment(align[c])
+                        if 'ориг' in current_cell_text and 'вк ' not in current_cell_text:
+                            table.item(r, c).setFont(self.tab_font_bold)
+                        if C.DK9_COLORED:
+                            if row_palette:
+                                table.item(r, c). \
+                                    setBackground(QtGui.QColor(row_palette[0], row_palette[1], row_palette[2]))
+                            elif dk9_td.attrs and 'style' in dk9_td.attrs:
+                                style = str(dk9_td['style'])
+                                td_palette = C.DK9_BG_COLORS[style[style.find(':') + 1: style.find(';')]]
+                                table.item(r, c). \
+                                    setBackground(QtGui.QColor(td_palette[0], td_palette[1], td_palette[2]))
+                            else:
+                                if c == 0:
+                                    _text = current_cell_text.lower()
+                                    if _text != first_cell_previous_text:
+                                        first_cell_previous_text = _text
+                                        current_zebra_color = abs(current_zebra_color - 1)
+                                        dbgc = zebra_colors[current_zebra_color]
+
+                                # dbgc = def_bg_color1 if r % 2 else def_bg_color2
+                                table.item(r, c).setBackground(QtGui.QColor(dbgc[0], dbgc[1], dbgc[2]))
+                        c += 1
+                r += 1
+            if count_column is not None:
+                self._update_dk9_tooltip(tab_widget=self.ui.tab_widget,
+                                         num=num, tab_names=tab_names, count_1=r - 1, count_2=item_counter)
+        except Exception as _err:
+            self.error((f'Error updating table:\n'
+                        f'{table}',
+                        f'{traceback.format_exc()}'))
+
+    def dk9_finish_search_worker(self):
+        if self.web_status == DK9.STATUS.SERV_ERR:
+            self.dk9_upd_cache_restart_timer(allow_update=False)
+        if not DK9.LOGIN_SUCCESS:
+            if not self.got_login_on_search_try_relog:
+                self.got_login_on_search_try_relog = True
+                self.dk9_login_start_worker(self.dk9_upd_cache_restart_timer)
+                return
+            else:
+                self.got_login_on_search_try_relog = False
+                # self.ui.web_status.setToolTip(f'Can`t relogin to DK9')
+                self.dk9_upd_cache_restart_timer(allow_update=False)
+            if self.web_status == DK9.STATUS.LOGIN_FAIL:
+                self.dk9_upd_cache_stop_timer()
+        self.dk9_finish_progress_bar_status()
+
+    def dk9_finish_progress_bar_status(self):
+        print(f'dk9_finish_progress_bar_status {self.web_status=}')
+        bar = self.ui.web_progress_bar
+        # if not DK9.CACHE.cache and C.DK9_CACHING and self.web_status in (DK9.STATUS.NO_CONN,
+        #                                                                 DK9.STATUS.CLI_ERR,
+        #                                                                 DK9.STATUS.SERV_ERR,
+        #                                                                 DK9.STATUS.CONN_ERROR):
+        #     if os.path.exists(f'{C.DK9_CACHE_FILE}'):
+        #         self.dk9_read_cache_start_worker()
+        if self.web_status in (DK9.STATUS.UPDATING, DK9.STATUS.OK, DK9.STATUS.FILE_UPDATED):
+            # if self.web_status in (DK9.STATUS.CONNECTING, DK9.STATUS.OK):
+            if self.web_status != DK9.STATUS.FILE_UPDATED:
+                if C.DK9_CACHING and DK9.CACHE.cache:
+                    self.update_web_status(DK9.STATUS.FILE_UPDATED)
+                else:
+                    self.update_web_status(DK9.STATUS.OK)
+            if self.web_status == DK9.STATUS.FILE_UPDATED:
+                self.ui.web_status.setToolTip(f'Using file: '
+                                              f'{C.DK9_CACHE_FILE}')
+            bar.setValue(0)
+            # bar.setStyleSheet("QProgressBar::chunk {background-color: rgb(230, 230, 230);}")
+        # elif self.web_status == DK9.STATUS.FILE_USED_OFFLINE:
+        #     bar.setValue(100)
+        #     bar.setStyleSheet("QProgressBar::chunk {background-color: orange;}")
+        #     self.ui.web_status.setToolTip(f'Loaded from file: '
+        #                                   f'{C.DK9_CACHE_FILE}')
+        elif C.DK9_CACHING or self.web_status == DK9.STATUS.FILE_USED_OFFLINE:
+            bar.setValue(100)
+            if DK9.CACHE.cache:
+                cache_day = int(DK9.CACHE.cache['updated'].split(' ')[1][0:2])
+                current_day = datetime.now().day
+                if cache_day == current_day:
+                    bar.setStyleSheet("QProgressBar::chunk {background-color: orange;}")
+                else:
+                    bar.setStyleSheet("QProgressBar::chunk {background-color: orangered;}")
+                if self.web_status == DK9.STATUS.LOGIN_FAIL:
+                    self.ui.web_status.setToolTip(C.WEB_STATUSES[DK9.STATUS.LOGIN_FAIL])
+                elif self.web_status not in (DK9.STATUS.CLI_ERR, DK9.STATUS.SERV_ERR, DK9.STATUS.NO_LOGIN):
+                    self.ui.web_status.setToolTip(f'Loaded from file: {C.DK9_CACHE_FILE}\n'
+                                                  f'{C.WEB_STATUSES[self.web_status]}')
+                self.update_web_status(DK9.STATUS.FILE_USED_OFFLINE)
+            else:
+                bar.setStyleSheet("QProgressBar::chunk {background-color: orangered;}")
+        else:
+            bar.setValue(100)
+            bar.setStyleSheet("QProgressBar::chunk {background-color: orangered;}")
+
+    def web_progress_bar(self, progress):
+        bar = self.ui.web_progress_bar
+        # if progress:
+        if self.web_status == DK9.STATUS.FILE_READ:
+            style = "QProgressBar::chunk {background-color: yellow;}"
+        elif self.web_status == DK9.STATUS.FILE_WRITE:
+            style = "QProgressBar::chunk {background-color: cyan;}"
+        else:
+            style = ""
+        bar.setStyleSheet(style)
+        bar.setValue(progress)
+        # else:
+        #     if self.web_status in (DK9.STATUS.OK, DK9.STATUS.FILE_UPDATED):
+        #         # if self.web_status in (DK9.STATUS.CONNECTING, DK9.STATUS.OK):
+        #         bar.setValue(0)
+        #         print(f'{DK9.CACHE.cache=}')
+        #         # bar.setStyleSheet("QProgressBar::chunk {background-color: rgb(230, 230, 230);}")
+        #     else:
+        #         bar.setValue(100)
+        #         bar.setStyleSheet("QProgressBar::chunk {background-color: orangered;}")
 
     def dummy(self):
         pass
@@ -786,6 +1289,10 @@ class App(QMainWindow):
         self.copied_table_items = {}
         table.clearContents()
         table.setRowCount(0)
+
+    # @staticmethod
+    # def get_color_from_style(style):
+    #     return C.DK9_BG_COLORS[style[style.find(':') + 1: style.find(';')]]
 
     def update_price_table(self, model, recursive_model: str = ''):  # 'xiaomi mi a2 m1804d2sg'
         try:
@@ -957,116 +1464,28 @@ class App(QMainWindow):
             if bold:
                 table.item(t_row_num, c).setFont(self.tab_font_bold if bold else self.tab_font)
 
-    def load_progress(self, progress):
-        self.ui.web_load_progress_bar.setValue(progress)
-
-    def thread_finished(self):
-        if self.web_status not in (1, 2):
-            self.ui.web_load_progress_bar.setValue(100)
+    def price_read_progress_bar(self, progress=None):
+        bar = self.ui.price_progress_bar
+        if progress:
+            bar.setStyleSheet("")
+            bar.setValue(progress)
         else:
-            self.ui.web_load_progress_bar.setValue(0)
-
-    def fill_dk9_table_from_soup(self, soup, table, num: int, tab_names: tuple,
-                                 def_bg_color1: tuple, def_bg_color2: tuple,
-                                 count_column: int = None, align: dict = None):
-        try:
-            item_counter = 0
-            r = 0
-            zebra_colors = (def_bg_color1, def_bg_color2)
-            current_zebra_color = 0
-            dbgc = zebra_colors[current_zebra_color]
-            first_cell_previous_text = ''
-            self.clear_table(table)
-            if not soup[num]:
-                if count_column is not None:
-                    self._update_dk9_tooltip(tab_widget=self.ui.tab_widget,
-                                             num=num, tab_names=tab_names, count_1=0, count_2=0)
-                return
-            for dk9_row in soup[num].tr.next_siblings:
-                row_palette = None
-                if repr(dk9_row)[0] != "'":
-                    # print(dk9_row)
-                    if C.DK9_COLORED and dk9_row.attrs:
-                        if 'style' in dk9_row.attrs:
-                            style = str(dk9_row['style'])
-                            row_palette = C.DK9_BG_COLORS[style[style.find(':') + 1: style.find(';')]]
-                    c = 0
-                    row = dk9_row.findAll('td')
-                    if C.FILTER_SEARCH_RESULT:
-                        # print(f'{self.curr_model=}{row[2].string.lower()=}{row[3].string.lower()=}')
-                        # Filter models different more than 1 symbol
-                        curr_model_len = len(self.curr_model)
-                        model_cell = row[2].string.lower()
-                        model_cell_len = len(model_cell)
-                        description_cell = row[3].string.lower()
-                        description_cell_len = len(description_cell)
-                        model_idx_in_desc = description_cell.find(self.curr_model)
-                        # print(f'{description_cell=} {description_cell[model_idx_in_desc + curr_model_len]=} ')
-                        if self.curr_model not in model_cell \
-                                or model_cell_len > curr_model_len + 1 \
-                                or 4 > model_cell_len > curr_model_len:
-                            if model_idx_in_desc == -1:
-                                continue
-                            if model_idx_in_desc > 0 and description_cell[model_idx_in_desc - 1].isalpha():
-                                continue
-                            if model_idx_in_desc + curr_model_len < description_cell_len - 1:
-                                _right_symbol = description_cell[model_idx_in_desc + curr_model_len]
-                                if _right_symbol not in ' /,.)':
-                                    continue
-                        # elif model_cell_len > curr_model_len + 1:
-                        #     continue
-
-                        # if self.curr_model not in model_cell \
-                        #         or (4 > model_cell_len > curr_model_len) \
-                        #         or curr_model_len + 1 < model_cell_len:
-                        #     if model_idx_in_desc == -1 \
-                        #             or (model_idx_in_desc > 0
-                        #                 and description_cell[model_idx_in_desc - 1].isalpha()) \
-                        #             or (model_idx_in_desc + curr_model_len < description_cell_len - 1
-                        #                 and (description_cell[model_idx_in_desc + curr_model_len] not in '/,.')):
-                        #         continue
-                    amt = row[count_column].string
-                    if count_column is not None and amt.isdigit():
-                        item_counter += int(amt)
-
-                    table.insertRow(r)
-                    for dk9_td in row:
-                        # print(f'{dk9_td.string} {self.curr_model=}')
-                        current_cell_text = dk9_td.string
-                        table.setItem(r, c, QTableWidgetItem(current_cell_text))
-                        table.item(r, c).setToolTip(current_cell_text)
-                        if align and c in align:
-                            table.item(r, c).setTextAlignment(align[c])
-                        if 'ориг' in current_cell_text and 'вк ' not in current_cell_text:
-                            table.item(r, c).setFont(self.tab_font_bold)
-                        if C.DK9_COLORED:
-                            if row_palette:
-                                table.item(r, c). \
-                                    setBackground(QtGui.QColor(row_palette[0], row_palette[1], row_palette[2]))
-                            elif dk9_td.attrs and 'style' in dk9_td.attrs:
-                                style = str(dk9_td['style'])
-                                td_palette = C.DK9_BG_COLORS[style[style.find(':') + 1: style.find(';')]]
-                                table.item(r, c). \
-                                    setBackground(QtGui.QColor(td_palette[0], td_palette[1], td_palette[2]))
-                            else:
-                                if c == 0:
-                                    _text = current_cell_text.lower()
-                                    if _text != first_cell_previous_text:
-                                        first_cell_previous_text = _text
-                                        current_zebra_color = abs(current_zebra_color - 1)
-                                        dbgc = zebra_colors[current_zebra_color]
-
-                                # dbgc = def_bg_color1 if r % 2 else def_bg_color2
-                                table.item(r, c).setBackground(QtGui.QColor(dbgc[0], dbgc[1], dbgc[2]))
-                        c += 1
-                r += 1
-            if count_column is not None:
-                self._update_dk9_tooltip(tab_widget=self.ui.tab_widget,
-                                         num=num, tab_names=tab_names, count_1=r - 1, count_2=item_counter)
-        except Exception as _err:
-            self.error((f'Error updating table:\n'
-                        f'{table}',
-                        f'{traceback.format_exc()}'))
+            if self.price_status == 6:
+                bar.setValue(0)
+                # print(f'{bar.style()=}')
+                # bar.setStyleSheet("")
+                # bar.setStyleSheet("QProgressBar::chunk {background-color: rgb(230, 230, 230);}")
+                if self.web_status in \
+                        (
+                                DK9.STATUS.NO_CONN,
+                                DK9.STATUS.CLI_ERR,
+                                DK9.STATUS.SERV_ERR,
+                                DK9.STATUS.CONN_ERROR,
+                        ):
+                    self.dk9_login_or_update_cache_on_start()
+            else:
+                bar.setValue(100)
+                bar.setStyleSheet("QProgressBar::chunk {background-color: orangered;}")
 
     @staticmethod
     def _update_dk9_tooltip(tab_widget, num: int, tab_names: tuple, count_1: int, count_2: int):
@@ -1102,6 +1521,9 @@ class App(QMainWindow):
             else:
                 last_cell_bg_color = (200, 200, 200)
             # print(f'{row=} {last_cell_bg_color=}')
+            # print(f"{self.web_table_stylesheet_template[0]}"
+            #       f"{last_cell_bg_color}"
+            #       f"{self.web_table_stylesheet_template[1]}")
             table.setStyleSheet(f"{self.web_table_stylesheet_template[0]}"
                                 f"{last_cell_bg_color}"
                                 f"{self.web_table_stylesheet_template[1]}")
@@ -1149,10 +1571,10 @@ class App(QMainWindow):
         # copy to cash
         selected_row = self.sender().selectedItems()
         selected_row_len = len(selected_row)
-        self.ui.pt_cash_name.setPlainText(selected_row[0].text() if selected_row_len > 0 else '')
+        self.ui.le_cash_name.setText(selected_row[0].text() if selected_row_len > 0 else '')
         _price = selected_row[1].text() if selected_row_len > 1 else ''
-        self.ui.pt_cash_price.setPlainText(_price)
-        self.ui.pt_cash_descr.setPlainText(selected_row[2].text() if selected_row_len > 2 else '')
+        self.ui.le_cash_price.setText(_price)
+        self.ui.le_cash_descr.setText(selected_row[2].text() if selected_row_len > 2 else '')
         self.selected_work_price = (int(_price) if _price.isdigit() else 0)
         if selected_row:
             self.highlight_web_parts_by_part_name(selected_row[0].text())
@@ -1334,7 +1756,12 @@ class App(QMainWindow):
 
     def eventFilter(self, source, event):
         if event.type() == QEvent.ContextMenu:
-            if source in (self.ui.table_parts, self.ui.table_accesory, self.ui.table_price):
+            if source in (
+                    self.ui.table_parts,
+                    self.ui.table_accesory,
+                    self.ui.table_price,
+            ):
+                # print(f'{source=}')
                 row = source.selectedItems()
                 # print(f'{row=}')
                 if row:
@@ -1350,6 +1777,9 @@ class App(QMainWindow):
                             self.copy_table_items(source, 4)
                     if action == copy_full_row:
                         self.copy_table_items(source)
+        elif event.type() == QEvent.MouseButtonDblClick:
+            if source in (self.ui.le_cash_name, self.ui.le_cash_descr, self.ui.le_cash_price):
+                clipboard.setText(source.text())
         return super().eventFilter(source, event)
 
     def open_adv_search(self):
@@ -1415,7 +1845,7 @@ class SearchInput(QLineEdit):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.sizePolicy().hasHeightForWidth())
         self.setSizePolicy(sizePolicy)
-        self.setMinimumSize(QtCore.QSize(540, 30))
+        self.setMinimumSize(QtCore.QSize(80, 30))
         self.setMaximumSize(QtCore.QSize(540, 30))
         self.setBaseSize(QtCore.QSize(540, 30))
 
@@ -1445,7 +1875,7 @@ class SearchInput(QLineEdit):
                 if self.app.model_list_widget.isHidden():
                     self.app.upd_models_list()
                     return
-                self.app.scheduler(self.app.model_list_widget.currentItem())
+                self.app.filter_item_text_search_visualise(self.app.model_list_widget.currentItem())
 
             elif event.key() == Qt.Key_Up:
                 idx = self.app.model_list_widget.currentRow() - 1

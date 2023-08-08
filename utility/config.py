@@ -156,6 +156,10 @@ class Config:
         self.DK9_PASSWORD, self.PASSWORD = '', ''
         self.DK9_LOGIN_DATA = {}
 
+        self.DK9_CACHING = True
+        self.DK9_CACHING_PERIOD = 30  # 1_800_000 ms = 30 min * 60_000
+        self.DK9_CACHE_FILE = f'{self.CONTENT_PATH}dk_tables.cache'
+
         self.DK9_HEADERS = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
                           '(KHTML, like Gecko) Chrome/93.0.4577.82 Safari/537.36 Firefox/10.0'}
@@ -164,7 +168,9 @@ class Config:
 
         self.WEB_STATUSES = {0: 'Нет соединения', 1: 'Подключение...', 2: 'Подключен',
                              3: 'Перенаправление', 4: 'Запрос отклонен', 5: 'Ошибка сервера',
-                             6: 'Ошибка авторизации', 7: 'Ошибка соединения'}
+                             6: 'Не подключен', 7: 'Ошибка соединения', 8: 'Чтение',
+                             9: 'Сохранение', 10: 'Ошибка чтения', 11: 'Ошибка сохранения',
+                             12: 'Обновлено', 13: 'Обновлено', 14: 'Обновляется', 15: 'Ошибка авторизации'}
 
         self.SYMBOL_TO_LATIN = {
             'й': 'q', 'ц': 'w', 'у': 'e', 'к': 'r', 'е': 't', 'н': 'y', 'г': 'u', 'ш': 'i', 'щ': 'o', 'з': 'p',
@@ -201,6 +207,9 @@ class Config:
             self.PRICE_SEARCH_COLUMN_NUMBERS[list_name] = *(ord(letter.upper()) - 65 for letter in columns),
         # print(self.PRICE_SEARCH_COLUMN_NUMBERS)
 
+    def get_color_from_style(self, style):
+        return self.DK9_BG_COLORS[style[style.find(':') + 1: style.find(';')]]
+
     # @staticmethod
     # def set_desktop_path():
     #     return os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop\\')
@@ -224,6 +233,9 @@ class Config:
             try:
                 self.DK9_LOGIN = config['WEB DATABASE']['DK9_LOGIN']
                 self.DK9_PASSWORD = config['WEB DATABASE']['DK9_PASSWORD']
+                self.DK9_CACHING = True if config['WEB DATABASE']['DK9_CACHING'] == 'True' else False
+                self.DK9_CACHING_PERIOD = int(config['WEB DATABASE']['DK9_CACHING_PERIOD'])
+
                 self.CURRENT_LANG = int(config['CLIENT']['LANG'])
                 self.BRANCH = int(config['CLIENT']['BRANCH'])
                 self.FULLSCREEN = True if config['SETTINGS']['FULLSCREEN'] == 'True' else False
@@ -260,25 +272,14 @@ class Config:
             'ButtonLogin': 'Submit'
         }
 
-    # def save_user_config(self):
-    #     config = configparser.ConfigParser()
-    #     config.add_section('WEB DATABASE')
-    #     print(f'{config=} {type(config)=}')
-    #     config.set('WEB DATABASE', 'dk9_login', str(self.DK9_LOGIN))
-    #     config.set('WEB DATABASE', 'DK9_PASSWORD', str(self.DK9_PASSWORD))
-    #     config.add_section('SETTINGS')
-    #     config.set('SETTINGS', 'MODEL_LIST_SIZE', str(self.MODEL_LIST_SIZE))
-    #     config.set('SETTINGS', 'PRICE_COLORED', str(self.PRICE_COLORED))
-    #     config.set('SETTINGS', 'DK9_COLORED', str(self.DK9_COLORED))
-    #     config.set('SETTINGS', 'DK9_COL_DIFF', str(self.DK9_COL_DIFF))
-    #     config.set('SETTINGS', 'TABLE_FONT_SIZE', str(self.TABLE_FONT_SIZE))
-
     def save_user_config(self):
         print(f'Saving {self.USER_CONFIG}')
         config = configparser.ConfigParser()
         config['WEB DATABASE'] = {}
         config['WEB DATABASE']['DK9_LOGIN'] = str(self.DK9_LOGIN)
         config['WEB DATABASE']['DK9_PASSWORD'] = str(self.DK9_PASSWORD)
+        config['WEB DATABASE']['DK9_CACHING'] = str(self.DK9_CACHING)
+        config['WEB DATABASE']['DK9_CACHING_PERIOD'] = str(self.DK9_CACHING_PERIOD)
 
         config['CLIENT'] = {}
         config['CLIENT']['LANG'] = str(self.CURRENT_LANG)

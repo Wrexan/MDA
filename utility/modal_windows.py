@@ -36,8 +36,10 @@ class ConfigWindow(QtWidgets.QDialog):
         self.L = L
         self.ui = Ui_settings_window()
         self.ui.setupUi(self)
-        self.ui.web_login.setText(C.DK9_LOGIN)
-        self.ui.web_password.setText(C.DK9_PASSWORD)
+        self.ui.web_login.setText(self.C.DK9_LOGIN)
+        self.ui.web_password.setText(self.C.DK9_PASSWORD)
+        self.ui.chb_dk9_caching.setCheckState(2 if self.C.DK9_CACHING else 0)
+        self.ui.dk9_caching_minutes.setValue(self.C.DK9_CACHING_PERIOD)
 
         self.ui.cb_branch.addItems(self.C.BRANCHES.values())
         self.ui.cb_branch.setCurrentIndex(self.C.BRANCH)
@@ -80,6 +82,8 @@ class ConfigWindow(QtWidgets.QDialog):
             login = True
         self.C.DK9_LOGIN = self.ui.web_login.text()
         self.C.DK9_PASSWORD = self.ui.web_password.text()
+        self.C.DK9_CACHING = True if self.ui.chb_dk9_caching.checkState() == 2 else False
+        self.C.DK9_CACHING_PERIOD = self.ui.dk9_caching_minutes.value()
         cbi = self.ui.cb_branch.currentIndex()
         self.C.BRANCH = cbi if self.C.BRANCHES.get(cbi) else 0
 
@@ -102,7 +106,12 @@ class ConfigWindow(QtWidgets.QDialog):
         # C.TABLE_COLUMN_SIZE_MAX = self.ui.column_width_max.value()
         if self.C.BRANCH == 0:
             self.Parent.reset_stat_timer()
+        if self.C.DK9_CACHING:
+            self.Parent.dk9_upd_cache_restart_timer()
+        else:
+            self.Parent.dk9_cache_timer.stop()
         self.Parent.init_ui_dynamics()
+        self.Parent.upd_username()
         self.C.precalculate_color_diffs()
         try:
             self.C.save_user_config()
@@ -111,7 +120,7 @@ class ConfigWindow(QtWidgets.QDialog):
         if login:
             self.DK9.change_data(self.C.c_data())
             print(f'{self.DK9.CDATA=}')
-            self.Parent.login_dk9()
+            self.Parent.dk9_login_start_worker()
 
 
 class FirstStartWindow(QtWidgets.QDialog):
@@ -162,7 +171,7 @@ class FirstStartWindow(QtWidgets.QDialog):
             login = True
             self.C.DK9_LOGIN = self.ui.web_login.text()
             self.C.DK9_PASSWORD = self.ui.web_password.text()
-
+            self.Parent.upd_username()
         try:
             self.C.save_user_config()
         except Exception as _err:
@@ -170,7 +179,8 @@ class FirstStartWindow(QtWidgets.QDialog):
         if login:
             self.DK9.change_data(self.C.c_data())
             print(f'{self.DK9.CDATA=}')
-            self.Parent.login_dk9()
+            self.Parent.dk9_login_start_worker()
+            # self.Parent.dk9_login_or_update_cache_on_start()
         self.close()
 
 

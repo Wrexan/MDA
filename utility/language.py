@@ -45,6 +45,7 @@ class Language:
         module.chb_price_name_only.setText(self.MainWindow["chb_price_name_only"])
         module.chb_search_eng.setText(self.MainWindow["chb_search_eng"])
         module.chb_search_narrow.setText(self.MainWindow["chb_search_narrow"])
+        module.le_cash_name.setPlaceholderText(self.MainWindow["le_cash_name_placeholder"])
 
     def translate_AdvSearchDialog_texts(self, module):
         module.setWindowTitle(self.AdvSearchDialog["WindowTitle"])
@@ -79,6 +80,8 @@ class Language:
         module.ui.frame.setToolTip(self.ConfigWindow["frame_ToolTip"])
         module.ui.label_2.setText(self.ConfigWindow["label_2"])
         module.ui.label_3.setText(self.ConfigWindow["label_3"])
+        module.ui.chb_dk9_caching.setText(self.ConfigWindow["chb_dk9_caching"])
+        module.ui.lbl_minutes.setText(self.ConfigWindow["lbl_minutes"])
         module.ui.label_14.setText(self.ConfigWindow["label_14"])
         module.ui.frame_7.setToolTip(self.ConfigWindow["frame_7_ToolTip"])
         module.ui.label_9.setText(self.ConfigWindow["label_9"])
