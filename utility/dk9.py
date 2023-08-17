@@ -1,4 +1,5 @@
 import json
+import os
 from datetime import datetime
 
 import requests
@@ -21,6 +22,8 @@ class DK9Parser:
         self.TIMEOUT = 30
         self.LOGIN_SUCCESS = False
         self.LAST_ERROR_PAGE_TEXT = ''
+        self.ERROR_FOLDER = 'Errors\\'
+        self.ERRORS_TO_IGNORE = '[Errno 110', '[WinError 10060]', 'Read timed out', 'Connection aborted'
 
         # self.WEB_STATUSES = {0: 'Нет соединения', 1: 'Не залогинен', 2: 'Подключен',
         #                      3: 'Перенаправление', 4: 'Запрос отклонен', 5: 'Ошибка сервера'}
@@ -93,10 +96,12 @@ class DK9Parser:
             return
         except Exception as err:
             print(err.__str__())
-            for err_type in ('[Errno 110', 'Read timed out', 'Connection aborted'):
+            # self.save_error_file(f'{err.__str__()}\n{traceback.format_exc()}')  # -------------
+            for err_type in self.ERRORS_TO_IGNORE:
                 if err_type in err.__str__():
                     self._error_handler(progress, status, err)
                     return
+            self.save_error_file(f'{err.__str__()}\n{traceback.format_exc()}')
             error.emit((f'Error while trying to login',
                         f'{traceback.format_exc()}'))
 
@@ -160,10 +165,12 @@ class DK9Parser:
             return
         except Exception as err:
             print(err.__str__())
-            for err_type in ('[Errno 110', 'Read timed out', 'Connection aborted'):
+            # self.save_error_file(f'{err.__str__()}\n{traceback.format_exc()}')  # -------------
+            for err_type in self.ERRORS_TO_IGNORE:
                 if err_type in err.__str__():
                     self._error_handler(progress, status, err)
                     return
+            self.save_error_file(f'{err.__str__()}\n{traceback.format_exc()}')
             error.emit((f'Error while trying to search:\n'
                         f'{model_}',
                         f'{traceback.format_exc()}'))
@@ -215,6 +222,18 @@ class DK9Parser:
             status.emit(emit or self.STATUS.CONN_ERROR)
             print(f'Error: (Connection error) Message :\n - {str(err)}')
         progress.emit(100)
+
+    def save_error_file(self, data: str):
+        self.check_and_create_folder(self.ERROR_FOLDER)
+        file_name = f'Error [{datetime.now().strftime("%Y%m%d-%H_%M_%S")}]'
+        print(f'saving error file: {file_name}')
+        with open(f'{self.ERROR_FOLDER}{file_name}', 'w') as file:
+            file.write(data)
+
+    @staticmethod
+    def check_and_create_folder(folder_path):
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
 
 
 class DK9Status:
