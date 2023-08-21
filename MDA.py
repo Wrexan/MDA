@@ -1,5 +1,5 @@
-import json
 import sys
+import webbrowser
 from datetime import datetime
 import bs4
 import traceback
@@ -29,6 +29,7 @@ from utility.language import Language
 from utility.modal_windows import ConfigWindow, HelpWindow, AdvancedSearchWindow, FirstStartWindow
 from utility.modal_graph_win import GraphWindow
 from utility.thread_worker import Worker, WorkerSignals
+from utility.update_checker import is_update_available
 from UI.window_main import Ui_MainWindow
 
 C = Config()
@@ -88,6 +89,7 @@ class App(QMainWindow):
         # self.model_list_widget.setHorizontalHeaderLabels('f')
         self.model_list_widget.verticalHeader().hide()
         self.model_list_widget.horizontalHeader().hide()
+        self.ui.update_button.hide()
         # widget_width = self.search_input.width()
         # self.model_list_widget.setMaximumWidth(widget_width)
         # column_0_width = int(widget_width * 0.9)
@@ -752,6 +754,13 @@ class App(QMainWindow):
             self.dk9_login_start_worker(self.dk9_upd_cache_restart_timer)
         elif self.web_status != DK9.STATUS.OK:
             self.dk9_login_start_worker()
+        if is_update_available(C.VERSION_FILE_PATH, C.UPDATE_URL):
+            self.ui.update_button.show()
+            self.ui.update_button.clicked.connect(self.open_update_page)
+
+    def open_update_page(self):
+        self.ui.update_button.hide()
+        webbrowser.open(C.UPDATE_URL)
 
     # @QtCore.pyqtSlot
     def dk9_search_or_login(self):

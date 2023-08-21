@@ -14,6 +14,7 @@ class Config:
         self.CONTENT_PATH = f'{self.PATH}content\\'
         self.MDAS_PATH = f'{self.PATH}mdas\\'
         self.LANG_PATH = f'{self.CONTENT_PATH}languages\\'
+        self.VERSION_FILE_PATH = f'{self.CONTENT_PATH}version.md'
 
         self.LOGO = f'{self.CONTENT_PATH}MDA.ico'
         self.USER_CONFIG = f'{self.CONTENT_PATH}user_config.ini'
@@ -33,6 +34,7 @@ class Config:
         self.DK9_LOGIN_URL = DK9_LOGIN_URL
         self.DK9_LOGGED_IN_URL = DK9_LOGGED_IN_URL
         self.DK9_SEARCH_URL = DK9_SEARCH_URL
+        self.UPDATE_URL = UPDATE_URL
 
         # =================================================
         # ==================  CLIENT  =====================
