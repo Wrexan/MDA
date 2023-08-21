@@ -52,7 +52,8 @@
 "chb_price_name_only": "Модель прайса",
 "chb_search_eng": "Латиница",
 "chb_search_narrow": "Два символа",
-"le_cash_name_placeholder": "Строка прайса в расширенном виде"
+"le_cash_name_placeholder": "Строка прайса в расширенном виде",
+"update_button": "Доступно обновление"
 },
 "AdvSearchDialog":
 {
