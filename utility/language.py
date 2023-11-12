@@ -1,5 +1,6 @@
 import json
 from dataclasses import dataclass
+from utility.config import LANG_PATH
 
 
 @dataclass
@@ -11,7 +12,7 @@ class Language:
         self.load_language()
 
     def load_language(self):
-        with open(f'{self.C.LANG_PATH}\\{self.C.LANGS[self.C.CURRENT_LANG]}', 'r', encoding='utf-8') as f:
+        with open(f'{LANG_PATH}\\{self.C.LANGS[self.C.CURRENT_LANG]}', 'r', encoding='utf-8') as f:
             lang_data = json.load(f)
         for module_name, module_attrs in lang_data.items():
             if module_name == self.apply_as_attrs:

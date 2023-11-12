@@ -5,6 +5,7 @@ import bs4
 import traceback
 import os
 import re
+from utility.utils import save_error_file
 
 sys.path.append(os.path.join(os.getcwd(), 'PyQt5'))
 # sys.path.append(os.path.join(os.getcwd(), 'PyQt5\\Qt5'))
@@ -21,7 +22,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, QMenu, 
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import Qt, QEvent
 
-from utility.config import Config
+from utility.config import Config, DK9_CACHE_FILE_PATH, VERSION_FILE_PATH, LOGO
 from utility.dk9 import DK9Parser
 from utility.price import Price
 from utility.statistic import MDAS
@@ -656,8 +657,8 @@ class App(QMainWindow):
     def read_price_start_worker(self):
         self.file_io_worker = Worker()
         signals = WorkerSignals()
-        signals.finished.connect(self.price_read_progress_bar)
-        signals.progress.connect(self.price_read_progress_bar)
+        signals.finished.connect(self.price_read_finished)
+        signals.progress.connect(self.price_read_finished)
         signals.status.connect(self.update_price_status)
         signals.error.connect(self.error)
         self.file_io_worker.add_task(self.Price.load_price, signals, 0)
@@ -754,9 +755,15 @@ class App(QMainWindow):
             self.dk9_login_start_worker(self.dk9_upd_cache_restart_timer)
         elif self.web_status != DK9.STATUS.OK:
             self.dk9_login_start_worker()
-        if is_update_available(C.VERSION_FILE_PATH, C.UPDATE_URL):
+
+        # Check for updated version of the program
+        upd_check_result = is_update_available(VERSION_FILE_PATH, C.UPDATE_URL)
+        if upd_check_result is True:
             self.ui.update_button.show()
             self.ui.update_button.clicked.connect(self.open_update_page)
+        elif upd_check_result is not False:
+            self.update_price_progress_bar(progress=0, style_sheet=C.PB_STYLE_SHEET_WARN)
+            save_error_file(f"Can't get update info from web server:\n{upd_check_result}")
 
     def open_update_page(self):
         self.ui.update_button.hide()
@@ -814,7 +821,7 @@ class App(QMainWindow):
                 if C.SEARCH_BY_PRICE_MODEL:
                     self.add_to_statistic(branch=C.BRANCH, brand=manufacturer, model=self.curr_model)
             else:
-                if os.path.exists(f'{C.DK9_CACHE_FILE}'):
+                if os.path.exists(DK9_CACHE_FILE_PATH):
                     self.dk9_read_cache_start_worker()
                 elif not DK9.LOGIN_SUCCESS:
                     self.dk9_login_start_worker(self.dk9_upd_cache_restart_timer)
@@ -1015,7 +1022,7 @@ class App(QMainWindow):
                                                                          DK9.STATUS.CLI_ERR,
                                                                          DK9.STATUS.SERV_ERR,
                                                                          DK9.STATUS.CONN_ERROR):
-            if os.path.exists(f'{C.DK9_CACHE_FILE}'):
+            if os.path.exists(DK9_CACHE_FILE_PATH):
                 self.dk9_read_cache_start_worker()
 
     def dk9_fill_one_table_from_dict(self, rows: list, table, tab_num: int, tab_names: tuple,
@@ -1225,13 +1232,7 @@ class App(QMainWindow):
 
     def dk9_finish_progress_bar_status(self):
         print(f'dk9_finish_progress_bar_status {self.web_status=}')
-        bar = self.ui.web_progress_bar
-        # if not DK9.CACHE.cache and C.DK9_CACHING and self.web_status in (DK9.STATUS.NO_CONN,
-        #                                                                 DK9.STATUS.CLI_ERR,
-        #                                                                 DK9.STATUS.SERV_ERR,
-        #                                                                 DK9.STATUS.CONN_ERROR):
-        #     if os.path.exists(f'{C.DK9_CACHE_FILE}'):
-        #         self.dk9_read_cache_start_worker()
+
         if self.web_status in (DK9.STATUS.UPDATING, DK9.STATUS.OK, DK9.STATUS.FILE_UPDATED):
             # if self.web_status in (DK9.STATUS.CONNECTING, DK9.STATUS.OK):
             if self.web_status != DK9.STATUS.FILE_UPDATED:
@@ -1241,55 +1242,35 @@ class App(QMainWindow):
                     self.update_web_status(DK9.STATUS.OK)
             if self.web_status == DK9.STATUS.FILE_UPDATED:
                 self.ui.web_status.setToolTip(f'Using file: '
-                                              f'{C.DK9_CACHE_FILE}')
-            bar.setValue(0)
-            # bar.setStyleSheet("QProgressBar::chunk {background-color: rgb(230, 230, 230);}")
-        # elif self.web_status == DK9.STATUS.FILE_USED_OFFLINE:
-        #     bar.setValue(100)
-        #     bar.setStyleSheet("QProgressBar::chunk {background-color: orange;}")
-        #     self.ui.web_status.setToolTip(f'Loaded from file: '
-        #                                   f'{C.DK9_CACHE_FILE}')
+                                              f'{DK9_CACHE_FILE_PATH}')
+            self.update_web_progress_bar(progress=0)
+
         elif C.DK9_CACHING or self.web_status == DK9.STATUS.FILE_USED_OFFLINE:
-            bar.setValue(100)
             if DK9.CACHE.cache:
                 cache_day = int(DK9.CACHE.cache['updated'].split(' ')[1][0:2])
                 current_day = datetime.now().day
                 if cache_day == current_day:
-                    bar.setStyleSheet("QProgressBar::chunk {background-color: orange;}")
+                    self.update_web_progress_bar(progress=100, style_sheet=C.PB_STYLE_SHEET_WARN)
                 else:
-                    bar.setStyleSheet("QProgressBar::chunk {background-color: orangered;}")
+                    self.update_web_progress_bar(progress=100, style_sheet=C.PB_STYLE_SHEET_ERROR)
                 if self.web_status == DK9.STATUS.LOGIN_FAIL:
                     self.ui.web_status.setToolTip(C.WEB_STATUSES[DK9.STATUS.LOGIN_FAIL])
                 elif self.web_status not in (DK9.STATUS.CLI_ERR, DK9.STATUS.SERV_ERR, DK9.STATUS.NO_LOGIN):
-                    self.ui.web_status.setToolTip(f'Loaded from file: {C.DK9_CACHE_FILE}\n'
+                    self.ui.web_status.setToolTip(f'Loaded from file: {DK9_CACHE_FILE_PATH}\n'
                                                   f'{C.WEB_STATUSES[self.web_status]}')
                 self.update_web_status(DK9.STATUS.FILE_USED_OFFLINE)
             else:
-                bar.setStyleSheet("QProgressBar::chunk {background-color: orangered;}")
+                self.update_web_progress_bar(progress=100, style_sheet=C.PB_STYLE_SHEET_ERROR)
         else:
-            bar.setValue(100)
-            bar.setStyleSheet("QProgressBar::chunk {background-color: orangered;}")
+            self.update_web_progress_bar(progress=100, style_sheet=C.PB_STYLE_SHEET_ERROR)
 
     def web_progress_bar(self, progress):
-        bar = self.ui.web_progress_bar
-        # if progress:
         if self.web_status == DK9.STATUS.FILE_READ:
-            style = "QProgressBar::chunk {background-color: yellow;}"
+            self.update_web_progress_bar(progress=progress, style_sheet=C.PB_STYLE_SHEET_FILE_READ)
         elif self.web_status == DK9.STATUS.FILE_WRITE:
-            style = "QProgressBar::chunk {background-color: cyan;}"
+            self.update_web_progress_bar(progress=progress, style_sheet=C.PB_STYLE_SHEET_FILE_WRITE)
         else:
-            style = ""
-        bar.setStyleSheet(style)
-        bar.setValue(progress)
-        # else:
-        #     if self.web_status in (DK9.STATUS.OK, DK9.STATUS.FILE_UPDATED):
-        #         # if self.web_status in (DK9.STATUS.CONNECTING, DK9.STATUS.OK):
-        #         bar.setValue(0)
-        #         print(f'{DK9.CACHE.cache=}')
-        #         # bar.setStyleSheet("QProgressBar::chunk {background-color: rgb(230, 230, 230);}")
-        #     else:
-        #         bar.setValue(100)
-        #         bar.setStyleSheet("QProgressBar::chunk {background-color: orangered;}")
+            self.update_web_progress_bar(progress=progress, style_sheet=C.PB_STYLE_SHEET_DEFAULT)
 
     def dummy(self):
         pass
@@ -1473,28 +1454,31 @@ class App(QMainWindow):
             if bold:
                 table.item(t_row_num, c).setFont(self.tab_font_bold if bold else self.tab_font)
 
-    def price_read_progress_bar(self, progress=None):
-        bar = self.ui.price_progress_bar
+    def price_read_finished(self, progress=None):
         if progress:
-            bar.setStyleSheet("")
-            bar.setValue(progress)
+            self.update_price_progress_bar(progress=progress, style_sheet=C.PB_STYLE_SHEET_DEFAULT)
         else:
             if self.price_status == 6:
-                bar.setValue(0)
-                # print(f'{bar.style()=}')
-                # bar.setStyleSheet("")
-                # bar.setStyleSheet("QProgressBar::chunk {background-color: rgb(230, 230, 230);}")
-                if self.web_status in \
-                        (
-                                DK9.STATUS.NO_CONN,
-                                DK9.STATUS.CLI_ERR,
-                                DK9.STATUS.SERV_ERR,
-                                DK9.STATUS.CONN_ERROR,
-                        ):
+                self.update_price_progress_bar(progress=0)
+                if self.web_status in (
+                    DK9.STATUS.NO_CONN,
+                    DK9.STATUS.CLI_ERR,
+                    DK9.STATUS.SERV_ERR,
+                    DK9.STATUS.CONN_ERROR,
+                ):
                     self.dk9_login_or_update_cache_on_start()
             else:
-                bar.setValue(100)
-                bar.setStyleSheet("QProgressBar::chunk {background-color: orangered;}")
+                self.update_price_progress_bar(progress=100, style_sheet=C.PB_STYLE_SHEET_ERROR)
+
+    def update_web_progress_bar(self, progress: int = 0, style_sheet: str = None):
+        self.ui.web_progress_bar.setValue(progress)
+        if style_sheet is not None:
+            self.ui.price_progress_bar.setStyleSheet(style_sheet)
+
+    def update_price_progress_bar(self, progress: int = 0, style_sheet: str = None):
+        self.ui.price_progress_bar.setValue(progress)
+        if style_sheet is not None:
+            self.ui.price_progress_bar.setStyleSheet(style_sheet)
 
     @staticmethod
     def _update_dk9_tooltip(tab_widget, num: int, tab_names: tuple, count_1: int, count_2: int):
@@ -1793,35 +1777,35 @@ class App(QMainWindow):
 
     def open_adv_search(self):
         adv_search_ui = AdvancedSearchWindow(self)
-        adv_search_ui.setWindowIcon(QtGui.QIcon(C.LOGO))
+        adv_search_ui.setWindowIcon(QtGui.QIcon(LOGO))
         L.translate_AdvSearchDialog_texts(adv_search_ui)
         adv_search_ui.exec_()
         adv_search_ui.show()
 
     def open_settings(self):
         settings_ui = ConfigWindow(C, self, DK9, L)
-        settings_ui.setWindowIcon(QtGui.QIcon(C.LOGO))
+        settings_ui.setWindowIcon(QtGui.QIcon(LOGO))
         L.translate_ConfigWindow_texts(settings_ui)
         settings_ui.exec_()
         settings_ui.show()
 
     def open_first_start(self):
         first_start_ui = FirstStartWindow(C, self, DK9, L)
-        first_start_ui.setWindowIcon(QtGui.QIcon(C.LOGO))
+        first_start_ui.setWindowIcon(QtGui.QIcon(LOGO))
         L.translate_StartWindow_texts(first_start_ui)
         first_start_ui.exec_()
         first_start_ui.show()
 
     def open_help(self):
         help_ui = HelpWindow(C, self)
-        help_ui.setWindowIcon(QtGui.QIcon(C.LOGO))
+        help_ui.setWindowIcon(QtGui.QIcon(LOGO))
         L.translate_HelpDialog_texts(help_ui)
         help_ui.exec_()
         help_ui.show()
 
     def open_graphs(self):
         graphs_ui = GraphWindow(C, self, MDAS, L)
-        graphs_ui.setWindowIcon(QtGui.QIcon(C.LOGO))
+        graphs_ui.setWindowIcon(QtGui.QIcon(LOGO))
         L.translate_GraphDialog_texts(graphs_ui)
         graphs_ui.exec_()
         graphs_ui.show()
@@ -1923,13 +1907,14 @@ def set_application_style(style):
 if __name__ == "__main__":
     try:
         app = QApplication(sys.argv)
-        app.setWindowIcon(QtGui.QIcon(C.LOGO))
+        app.setWindowIcon(QtGui.QIcon(LOGO))
         clipboard = app.clipboard()
         window = App()
-        window.setWindowIcon(QtGui.QIcon(C.LOGO))
+        window.setWindowIcon(QtGui.QIcon(LOGO))
         QtCore.QTimer.singleShot(1, window.on_ui_loaded)
         window.search_input.setFocus()
         sys.exit(app.exec_())
     except Exception as err:
         App.error((f'Global Error',
                    f'{traceback.format_exc()}'))
+        save_error_file(f'Global Error: {traceback.format_exc()}')

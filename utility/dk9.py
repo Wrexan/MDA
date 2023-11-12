@@ -1,10 +1,12 @@
 import json
-import os
 from datetime import datetime
 
 import requests
 import traceback
 from bs4 import BeautifulSoup
+
+from utility.config import DK9_CACHE_FILE_PATH
+from utility.utils import save_error_file, is_error_ignored
 
 
 class DK9Parser:
@@ -22,8 +24,6 @@ class DK9Parser:
         self.TIMEOUT = 30
         self.LOGIN_SUCCESS = False
         self.LAST_ERROR_PAGE_TEXT = ''
-        self.ERROR_FOLDER = 'Errors\\'
-        self.ERRORS_TO_IGNORE = '[Errno 110', '[WinError 10060]', 'Read timed out', 'Connection aborted'
 
         # self.WEB_STATUSES = {0: 'Нет соединения', 1: 'Не залогинен', 2: 'Подключен',
         #                      3: 'Перенаправление', 4: 'Запрос отклонен', 5: 'Ошибка сервера'}
@@ -81,6 +81,7 @@ class DK9Parser:
                                                 '__EVENTVALIDATION': 'cdc9796cjlmckdmjNCydc565nysdi'}
                         self.LOGIN_SUCCESS = False
                         self.LAST_ERROR_PAGE_TEXT = self.get_text_from_html_body(soup)
+                        save_error_file(f'LOGIN FAIL{self.LAST_ERROR_PAGE_TEXT}')
                         status.emit(self.STATUS.LOGIN_FAIL)
                     progress.emit(100)
                     return
@@ -97,13 +98,11 @@ class DK9Parser:
         except Exception as err:
             print(err.__str__())
             # self.save_error_file(f'{err.__str__()}\n{traceback.format_exc()}')  # -------------
-            for err_type in self.ERRORS_TO_IGNORE:
-                if err_type in err.__str__():
-                    self._error_handler(progress, status, err)
-                    return
-            self.save_error_file(f'{err.__str__()}\n{traceback.format_exc()}')
-            error.emit((f'Error while trying to login',
-                        f'{traceback.format_exc()}'))
+            if is_error_ignored(err.__str__()):
+                self._error_handler(progress, status, err)
+                return
+            save_error_file(f'{err.__str__()}\n{traceback.format_exc()}')
+            error.emit((f'Error while trying to login', f'{traceback.format_exc()}'))
 
     def adv_search(self, type_: str, firm_: str, model_: str, description_: str, progress, status, error)\
             -> tuple or None:
@@ -143,6 +142,7 @@ class DK9Parser:
                     self.LOGIN_SUCCESS = False
                 else:
                     self.LAST_ERROR_PAGE_TEXT = self.get_text_from_html_body(soup)
+                    save_error_file(f'LOGIN FAIL{self.LAST_ERROR_PAGE_TEXT}')
                     status.emit(self.STATUS.SERV_ERR)
 
             return part_table_soup, accessory_table_soup
@@ -166,11 +166,10 @@ class DK9Parser:
         except Exception as err:
             print(err.__str__())
             # self.save_error_file(f'{err.__str__()}\n{traceback.format_exc()}')  # -------------
-            for err_type in self.ERRORS_TO_IGNORE:
-                if err_type in err.__str__():
-                    self._error_handler(progress, status, err)
-                    return
-            self.save_error_file(f'{err.__str__()}\n{traceback.format_exc()}')
+            if is_error_ignored(err.__str__()):
+                self._error_handler(progress, status, err)
+                return
+            save_error_file(f'Error while trying to search: {model_}\n{err.__str__()}\n{traceback.format_exc()}')
             error.emit((f'Error while trying to search:\n'
                         f'{model_}',
                         f'{traceback.format_exc()}'))
@@ -223,18 +222,6 @@ class DK9Parser:
             print(f'Error: (Connection error) Message :\n - {str(err)}')
         progress.emit(100)
 
-    def save_error_file(self, data: str):
-        self.check_and_create_folder(self.ERROR_FOLDER)
-        file_name = f'Error [{datetime.now().strftime("%Y%m%d-%H_%M_%S")}]'
-        print(f'saving error file: {file_name}')
-        with open(f'{self.ERROR_FOLDER}{file_name}', 'w') as file:
-            file.write(data)
-
-    @staticmethod
-    def check_and_create_folder(folder_path):
-        if not os.path.exists(folder_path):
-            os.makedirs(folder_path)
-
 
 class DK9Status:
     NO_CONN = 0
@@ -270,7 +257,7 @@ class DK9Cache:
         status.emit(self.DK9.STATUS.FILE_READ)
         progress.emit(10)
         try:
-            with open(f'{self.C.DK9_CACHE_FILE}', 'r', encoding='utf-8') as cache_file:
+            with open(DK9_CACHE_FILE_PATH, 'r', encoding='utf-8') as cache_file:
                 progress.emit(30)
                 temp_cache = json.load(cache_file)
                 progress.emit(50)
@@ -285,7 +272,7 @@ class DK9Cache:
             status.emit(self.DK9.STATUS.FILE_READ_ERR)
             if self.app.ui:
                 self.app.ui.web_status.setToolTip(f'Error while trying to load database cache: '
-                                                  f'{self.C.DK9_CACHE_FILE} '
+                                                  f'{DK9_CACHE_FILE_PATH} '
                                                   f'{traceback.format_exc()}')
             # error.emit((f'Error while trying to load database cache:\n'
             #             f'{C.DK9_CACHE_FILE}',
@@ -306,7 +293,7 @@ class DK9Cache:
         status.emit(self.DK9.STATUS.FILE_WRITE)
         progress.emit(10)
         try:
-            with open(f'{self.C.DK9_CACHE_FILE}', 'w', encoding='utf-8') as cache_file:
+            with open(DK9_CACHE_FILE_PATH, 'w', encoding='utf-8') as cache_file:
                 progress.emit(50)
                 json.dump(self.cache, cache_file, ensure_ascii=False)
             progress.emit(100)
@@ -314,7 +301,7 @@ class DK9Cache:
         except Exception as _err:
             status.emit(self.DK9.STATUS.FILE_WRITE_ERR)
             error.emit((f'Error while trying to save database cache:\n'
-                        f'{self.C.DK9_CACHE_FILE}',
+                        f'{DK9_CACHE_FILE_PATH}',
                         f'{traceback.format_exc()}'))
 
     def search_rows_in_cache_dict(self):

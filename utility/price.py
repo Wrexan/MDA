@@ -2,6 +2,8 @@ import os
 import traceback
 import xlrd
 
+from utility.config import PRICE_PATH, PRICE_PATH_ALT, PROJECT_PATH
+
 
 class Price:
     # 0: 'Не загружен', 1: 'Не найден', 2: 'Загрузка',
@@ -19,9 +21,9 @@ class Price:
         status.emit(self.S_READING)
         progress.emit(10)
         try:
-            price_path_name, self.NAME = self.search_price_in_path_tuple((self.C.PRICE_PATH,
-                                                                          self.C.PRICE_PATH_ALT,
-                                                                          self.C.PATH))
+            price_path_name, self.NAME = self.search_price_in_path_tuple((PRICE_PATH,
+                                                                          PRICE_PATH_ALT,
+                                                                          PROJECT_PATH))
             progress.emit(30)
 
             if price_path_name:
@@ -55,7 +57,7 @@ class Price:
             if os.path.exists(path):
                 for name in os.listdir(path):
                     if name[-4:] == self.C.PRICE_PARTIAL_NAME[1] and self.C.PRICE_PARTIAL_NAME[0] in name:
-                        return f'{path}{name}', name
+                        return os.path.join(path, name), name
         return None, None
 
     def approve(self):

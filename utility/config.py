@@ -4,24 +4,41 @@ from win32comext.shell import shell, shellcon
 
 from secured.confidential_data import *
 
+PROJECT_PATH = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+CONTENT_PATH = os.path.join(PROJECT_PATH, 'content')
+MDAS_PATH = os.path.join(PROJECT_PATH, 'mdas')
+LANG_PATH = os.path.join(CONTENT_PATH, 'languages')
+VERSION_FILE_PATH = os.path.join(CONTENT_PATH, 'version.md')
+
+LOGO = os.path.join(CONTENT_PATH, 'MDA.ico')
+USER_CONFIG_FILE_PATH = os.path.join(CONTENT_PATH, 'user_config.ini')
+ERROR_FOLDER_PATH = os.path.join(CONTENT_PATH, 'Errors')
+ERRORS_TO_IGNORE = '[Errno 110', '[WinError 10060]', 'Read timed out', 'Connection aborted'
+
+PRICE_PATH = os.path.join(os.environ['USERPROFILE'], 'Desktop')
+PRICE_PATH_ALT = f'{shell.SHGetFolderPath(0, shellcon.CSIDL_DESKTOP, None, 0)}'
+PRICE_GD_PATH = ''
+
+DK9_CACHE_FILE_PATH = os.path.join(CONTENT_PATH, 'dk_tables.cache')
+
 
 class Config:
     FILTER_SEARCH_RESULT = None
 
     def __init__(self):
         self.error = None
-        self.PATH = f'{os.path.dirname(os.path.dirname(os.path.realpath(__file__)))}\\'
-        self.CONTENT_PATH = f'{self.PATH}content\\'
-        self.MDAS_PATH = f'{self.PATH}mdas\\'
-        self.LANG_PATH = f'{self.CONTENT_PATH}languages\\'
-        self.VERSION_FILE_PATH = f'{self.CONTENT_PATH}version.md'
-
-        self.LOGO = f'{self.CONTENT_PATH}MDA.ico'
-        self.USER_CONFIG = f'{self.CONTENT_PATH}user_config.ini'
+        # self.PATH = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+        # self.CONTENT_PATH = os.path.join(self.PATH, 'content')
+        # self.MDAS_PATH = os.path.join(self.PATH, 'mdas')
+        # self.LANG_PATH = os.path.join(self.CONTENT_PATH, 'languages')
+        # self.VERSION_FILE_PATH = os.path.join(self.CONTENT_PATH, 'version.md')
+        #
+        # self.LOGO = os.path.join(self.CONTENT_PATH, 'MDA.ico')
+        # self.USER_CONFIG = os.path.join(self.CONTENT_PATH, 'user_config.ini')
+        # self.ERROR_FOLDER_PATH = os.path.join(self.CONTENT_PATH, 'Errors')
 
         self.CURRENT_LANG = 1
-        self.LANGS: tuple
-        self.upd_langs()
+        self.LANGS: tuple = (*os.listdir(LANG_PATH),)
         self.HELP_FILE_PATH: str
         self.upd_help_file_path()
 
@@ -78,9 +95,6 @@ class Config:
         self.INCOME_PARTS_MARGIN_PERC = 4
 
         # ====================PRICE====================
-        self.PRICE_PATH = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop\\')
-        self.PRICE_PATH_ALT = f'{shell.SHGetFolderPath(0, shellcon.CSIDL_DESKTOP, None, 0)}\\'
-        self.PRICE_GD_PATH = ''
         # self.PRICE_CONFIG = f'{self.CONTENT_PATH}price_config.ini'
         self.NARROW_SEARCH_LEN = 2  # start search from 2 symbols
         self.APPROVED = False
@@ -152,6 +166,12 @@ class Config:
                               'Red': (255, 80, 80),
                               }
 
+        self.PB_STYLE_SHEET_DEFAULT = ""
+        self.PB_STYLE_SHEET_WARN = "QProgressBar::chunk {background-color: orange;}"
+        self.PB_STYLE_SHEET_ERROR = "QProgressBar::chunk {background-color: orangered;}"
+        self.PB_STYLE_SHEET_FILE_READ = "QProgressBar::chunk {background-color: yellow;}"
+        self.PB_STYLE_SHEET_FILE_WRITE = "QProgressBar::chunk {background-color: cyan;}"
+
         self.DK9_TABLE_NAMES = (' ЗАПЧАСТИ - ', ' АКСЕССУАРЫ - ')
 
         self.DK9_LOGIN, self.LOGIN = '', ''
@@ -160,7 +180,6 @@ class Config:
 
         self.DK9_CACHING = True
         self.DK9_CACHING_PERIOD = 30  # 1_800_000 ms = 30 min * 60_000
-        self.DK9_CACHE_FILE = f'{self.CONTENT_PATH}dk_tables.cache'
 
         self.DK9_HEADERS = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
@@ -196,10 +215,7 @@ class Config:
         self.load_or_generate_config()
 
     def upd_help_file_path(self):
-        self.HELP_FILE_PATH = f'{self.CONTENT_PATH}help_{self.LANGS[self.CURRENT_LANG].lower()}.txt'
-
-    def upd_langs(self):
-        self.LANGS = (*os.listdir(f'{self.LANG_PATH}'),)
+        self.HELP_FILE_PATH = f'{CONTENT_PATH}help_{self.LANGS[self.CURRENT_LANG].lower()}.txt'
 
     def set_error_signal(self, signal):
         self.error = signal
@@ -229,9 +245,9 @@ class Config:
 
     def load_or_generate_config(self):
         config = configparser.ConfigParser()
-        config.read(self.USER_CONFIG)
+        config.read(USER_CONFIG_FILE_PATH)
         if 'SETTINGS' in config:
-            print(f'Reading {self.USER_CONFIG}')
+            print(f'Reading {USER_CONFIG_FILE_PATH}')
             try:
                 self.DK9_LOGIN = config['WEB DATABASE']['DK9_LOGIN']
                 self.DK9_PASSWORD = config['WEB DATABASE']['DK9_PASSWORD']
@@ -260,8 +276,8 @@ class Config:
                 # self.TABLE_COLUMN_SIZE_MAX = int(config['SETTINGS']['TABLE_COLUMN_SIZE_MAX'])
                 # self.DK9_LOGIN_DATA = self.data()
             except Exception as _err:
-                print(f'Error while trying to read/create config at:\n{self.USER_CONFIG}', _err)
-                os.remove(self.USER_CONFIG)
+                print(f'Error while trying to read/create config at:\n{USER_CONFIG_FILE_PATH}', _err)
+                os.remove(USER_CONFIG_FILE_PATH)
                 self.save_user_config()
         else:
             self.FIRST_START = True
@@ -275,7 +291,7 @@ class Config:
         }
 
     def save_user_config(self):
-        print(f'Saving {self.USER_CONFIG}')
+        print(f'Saving {USER_CONFIG_FILE_PATH}')
         config = configparser.ConfigParser()
         config['WEB DATABASE'] = {}
         config['WEB DATABASE']['DK9_LOGIN'] = str(self.DK9_LOGIN)
@@ -306,12 +322,12 @@ class Config:
 
         self.DK9_LOGIN_DATA = self.c_data()
         try:
-            with open(self.USER_CONFIG, 'w') as conf:
+            with open(USER_CONFIG_FILE_PATH, 'w') as conf:
                 config.write(conf)
-                print(f'Saved {self.USER_CONFIG}')
+                print(f'Saved {USER_CONFIG_FILE_PATH}')
         except Exception as err:
-            print(f'Error while trying to save config at:\n{self.USER_CONFIG}', err)
-            # error.emit(f'Error while trying to save config at:\n{self.USER_CONFIG}', err)
+            print(f'Error while trying to save config at:\n{USER_CONFIG_FILE_PATH}', err)
+            # error.emit(f'Error while trying to save config at:\n{USER_CONFIG_FILE_PATH}', err)
 
     def r_data(self):
         return {
