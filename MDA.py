@@ -133,7 +133,7 @@ class App(QMainWindow):
         self.stat_send_timer.timeout.connect(self.stat_send_start_worker)
 
         self.dk9_cache_timer = QtCore.QTimer()
-        self.dk9_cache_timer.timeout.connect(self.dk9_cache_updater_start_worker)
+        self.dk9_cache_timer.timeout.connect(self.dk9_login_than_cash_update_workers_sequence)
 
         self.curr_manufacturer_idx: int = 0
         self.curr_manufacturer: str = ''
@@ -375,7 +375,7 @@ class App(QMainWindow):
         C.SEARCH_BY_PRICE_MODEL = True if self.ui.chb_price_name_only.checkState() == 2 else False
         C.LATIN_SEARCH = True if self.ui.chb_search_eng.checkState() == 2 else False
         C.NARROW_SEARCH = True if self.ui.chb_search_narrow.checkState() == 2 else False
-        self.prepare_and_search(self.search_input.text(), True)
+        self.prepare_and_search(search_req=self.search_input.text(), force_search=True)
 
     def upd_dk9_on_rule_change(self):
         if self.freeze_ui_update:
@@ -665,7 +665,7 @@ class App(QMainWindow):
         print('Starting thread to read price')
         self.thread.start(self.file_io_worker, priority=QtCore.QThread.Priority.HighestPriority)
 
-    # =========================== MDAS ==============================
+    # =============================================== MDAS ======================================================
 
     def stat_send_start_worker(self):
         print('Starting thread to send stats')
@@ -707,7 +707,7 @@ class App(QMainWindow):
         else:  # Overflowing or STOPPED Overflow - no connection to stat server, longer delay
             self.stat_send_timer.start(C.STAT_RESEND_DELAY)
 
-    # =========================== DK9 ==============================
+    # =============================================== DK9 ======================================================
 
     def update_web_status(self, status: int):
         if status in C.WEB_STATUSES:
@@ -823,10 +823,12 @@ class App(QMainWindow):
             else:
                 if os.path.exists(DK9_CACHE_FILE_PATH):
                     self.dk9_read_cache_start_worker()
-                elif not DK9.LOGIN_SUCCESS:
-                    self.dk9_login_start_worker(self.dk9_upd_cache_restart_timer)
                 else:
-                    self.dk9_upd_cache_restart_timer()
+                    self.dk9_login_start_worker(self.dk9_upd_cache_restart_timer)
+                # elif not DK9.LOGIN_SUCCESS:
+                #     self.dk9_login_start_worker(self.dk9_upd_cache_restart_timer)
+                # else:
+                #     self.dk9_upd_cache_restart_timer()
             return
 
         if not DK9.LOGIN_SUCCESS or self.web_status not in \
@@ -843,7 +845,7 @@ class App(QMainWindow):
         C.FILTER_SEARCH_RESULT = False
         self.ui.chb_show_exact.setCheckState(2 if C.FILTER_SEARCH_RESULT else 0)
         self.request_worker = Worker()
-
+        # TODO==============================================================================================================
         if advanced:
             signals = self.dk9_get_search_signals()
             self.request_worker.add_task(DK9.adv_search,
@@ -881,12 +883,51 @@ class App(QMainWindow):
                                          self.curr_description)
         self.thread.start(self.request_worker)
 
+    def dk9_fill_tables_from_soup(self, table_soups: type(bs4.BeautifulSoup) = None, use_old_soup: bool = False):
+        print(f'dk9_fill_tables_from_soup {self.web_status=} {use_old_soup=}')
+        if not use_old_soup:
+            if DK9.check_soups_is_broken(table_soups):
+                return
+            self.soup = table_soups
+            # if not self.soup:
+            #     self.update_web_status(DK9.STATUS.NO_CONN)
+            # elif not self.soup[0]:
+            #     self.update_web_status(DK9.STATUS.OK)
+
+        if self.web_status in (DK9.STATUS.OK, DK9.STATUS.UPDATING):
+            self.web_progress_bar(70)
+            self.ui.table_parts.setSortingEnabled(False)
+            self.ui.table_accesory.setSortingEnabled(False)
+            self.dk9_fill_table_from_soup(self.soup, self.ui.table_parts, 0,
+                                          C.DK9_TABLE_NAMES, C.DK9_BG_P_COLOR1, C.DK9_BG_P_COLOR2, 5,
+                                          align={4: Qt.AlignRight | Qt.AlignVCenter})
+            self.dk9_fill_table_from_soup(self.soup, self.ui.table_accesory, 1,
+                                          C.DK9_TABLE_NAMES, C.DK9_BG_A_COLOR1, C.DK9_BG_A_COLOR2, 5,
+                                          align={4: Qt.AlignRight | Qt.AlignVCenter})
+            self.web_progress_bar(85)
+            self.ui.table_parts.sortByColumn(3, Qt.SortOrder(0))
+            self.ui.table_parts.sortByColumn(2, Qt.SortOrder(0))
+            self.ui.table_parts.sortByColumn(0, Qt.SortOrder(0))
+            self.ui.table_parts.setSortingEnabled(True)
+            self.ui.table_accesory.sortByColumn(3, Qt.SortOrder(0))
+            self.ui.table_accesory.sortByColumn(2, Qt.SortOrder(0))
+            self.ui.table_accesory.sortByColumn(0, Qt.SortOrder(0))
+            self.ui.table_accesory.setSortingEnabled(True)
+
+            self.upd_tables_row_heights(dk9=True)
+        else:
+            self.dk9_login_start_worker()
+        self.web_progress_bar(0) if use_old_soup else self.web_progress_bar(100)
+
+    # ======================================== CACHE WEB DATABASE (DK9) ===============================================
+
     def dk9_upd_cache_restart_timer(self, period=C.DK9_CACHING_PERIOD * 60_000,
                                     allow_update=True):  # * 60_000============================
         print(f'dk9_upd_cache_restart_timer: {period // 60_000}minutes')
         self.dk9_cache_timer.stop()
         if allow_update:
-            self.dk9_cache_updater_start_worker()
+            self.dk9_login_than_cash_update_workers_sequence()
+            # self.dk9_cache_updater_start_worker()
         # self.dk9_update_cache_start_worker()
         self.dk9_cache_timer.start(period)  # * 60_000
 
@@ -929,44 +970,6 @@ class App(QMainWindow):
         self.web_progress_bar(100)
         self.dk9_finish_progress_bar_status()
 
-    def dk9_fill_tables_from_soup(self, table_soups: type(bs4.BeautifulSoup) = None, use_old_soup: bool = False):
-        print(f'dk9_fill_tables_from_soup {self.web_status=} {use_old_soup=}')
-        if not use_old_soup:
-            if DK9.check_soups_is_broken(table_soups):
-                return
-            self.soup = table_soups
-            # if not self.soup:
-            #     self.update_web_status(DK9.STATUS.NO_CONN)
-            # elif not self.soup[0]:
-            #     self.update_web_status(DK9.STATUS.OK)
-
-        if self.web_status in (DK9.STATUS.OK, DK9.STATUS.UPDATING):
-            self.web_progress_bar(70)
-            self.ui.table_parts.setSortingEnabled(False)
-            self.ui.table_accesory.setSortingEnabled(False)
-            self.dk9_fill_table_from_soup(self.soup, self.ui.table_parts, 0,
-                                          C.DK9_TABLE_NAMES, C.DK9_BG_P_COLOR1, C.DK9_BG_P_COLOR2, 5,
-                                          align={4: Qt.AlignRight | Qt.AlignVCenter})
-            self.dk9_fill_table_from_soup(self.soup, self.ui.table_accesory, 1,
-                                          C.DK9_TABLE_NAMES, C.DK9_BG_A_COLOR1, C.DK9_BG_A_COLOR2, 5,
-                                          align={4: Qt.AlignRight | Qt.AlignVCenter})
-            self.web_progress_bar(85)
-            self.ui.table_parts.sortByColumn(3, Qt.SortOrder(0))
-            self.ui.table_parts.sortByColumn(2, Qt.SortOrder(0))
-            self.ui.table_parts.sortByColumn(0, Qt.SortOrder(0))
-            self.ui.table_parts.setSortingEnabled(True)
-            self.ui.table_accesory.sortByColumn(3, Qt.SortOrder(0))
-            self.ui.table_accesory.sortByColumn(2, Qt.SortOrder(0))
-            self.ui.table_accesory.sortByColumn(0, Qt.SortOrder(0))
-            self.ui.table_accesory.setSortingEnabled(True)
-
-            self.upd_tables_row_heights(dk9=True)
-        else:
-            self.dk9_login_start_worker()
-        self.web_progress_bar(0) if use_old_soup else self.web_progress_bar(100)
-
-    # ========== CACHE WEB DATABASE (DK9) ============
-
     def dk9_get_cache_update_signals(self, result_to=None, next_method=None):
         signals = WorkerSignals()
         if result_to:
@@ -979,6 +982,9 @@ class App(QMainWindow):
         signals.error.connect(self.error)
         signals.status.connect(self.update_web_status)
         return signals
+
+    def dk9_login_than_cash_update_workers_sequence(self):
+        self.dk9_login_start_worker(next_method=self.dk9_cache_updater_start_worker)
 
     def dk9_cache_updater_start_worker(self):
         self.dk9_cache_handler_worker = Worker()
