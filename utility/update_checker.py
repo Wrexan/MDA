@@ -8,11 +8,11 @@ from utility.utils import is_error_ignored
 def is_update_available(ver_file_path: str, ver_url: str):
     """Version format is 0.0000"""
     try:
-        update_page = requests.get(ver_url)
+        update_page = requests.get(ver_url, timeout=2)
     except Exception as error:
         return False if is_error_ignored(error=error.__str__()) else error
 
-    if update_page.status_code != 200:
+    if update_page.status_code != requests.codes.ok:
         return update_page
 
     with open(ver_file_path, 'r', encoding='utf-8') as file:

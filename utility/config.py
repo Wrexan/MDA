@@ -13,7 +13,8 @@ VERSION_FILE_PATH = os.path.join(CONTENT_PATH, 'version.md')
 LOGO = os.path.join(CONTENT_PATH, 'MDA.ico')
 USER_CONFIG_FILE_PATH = os.path.join(CONTENT_PATH, 'user_config.ini')
 ERROR_FOLDER_PATH = os.path.join(CONTENT_PATH, 'Errors')
-ERRORS_TO_IGNORE = '[Errno 110', '[WinError 10060]', 'Read timed out', 'Connection aborted'
+# ConnectTimeoutError
+ERRORS_TO_IGNORE = '[Errno 110', '[WinError 10060]', 'timed out', 'Connection aborted'
 
 PRICE_PATH = os.path.join(os.environ['USERPROFILE'], 'Desktop')
 PRICE_PATH_ALT = f'{shell.SHGetFolderPath(0, shellcon.CSIDL_DESKTOP, None, 0)}'
