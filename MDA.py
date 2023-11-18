@@ -140,6 +140,7 @@ class App(QMainWindow):
         # self.curr_manufacturers: tuple = ()
         self.curr_type: str = ''
         self.curr_model: str = ''  # --------------------------------------
+        self.compatible_parts: list = []
         # self.curr_model_idx: int = 0
         self.curr_description: str = ''
         self.recursor = ' -> '
@@ -173,9 +174,10 @@ class App(QMainWindow):
         self.ui.pb_adv_search.setToolTip(L.pb_adv_search_ToolTip)
         self.ui.chb_show_exact.setToolTip(L.chb_show_exact_ToolTip)
         self.ui.chb_show_date.setToolTip(L.chb_show_date_ToolTip)
-        self.ui.chb_price_name_only.setToolTip(L.chb_price_name_only_ToolTip)
+        # self.ui.chb_price_name_only.setToolTip(L.chb_price_name_only_ToolTip)
         self.ui.chb_search_eng.setToolTip(L.chb_search_eng_ToolTip)
         self.ui.chb_search_narrow.setToolTip(L.chb_search_narrow_ToolTip)
+        self.ui.chb_show_compatibility.setToolTip(L.chb_show_compatibility_ToolTip)
         self.ui.table_price.setHorizontalHeaderLabels((L.table_price_HHL))
         self.ui.table_parts.setHorizontalHeaderLabels((L.table_parts_HHL))
         self.ui.table_accesory.setHorizontalHeaderLabels((L.table_accesory_HHL))
@@ -194,7 +196,8 @@ class App(QMainWindow):
         self.ui.bt_upd_price.clicked.connect(self.read_price_start_worker)
         self.ui.chb_show_exact.stateChanged.connect(self.upd_dk9_on_rule_change)
         self.ui.chb_show_date.stateChanged.connect(self.switch_n_upd_dk9_tables_grid)
-        self.ui.chb_price_name_only.stateChanged.connect(self.start_search_on_rule_change)
+        # self.ui.chb_price_name_only.stateChanged.connect(self.start_search_on_rule_change)
+        self.ui.chb_show_compatibility.stateChanged.connect(self.switch_compat_upd_price_tables_grid)
         self.ui.chb_search_eng.stateChanged.connect(self.start_search_on_rule_change)
         self.ui.chb_search_narrow.stateChanged.connect(self.start_search_on_rule_change)
         self.ui.pb_adv_search.clicked.connect(self.open_adv_search)
@@ -274,19 +277,15 @@ class App(QMainWindow):
         self.fix_models_list_position()
 
         self.upd_dk9_tables_grid()
+        self.upd_price_tables_grid()
         self.upd_tables_row_heights(force=True)
-
-        table_width = self.ui.table_price.width()
-        table_width_n_percent = int(table_width / 2.5 + (table_width - 640) / 4)
-        self.ui.table_price.horizontalHeader().setDefaultSectionSize(table_width_n_percent)
-        self.ui.table_price.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
-        self.ui.table_price.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
 
         self.freeze_ui_update = True
         self.ui.chb_show_exact.setCheckState(2 if C.FILTER_SEARCH_RESULT else 0)
-        self.ui.chb_price_name_only.setCheckState(2 if C.SEARCH_BY_PRICE_MODEL else 0)
+        # self.ui.chb_price_name_only.setCheckState(2 if C.SEARCH_BY_PRICE_MODEL else 0)
         self.ui.chb_search_eng.setCheckState(2 if C.LATIN_SEARCH else 0)
         self.ui.chb_search_narrow.setCheckState(2 if C.NARROW_SEARCH else 0)
+        self.ui.chb_show_compatibility.setCheckState(2 if C.SHOW_COMPATIBILITY else 0)
         self.freeze_ui_update = False
 
         self.dk9_request_label.move(self.ui.table_parts.width() - 84, 3)
@@ -372,9 +371,10 @@ class App(QMainWindow):
     def start_search_on_rule_change(self):
         if self.freeze_ui_update:
             return
-        C.SEARCH_BY_PRICE_MODEL = True if self.ui.chb_price_name_only.checkState() == 2 else False
+        # C.SEARCH_BY_PRICE_MODEL = True if self.ui.chb_price_name_only.checkState() == 2 else False
         C.LATIN_SEARCH = True if self.ui.chb_search_eng.checkState() == 2 else False
         C.NARROW_SEARCH = True if self.ui.chb_search_narrow.checkState() == 2 else False
+        C.SHOW_COMPATIBILITY = True if self.ui.chb_show_compatibility.checkState() == 2 else False
         self.prepare_and_search(search_req=self.search_input.text(), force_search=True)
 
     def upd_dk9_on_rule_change(self):
@@ -383,6 +383,25 @@ class App(QMainWindow):
         C.FILTER_SEARCH_RESULT = True if self.ui.chb_show_exact.checkState() == 2 else False
         if self.soup:
             self.dk9_fill_tables_from_soup(use_old_soup=True)
+
+    def switch_compat_upd_price_tables_grid(self):
+        C.SHOW_COMPATIBILITY = True if self.ui.chb_show_compatibility.checkState() == 2 else False
+        self.upd_price_tables_grid()
+
+    def upd_price_tables_grid(self):
+        table_width = (self.width() - 6)//2
+        # print(f'{----------------------------------table_width=}')
+        if C.SHOW_COMPATIBILITY:
+            self.ui.table_price.showColumn(2)
+            table_width_n_percent = int(table_width / 5 + (table_width - 640) / 4)
+            # self.ui.table_price.horizontalHeader().setSectionResizeMode(2, table_width_n_percent)
+        else:
+            self.ui.table_price.hideColumn(2)
+            table_width_n_percent = int(table_width / 2.5 + (table_width - 640) / 4)
+
+        self.ui.table_price.horizontalHeader().setDefaultSectionSize(table_width_n_percent)
+        self.ui.table_price.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+        self.ui.table_price.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
 
     def switch_n_upd_dk9_tables_grid(self):
         C.SHOW_DATE = True if self.ui.chb_show_date.checkState() == 2 else False
@@ -448,7 +467,7 @@ class App(QMainWindow):
 
         # print(f'{result_req=} {self.price_status=} {len(C.PRICE_STATUSES)=}')
 
-        self.search_req_ruled = result_req
+        # self.search_req_ruled = result_req
         if result_req:
             if force_search:
                 self.search_input.selectAll()
@@ -629,10 +648,13 @@ class App(QMainWindow):
             models_for_buttons[0] = recursive_model
         # print(f'{models_for_buttons=}  {text_lower=}')
         # print(f'{C.SEARCH_BY_PRICE_MODEL=} {recursive_model=} {self.search_req_ruled=} ')
-        if C.SEARCH_BY_PRICE_MODEL:
-            self.curr_model = models_for_buttons[0]
-        else:
-            self.curr_model = self.search_req_ruled
+
+        # if C.SEARCH_BY_PRICE_MODEL:
+        #     self.curr_model = models_for_buttons[0]
+        # else:
+        #     self.curr_model = self.search_req_ruled
+
+        self.curr_model = models_for_buttons[0]
         self.dk9_search_or_login()
         self.upd_models_list(clear=True)
         self.upd_model_buttons(models_for_buttons)
@@ -818,8 +840,8 @@ class App(QMainWindow):
         if C.DK9_CACHING:
             if DK9.CACHE.cache:
                 self.dk9_fill_tables_from_cache_dict()
-                if C.SEARCH_BY_PRICE_MODEL:
-                    self.add_to_statistic(branch=C.BRANCH, brand=manufacturer, model=self.curr_model)
+                # if C.SEARCH_BY_PRICE_MODEL:
+                self.add_to_statistic(branch=C.BRANCH, brand=manufacturer, model=self.curr_model)
             else:
                 if os.path.exists(DK9_CACHE_FILE_PATH):
                     self.dk9_read_cache_start_worker()
@@ -856,19 +878,16 @@ class App(QMainWindow):
                                          advanced['_model'],
                                          advanced['_description'])
         else:
-            # if not C.SEARCH_BY_PRICE_MODEL or 'asus' in self.curr_manufacturer.lower():  # -------------------ASUS
-            #     manufacturer = ''
-            # else:
-            #     manufacturer = self.curr_manufacturer
 
             if self.search_again:
                 self.search_again = False
 
             # ===========================  statistic  ==============================
             # elif manufacturer and self.curr_model and self.statify_next_request:  # -----test
-            # elif C.BRANCH > 0 and manufacturer and self.curr_model and self.statify_next_request:  # +++++prod
-            if C.SEARCH_BY_PRICE_MODEL:
+            elif C.BRANCH > 0 and manufacturer and self.curr_model and self.statify_next_request:  # +++++prod
                 self.add_to_statistic(branch=C.BRANCH, brand=manufacturer, model=self.curr_model)
+            # if C.SEARCH_BY_PRICE_MODEL:
+            #     self.add_to_statistic(branch=C.BRANCH, brand=manufacturer, model=self.curr_model)
 
             # ===========================  search in dk9  ==============================
             self.dk9_request_label.setText(self.curr_model)
@@ -1374,7 +1393,7 @@ class App(QMainWindow):
                 columns_for_price_table = [
                     PriceColumns.work_type,
                     PriceColumns.price,
-                    # PriceColumns.compatible_part,
+                    PriceColumns.compatible_part,
                     PriceColumns.note,
                 ]
 
@@ -1397,7 +1416,7 @@ class App(QMainWindow):
                 # Add other PRICE rows to the table
                 for i in range(row_num, sheet.nrows - 1):
                     # row = Price.get_row_in_pos(sheet=sheet, row_num=row_num)
-                    # print(f'{row=} {row_len=} {i=}')
+                    print(f'{row=} {row_len=} {i=}')
                     if row_len < PriceColumns.note:  # If row shorter, than we expect, then place all row in 0 column
                         print('SHORT row:' + str(row))
                         cell_text = self.list_to_string(row)
@@ -1413,7 +1432,7 @@ class App(QMainWindow):
                                 cells_texts.append(row[column_num])
                             else:
                                 cells_texts.append('')
-                        # print(f"{row=}   {cells_texts=}")
+                        print(f"{cells_texts=}")
                         if cells_texts[0]:  # or len(cells_texts[1]) > 3:
                             self._add_price_table_row(table=self.ui.table_price, sheet=sheet,
                                                       columns=columns_for_price_table, cells_texts=cells_texts,
@@ -1825,6 +1844,7 @@ class App(QMainWindow):
 
     @staticmethod
     def error(errors: tuple):
+        save_error_file(f'Error: {errors}')
         msg_box = QMessageBox()
         text, info = '', ''
         for i, e in enumerate(errors):

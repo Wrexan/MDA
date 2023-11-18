@@ -1368,19 +1368,6 @@
                     <number>0</number>
                    </property>
                    <item>
-                    <widget class="QCheckBox" name="chb_price_name_only">
-                     <property name="enabled">
-                      <bool>true</bool>
-                     </property>
-                     <property name="text">
-                      <string>Модель прайса</string>
-                     </property>
-                     <property name="checked">
-                      <bool>true</bool>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
                     <widget class="QCheckBox" name="chb_search_eng">
                      <property name="enabled">
                       <bool>true</bool>
@@ -1400,6 +1387,19 @@
                      </property>
                      <property name="checked">
                       <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QCheckBox" name="chb_show_compatibility">
+                     <property name="enabled">
+                      <bool>true</bool>
+                     </property>
+                     <property name="text">
+                      <string>Совместимость</string>
+                     </property>
+                     <property name="checked">
+                      <bool>false</bool>
                      </property>
                     </widget>
                    </item>
@@ -1695,7 +1695,7 @@
              <bool>false</bool>
             </property>
             <property name="columnCount">
-             <number>3</number>
+             <number>4</number>
             </property>
             <attribute name="horizontalHeaderMinimumSectionSize">
              <number>4</number>
@@ -1715,6 +1715,7 @@
             <attribute name="verticalHeaderDefaultSectionSize">
              <number>14</number>
             </attribute>
+            <column/>
             <column/>
             <column/>
             <column/>

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'window_settings.ui'
+# Form implementation generated from reading ui file 'D:\+FREEMEN+\+FREEMENstudio+\PYTHON_2022\MDA\UI\window_settings.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.8
 #
@@ -24,7 +24,7 @@ class Ui_settings_window(object):
         font.setPointSize(12)
         settings_window.setFont(font)
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("start_test.ico"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(QtGui.QPixmap("D:\\+FREEMEN+\\+FREEMENstudio+\\PYTHON_2022\\MDA\\UI\\start_test.ico"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         settings_window.setWindowIcon(icon)
         self.verticalLayout = QtWidgets.QVBoxLayout(settings_window)
         self.verticalLayout.setSizeConstraint(QtWidgets.QLayout.SetFixedSize)
@@ -291,13 +291,6 @@ class Ui_settings_window(object):
         self.chb_show_exact.setMaximumSize(QtCore.QSize(160, 16777215))
         self.chb_show_exact.setObjectName("chb_show_exact")
         self.horizontalLayout.addWidget(self.chb_show_exact)
-        self.chb_price_name_only = QtWidgets.QCheckBox(self.frame_2)
-        self.chb_price_name_only.setEnabled(True)
-        self.chb_price_name_only.setMinimumSize(QtCore.QSize(130, 0))
-        self.chb_price_name_only.setMaximumSize(QtCore.QSize(160, 16777215))
-        self.chb_price_name_only.setChecked(True)
-        self.chb_price_name_only.setObjectName("chb_price_name_only")
-        self.horizontalLayout.addWidget(self.chb_price_name_only)
         self.chb_search_eng = QtWidgets.QCheckBox(self.frame_2)
         self.chb_search_eng.setEnabled(True)
         self.chb_search_eng.setMinimumSize(QtCore.QSize(130, 0))
@@ -311,6 +304,13 @@ class Ui_settings_window(object):
         self.chb_search_narrow.setChecked(True)
         self.chb_search_narrow.setObjectName("chb_search_narrow")
         self.horizontalLayout.addWidget(self.chb_search_narrow)
+        self.chb_show_compatibility = QtWidgets.QCheckBox(self.frame_2)
+        self.chb_show_compatibility.setEnabled(True)
+        self.chb_show_compatibility.setMinimumSize(QtCore.QSize(130, 0))
+        self.chb_show_compatibility.setMaximumSize(QtCore.QSize(160, 16777215))
+        self.chb_show_compatibility.setChecked(False)
+        self.chb_show_compatibility.setObjectName("chb_show_compatibility")
+        self.horizontalLayout.addWidget(self.chb_show_compatibility)
         self.verticalLayout_3.addLayout(self.horizontalLayout)
         self.verticalLayout_13.addWidget(self.frame_2)
         self.label_10 = QtWidgets.QLabel(self.frame_4)
@@ -503,9 +503,9 @@ class Ui_settings_window(object):
         self.chk_fullscreen.setText(_translate("settings_window", "Запуск во весь экран"))
         self.label_11.setText(_translate("settings_window", "Настройки поиска при запуске"))
         self.chb_show_exact.setText(_translate("settings_window", "Искомая модель"))
-        self.chb_price_name_only.setText(_translate("settings_window", "Модель прайса"))
         self.chb_search_eng.setText(_translate("settings_window", "Латиница"))
         self.chb_search_narrow.setText(_translate("settings_window", "Минимум 2"))
+        self.chb_show_compatibility.setText(_translate("settings_window", "Совместимость"))
         self.label_10.setText(_translate("settings_window", "Таблицы"))
         self.label_4.setText(_translate("settings_window", "Контраст зебры"))
         self.colored_price_table.setText(_translate("settings_window", "Цвета прайса"))

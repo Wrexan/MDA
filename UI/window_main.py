@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'window_main.ui'
+# Form implementation generated from reading ui file 'D:\+FREEMEN+\+FREEMENstudio+\PYTHON_2022\MDA\UI\window_main.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.8
 #
@@ -17,7 +17,7 @@ class Ui_MainWindow(object):
         MainWindow.resize(1280, 701)
         MainWindow.setWindowTitle("MDA")
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("MDA.ico"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(QtGui.QPixmap("D:\\+FREEMEN+\\+FREEMENstudio+\\PYTHON_2022\\MDA\\UI\\MDA.ico"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         MainWindow.setWindowIcon(icon)
         MainWindow.setIconSize(QtCore.QSize(64, 64))
         self.centralwidget = QtWidgets.QWidget(MainWindow)
@@ -541,11 +541,6 @@ class Ui_MainWindow(object):
         self.horizontalLayout_6 = QtWidgets.QHBoxLayout(self.frame_5)
         self.horizontalLayout_6.setContentsMargins(12, 0, 12, 0)
         self.horizontalLayout_6.setObjectName("horizontalLayout_6")
-        self.chb_price_name_only = QtWidgets.QCheckBox(self.frame_5)
-        self.chb_price_name_only.setEnabled(True)
-        self.chb_price_name_only.setChecked(True)
-        self.chb_price_name_only.setObjectName("chb_price_name_only")
-        self.horizontalLayout_6.addWidget(self.chb_price_name_only)
         self.chb_search_eng = QtWidgets.QCheckBox(self.frame_5)
         self.chb_search_eng.setEnabled(True)
         self.chb_search_eng.setChecked(True)
@@ -555,6 +550,11 @@ class Ui_MainWindow(object):
         self.chb_search_narrow.setChecked(True)
         self.chb_search_narrow.setObjectName("chb_search_narrow")
         self.horizontalLayout_6.addWidget(self.chb_search_narrow)
+        self.chb_show_compatibility = QtWidgets.QCheckBox(self.frame_5)
+        self.chb_show_compatibility.setEnabled(True)
+        self.chb_show_compatibility.setChecked(False)
+        self.chb_show_compatibility.setObjectName("chb_show_compatibility")
+        self.horizontalLayout_6.addWidget(self.chb_show_compatibility)
         self.hboxlayout.addWidget(self.frame_5)
         self.verticalLayout_7.addWidget(self.frame_3)
         self.verticalLayout_3.addWidget(self.HEAD_3bottom)
@@ -663,7 +663,7 @@ class Ui_MainWindow(object):
         self.table_price.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
         self.table_price.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.table_price.setShowGrid(False)
-        self.table_price.setColumnCount(3)
+        self.table_price.setColumnCount(4)
         self.table_price.setObjectName("table_price")
         self.table_price.setRowCount(0)
         self.table_price.horizontalHeader().setDefaultSectionSize(4)
@@ -693,9 +693,9 @@ class Ui_MainWindow(object):
         self.chb_show_exact.setText(_translate("MainWindow", "Фильтр модели"))
         self.chb_show_date.setText(_translate("MainWindow", "Показать дату"))
         self.pb_adv_search.setText(_translate("MainWindow", "Расш. поиск"))
-        self.chb_price_name_only.setText(_translate("MainWindow", "Модель прайса"))
         self.chb_search_eng.setText(_translate("MainWindow", "Латиница"))
         self.chb_search_narrow.setText(_translate("MainWindow", "Два символа"))
+        self.chb_show_compatibility.setText(_translate("MainWindow", "Совместимость"))
         self.table_parts.setSortingEnabled(True)
         self.tab_widget.setTabText(self.tab_widget.indexOf(self.tab_0), _translate("MainWindow", "   ЗАПЧАСТИ   "))
         self.tab_widget.setTabText(self.tab_widget.indexOf(self.tab_1), _translate("MainWindow", "  АКСЕССУАРЫ  "))

@@ -11,6 +11,7 @@ from utility.utils import save_error_file, is_error_ignored
 
 class DK9Parser:
     def __init__(self, C):
+        self.C = C
         self.STATUS = DK9Status
         self.CACHE = DK9Cache(C, self)
         self.LOGIN_URL = C.DK9_LOGIN_URL
@@ -69,7 +70,7 @@ class DK9Parser:
                 r = self._get_response(self.SEARCH_URL, status)
                 if r and r.__dict__['url'] == self.SEARCH_URL:
                     progress.emit(80)
-                    if self.addiction():
+                    if self.addiction() and self.C.APPROVED:
                         print('LOGIN OK')
                         self.validation_data = self._get_validation_data(BeautifulSoup(r.content, 'html.parser'))
                         self.LOGIN_SUCCESS = True
@@ -80,12 +81,12 @@ class DK9Parser:
                                                 '__VIEWSTATEGENERATOR': '567Ddc67DS57s&&dtc',
                                                 '__EVENTVALIDATION': 'cdc9796cjlmckdmjNCydc565nysdi'}
                         self.LOGIN_SUCCESS = False
-                        self.LAST_ERROR_PAGE_TEXT = self.get_text_from_html_body(soup)
-                        save_error_file(f'LOGIN FAIL{self.LAST_ERROR_PAGE_TEXT}')
                         status.emit(self.STATUS.LOGIN_FAIL)
                     progress.emit(100)
                     return
                 else:
+                    self.LAST_ERROR_PAGE_TEXT = self.get_text_from_html_body(soup)
+                    save_error_file(f'LOGIN FAIL{self.LAST_ERROR_PAGE_TEXT}')
                     self._error_handler(progress, status, err=f'Cannot connect to: {str(self.SEARCH_URL)}')
                     return
             else:

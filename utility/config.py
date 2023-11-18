@@ -80,7 +80,7 @@ class Config:
         self.MODEL_LIST_MAX_SIZE = 20
 
         self.FILTER_SEARCH_RESULT = False  # filter, from start
-        self.SEARCH_BY_PRICE_MODEL = True
+        self.SHOW_COMPATIBILITY = False
         self.NARROW_SEARCH = True  # from n symbols
         self.LATIN_SEARCH = True
 
@@ -263,7 +263,8 @@ class Config:
                 # ALWAYS FALSE
                 self.FILTER_SEARCH_RESULT = False
                 # True if config['SETTINGS']['FILTER_SEARCH_RESULT'] == 'True' else False
-                self.SEARCH_BY_PRICE_MODEL = True if config['SETTINGS']['SEARCH_BY_PRICE_MODEL'] == 'True' else False
+                # self.SEARCH_BY_PRICE_MODEL = True if config['SETTINGS']['SEARCH_BY_PRICE_MODEL'] == 'True' else False
+                self.SHOW_COMPATIBILITY = True if config['SETTINGS']['SHOW_COMPATIBILITY'] == 'True' else False
                 self.LATIN_SEARCH = True if config['SETTINGS']['LATIN_SEARCH'] == 'True' else False
                 self.NARROW_SEARCH = True if config['SETTINGS']['NARROW_SEARCH'] == 'True' else False
 
@@ -310,7 +311,8 @@ class Config:
         config['SETTINGS']['FULLSCREEN'] = str(self.FULLSCREEN)
 
         config['SETTINGS']['FILTER_SEARCH_RESULT'] = str(self.FILTER_SEARCH_RESULT)
-        config['SETTINGS']['SEARCH_BY_PRICE_MODEL'] = str(self.SEARCH_BY_PRICE_MODEL)
+        # config['SETTINGS']['SEARCH_BY_PRICE_MODEL'] = str(self.SEARCH_BY_PRICE_MODEL)
+        config['SETTINGS']['SHOW_COMPATIBILITY'] = str(self.SHOW_COMPATIBILITY)
         config['SETTINGS']['LATIN_SEARCH'] = str(self.LATIN_SEARCH)
         config['SETTINGS']['NARROW_SEARCH'] = str(self.NARROW_SEARCH)
 

@@ -3,7 +3,7 @@ import traceback
 from enum import IntEnum
 
 import xlrd
-from xlrd.sheet import Sheet
+from xlrd import Book
 
 from utility.config import PRICE_PATH, PRICE_PATH_ALT, PROJECT_PATH
 
@@ -27,10 +27,11 @@ class Price:
 
     def __init__(self, C):
         self.C = C
-        self.SMART_SEARCH = False
-        self.NAME = ''
-        self.DB = None
-        self.APPROVED = C.APPROVED or self.approve()
+        self.SMART_SEARCH: bool = False
+        self.NAME: str = ''
+        self.DB: Book or None = None
+        self.APPROVED: bool = C.APPROVED or False
+        self.BRANDS: list = []
 
     def load_price(self, progress, status, error) -> None:
         status.emit(self.S_READING)
@@ -44,6 +45,7 @@ class Price:
             if price_path_name:
                 progress.emit(50)
                 self.DB = xlrd.open_workbook(price_path_name, formatting_info=True)
+                self.BRANDS = self.get_brands()
                 progress.emit(90)
                 status.emit(self.S_OK)
                 print(f'Price loaded: {price_path_name}')
@@ -75,15 +77,22 @@ class Price:
                         return os.path.join(path, name), name
         return None, None
 
-    def approve(self):
+    def get_brands(self):
+        brands = []
+        a = False
         if self.DB:
             try:
                 for sheet in self.DB:
+                    if sheet.name[0].isascii():
+                        brands.append(sheet.name.casefold())
                     if sheet.name == 'Samsung':
-                        return True
+                        a = True
             except Exception as err:
-                print(f'Price is wrong or damaged: {err}')
-        return False
+                print(f'Price file is wrong or damaged: {err}')
+        if not a:
+            raise AssertionError(f'Price file is wrong or damaged')
+        self.C.APPROVED = True
+        return brands
 
     # @staticmethod
     # def get_row_in_pos(sheet: Sheet, row_num: int):

@@ -15,6 +15,7 @@ class Language:
         with open(f'{LANG_PATH}\\{self.C.LANGS[self.C.CURRENT_LANG]}', 'r', encoding='utf-8') as f:
             lang_data = json.load(f)
         for module_name, module_attrs in lang_data.items():
+            print(f'{module_name=}  {module_attrs=}  ')
             if module_name == self.apply_as_attrs:
                 for text_elem in lang_data[module_name].items():
                     self.__setattr__(*text_elem)
@@ -37,17 +38,18 @@ class Language:
             module.MDAS_DATA_HANDLE_MSGS[i] = elem
 
     def translate_MainWindow_texts(self, module):
-        module.help.setText(self.MainWindow["help"])
-        module.settings_button.setText(self.MainWindow["settings_button"])
-        module.graph_button.setText(self.MainWindow["graph_button"])
-        module.chb_show_exact.setText(self.MainWindow["chb_show_exact"])
-        module.chb_show_date.setText(self.MainWindow["chb_show_date"])
-        module.pb_adv_search.setText(self.MainWindow["pb_adv_search"])
-        module.chb_price_name_only.setText(self.MainWindow["chb_price_name_only"])
-        module.chb_search_eng.setText(self.MainWindow["chb_search_eng"])
-        module.chb_search_narrow.setText(self.MainWindow["chb_search_narrow"])
-        module.le_cash_name.setPlaceholderText(self.MainWindow["le_cash_name_placeholder"])
-        module.update_button.setText(self.MainWindow["update_button"])
+        module.help.setText(self.MainWindow.get("help"))
+        module.settings_button.setText(self.MainWindow.get("settings_button"))
+        module.graph_button.setText(self.MainWindow.get("graph_button"))
+        module.chb_show_exact.setText(self.MainWindow.get("chb_show_exact"))
+        module.chb_show_date.setText(self.MainWindow.get("chb_show_date"))
+        module.pb_adv_search.setText(self.MainWindow.get("pb_adv_search"))
+        # module.chb_price_name_only.setText(self.MainWindow["chb_price_name_only"])
+        module.chb_search_eng.setText(self.MainWindow.get("chb_search_eng"))
+        module.chb_search_narrow.setText(self.MainWindow.get("chb_search_narrow"))
+        module.chb_show_compatibility.setText(self.MainWindow.get("chb_show_compatibility"))
+        module.le_cash_name.setPlaceholderText(self.MainWindow.get("le_cash_name_placeholder"))
+        module.update_button.setText(self.MainWindow.get("update_button"))
 
     def translate_AdvSearchDialog_texts(self, module):
         module.setWindowTitle(self.AdvSearchDialog["WindowTitle"])
@@ -92,7 +94,7 @@ class Language:
         module.ui.chk_fullscreen.setText(self.ConfigWindow["chk_fullscreen"])
         module.ui.label_11.setText(self.ConfigWindow["label_11"])
         module.ui.chb_show_exact.setText(self.ConfigWindow["chb_show_exact"])
-        module.ui.chb_price_name_only.setText(self.ConfigWindow["chb_price_name_only"])
+        # module.ui.chb_price_name_only.setText(self.ConfigWindow["chb_price_name_only"])
         module.ui.chb_search_eng.setText(self.ConfigWindow["chb_search_eng"])
         module.ui.chb_search_narrow.setText(self.ConfigWindow["chb_search_narrow"])
         module.ui.label_10.setText(self.ConfigWindow["label_10"])
