@@ -1,8 +1,23 @@
 import os
 import traceback
+from enum import IntEnum
+
 import xlrd
+from xlrd.sheet import Sheet
 
 from utility.config import PRICE_PATH, PRICE_PATH_ALT, PROJECT_PATH
+
+
+class PriceColumns(IntEnum):
+    model: int = 0
+    work_type: int = 1
+    price: int = 5
+    compatible_model: int = 5
+    compatible_part: int = 6
+    note: int = 7
+
+
+MAX_PRICE_COLUMNS = int(max(PriceColumns)) + 1
 
 
 class Price:
@@ -70,9 +85,9 @@ class Price:
                 print(f'Price is wrong or damaged: {err}')
         return False
 
-    @staticmethod
-    def get_row_in_pos(position: tuple):
-        return position[0].row_values(position[1], 0, 7)  # position[1], 0, 9
+    # @staticmethod
+    # def get_row_in_pos(sheet: Sheet, row_num: int):
+    #     return sheet.row_values(row_num, 0, MAX_PRICE_COLUMNS)  # position[1], 0, 9
         # ['Xiaomi Mi A2 M1804D2SG ', '', '', 0.0, '', '', '', '', '']
 
     def search_price_models(self, search_req: str, MODEL_LIST_SIZE: int, exact: bool = False):
@@ -87,10 +102,10 @@ class Price:
                 manufacturer = sheet.name
                 if manufacturer in self.C.MANUFACTURER_BLACKLIST:
                     continue
-                if manufacturer in self.C.PRICE_SEARCH_COLUMN_NUMBERS.keys():
-                    compat_model_column = self.C.PRICE_SEARCH_COLUMN_NUMBERS[manufacturer][1]
-                else:
-                    compat_model_column = self.C.PRICE_SEARCH_COLUMN_NUMBERS['+'][1]
+                # if manufacturer in self.C.PRICE_SEARCH_COLUMN_NUMBERS.keys():
+                #     compat_model_column = self.C.PRICE_SEARCH_COLUMN_NUMBERS[manufacturer][1]
+                # else:
+                #     compat_model_column = self.C.PRICE_SEARCH_COLUMN_NUMBERS['+'][1]
                 # print(f'{compat_model_column=}')
 
                 for row_num in range(sheet.nrows):  # Rows cycle
@@ -120,14 +135,18 @@ class Price:
                         if manufacturer not in models:
                             models[manufacturer] = {}
                         # Getting main model to redirect, if present
-                        if compat_model_column < row_values_len and isinstance(row_values[compat_model_column], str):
-                            compat_model_name: str = row_values[compat_model_column].strip().lower()
-                            # ru ru, en ru, ru en, en en  -  separating trash
-                            if compat_model_name.startswith('см', 0, 2) \
-                                    or compat_model_name.startswith('cм', 0, 2) \
-                                    or compat_model_name.startswith('сm', 0, 2) \
-                                    or compat_model_name.startswith('cm', 0, 2):
-                                compat_model_name = compat_model_name[2:].strip()
+                        if PriceColumns.compatible_model < row_values_len:
+                            compat_model_name = row_values[PriceColumns.compatible_model]
+                            if isinstance(compat_model_name, str):
+                                compat_model_name: str = compat_model_name.strip().lower()
+                                # ru ru, en ru, ru en, en en  -  separating trash
+                                if compat_model_name.startswith('см', 0, 2) \
+                                        or compat_model_name.startswith('cм', 0, 2) \
+                                        or compat_model_name.startswith('сm', 0, 2) \
+                                        or compat_model_name.startswith('cm', 0, 2):
+                                    compat_model_name = compat_model_name[2:].strip()
+                            else:
+                                compat_model_name = ''
                         else:
                             compat_model_name = ''
                         # print(f'{compat_model_name=}')

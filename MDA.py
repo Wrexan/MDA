@@ -24,7 +24,7 @@ from PyQt5.QtCore import Qt, QEvent
 
 from utility.config import Config, DK9_CACHE_FILE_PATH, VERSION_FILE_PATH, LOGO
 from utility.dk9 import DK9Parser
-from utility.price import Price
+from utility.price import Price, PriceColumns, MAX_PRICE_COLUMNS
 from utility.statistic import MDAS
 from utility.language import Language
 from utility.modal_windows import ConfigWindow, HelpWindow, AdvancedSearchWindow, FirstStartWindow
@@ -1361,37 +1361,45 @@ class App(QMainWindow):
 
             if _model in _models_of_manufacturer:
                 # print(f'FOUND')
-                position = _models_of_manufacturer[_model]  # [Sheet 27:<XIAOMI>, 813] - sheet, row
-                # print(f'{position=}')
+                # print(f'{_models_of_manufacturer=}')
+                sheet, row_num, _ = _models_of_manufacturer[_model]  # [Sheet 27:<XIAOMI>, 813] - sheet, row
 
                 # Take needed columns for exact model
-                if self.curr_manufacturer in C.PRICE_SEARCH_COLUMN_NUMBERS:
-                    columns = C.PRICE_SEARCH_COLUMN_NUMBERS[self.curr_manufacturer]  # [2, 6, 7]
-                else:
-                    columns = C.PRICE_SEARCH_COLUMN_NUMBERS['+']
-                # print(f'{columns=}')
 
-                row = Price.get_row_in_pos(position)
+                row = sheet.row_values(row_num, 0, MAX_PRICE_COLUMNS)
                 row_len = len(row)
-                cells_texts = [row[0],
-                               row[columns[1]] if columns[1] < row_len else '',
-                               row[columns[2]] if columns[2] < row_len else '']
                 new_row_num = 0
-                # print(f'{row=}')
+                # print(f'{row_len=} {row=}')
+                # print(f'{cells_texts=}')
+                columns_for_price_table = [
+                    PriceColumns.work_type,
+                    PriceColumns.price,
+                    # PriceColumns.compatible_part,
+                    PriceColumns.note,
+                ]
 
+                # Add MODEL NAME row to the first table row
                 if True:  # if model row must be shown in price table
+                    cells_texts = [row[PriceColumns.model],
+                                   row[PriceColumns.compatible_model]]
                     # print(f'{row=} {columns=} {cells_texts=} ')
-                    self._add_price_table_row(table=self.ui.table_price, sheet=position[0],
-                                              columns=columns, cells_texts=cells_texts,
-                                              t_row_num=new_row_num, p_row_num=position[1],
+                    self._add_price_table_row(table=self.ui.table_price, sheet=sheet,
+                                              columns=[
+                                                    PriceColumns.model,
+                                                    PriceColumns.note,
+                                              ],
+                                              cells_texts=cells_texts,
+                                              t_row_num=new_row_num, p_row_num=row_num,
                                               align={1: Qt.AlignRight | Qt.AlignVCenter},
                                               colored=C.PRICE_COLORED, bold=True)
                     new_row_num += 1
 
-                for i in range(position[1], position[0].nrows - 1):
-                    # print(f'{row=} {row_len=} {i=} {columns[-1]=} {columns=} ')
-                    if row_len < columns[-1] + 1:  # If row shorter, than we expect, then place all row in 0 column
-                        # print('SHORT row:' + str(row))
+                # Add other PRICE rows to the table
+                for i in range(row_num, sheet.nrows - 1):
+                    # row = Price.get_row_in_pos(sheet=sheet, row_num=row_num)
+                    # print(f'{row=} {row_len=} {i=}')
+                    if row_len < PriceColumns.note:  # If row shorter, than we expect, then place all row in 0 column
+                        print('SHORT row:' + str(row))
                         cell_text = self.list_to_string(row)
                         self.ui.table_price.insertRow(new_row_num)
                         self.ui.table_price.setItem(new_row_num, 0, QTableWidgetItem(cell_text))
@@ -1400,27 +1408,25 @@ class App(QMainWindow):
                     else:
                         # if cell is out of row, text will be empty
                         cells_texts = []
-                        for c in range(len(columns)):
-                            if columns[c] < row_len:
-                                cells_texts.append(row[columns[c]])
+                        for column_num in columns_for_price_table:
+                            if column_num < row_len:
+                                cells_texts.append(row[column_num])
                             else:
                                 cells_texts.append('')
-                        # print(f"{cells_texts=}")
+                        # print(f"{row=}   {cells_texts=}")
                         if cells_texts[0]:  # or len(cells_texts[1]) > 3:
-                            self._add_price_table_row(table=self.ui.table_price, sheet=position[0],
-                                                      columns=columns, cells_texts=cells_texts,
+                            self._add_price_table_row(table=self.ui.table_price, sheet=sheet,
+                                                      columns=columns_for_price_table, cells_texts=cells_texts,
                                                       t_row_num=new_row_num, p_row_num=i,
                                                       align={1: Qt.AlignRight | Qt.AlignVCenter},
                                                       colored=C.PRICE_COLORED)
 
                             new_row_num += 1
-                        if i < position[0].nrows:
-                            # print(row[col[0] - 1, col[1] - 1, col[2] - 1])
-                            row = position[0].row_values(i + 1, 0, 7)
+                        if i < sheet.nrows:
+                            row = sheet.row_values(i + 1, 0, MAX_PRICE_COLUMNS)
                             if row[0] != '':
                                 if row[0] not in C.PRICE_TRASH_IN_CELLS:
                                     return
-                            # print(row[col[0]-1, col[1]-1, col[2]-1])
                         else:
                             return
         except Exception as _err:
@@ -1436,11 +1442,12 @@ class App(QMainWindow):
         #     bold_font = QtGui.QFont()
         #     bold_font.setBold(True)
         for c, txt in enumerate(cells_texts):
+            # print(f'{c=} {txt=}')
             if not isinstance(txt, str):
                 if isinstance(txt, float):
                     txt = str(int(txt))
                 else:
-                    txt = str(txt)
+                    txt = ''  # str(txt)
             table.setItem(t_row_num, c, QTableWidgetItem(txt))
             table.item(t_row_num, c).setToolTip(txt)
             if align and c in align:
@@ -1467,10 +1474,10 @@ class App(QMainWindow):
             if self.price_status == 6:
                 self.update_price_progress_bar(progress=0)
                 if self.web_status in (
-                    DK9.STATUS.NO_CONN,
-                    DK9.STATUS.CLI_ERR,
-                    DK9.STATUS.SERV_ERR,
-                    DK9.STATUS.CONN_ERROR,
+                        DK9.STATUS.NO_CONN,
+                        DK9.STATUS.CLI_ERR,
+                        DK9.STATUS.SERV_ERR,
+                        DK9.STATUS.CONN_ERROR,
                 ):
                     self.dk9_login_or_update_cache_on_start()
             else:

@@ -1,5 +1,7 @@
 import os
 import configparser
+from enum import IntEnum
+
 from win32comext.shell import shell, shellcon
 
 from secured.confidential_data import *
@@ -99,39 +101,39 @@ class Config:
         # self.PRICE_CONFIG = f'{self.CONTENT_PATH}price_config.ini'
         self.NARROW_SEARCH_LEN = 2  # start search from 2 symbols
         self.APPROVED = False
-        self.PRICE_SEARCH_COLUMN_SYMBOLS = {'+': 'BFG',
-                                            # 'Alcatel': 'BCDE',
-                                            # 'Asus-тел': 'XBFG',
-                                            'Asus-планш': 'BDG',
-                                            # 'BlackBerry': 'ABCFG',
-                                            # 'Blackview': 'XBEF',
-                                            # 'Fly': 'XBCHI',
-                                            # 'doogee': 'XBCDE',
-                                            # 'HTC': 'BCEFH',
-                                            # 'Huawei': 'XBGHIJ',
-                                            # 'iPad': 'XAFGI',
-                                            # 'iPhone': 'XBHI',
-                                            # 'Lenovo': 'XBFGH',
-                                            # 'LG': 'BCDI',
-                                            # 'Meizu': 'XBEFG',
-                                            # 'Motorola': 'XBJKQ',
-                                            # 'Nokia': 'BCGHJ',
-                                            # 'Nomi': 'XBCEF',
-                                            # 'OPPO': 'BCFGH',
-                                            # 'OnePlus': 'BCFGH',
-                                            # 'Oukitel': 'BCFGL',
-                                            # 'PIXEL': 'BCFGH',
-                                            # 'Realme': 'BCFGH',
-                                            # 'Samsung': 'BCGH',
-                                            # 'Sony': 'XBFGH',
-                                            # 'Tecno': 'BCFG',
-                                            # 'vivo': 'BCDEF',
-                                            # 'TP-Link': 'BCDE',
-                                            # 'XIAOMI': 'XBFG',
-                                            # 'ZTE': 'BCFGH',
-                                            }
-        self.PRICE_SEARCH_COLUMN_NUMBERS = {}
-        self.convert_columns_to_nums()
+        # self.PRICE_SEARCH_COLUMN_SYMBOLS = {'+': 'BFGH',
+        #                                     # 'Alcatel': 'BCDE',
+        #                                     # 'Asus-тел': 'XBFG',
+        #                                     'Asus-планш': 'BDH',
+        #                                     # 'BlackBerry': 'ABCFG',
+        #                                     # 'Blackview': 'XBEF',
+        #                                     # 'Fly': 'XBCHI',
+        #                                     # 'doogee': 'XBCDE',
+        #                                     # 'HTC': 'BCEFH',
+        #                                     # 'Huawei': 'XBGHIJ',
+        #                                     # 'iPad': 'XAFGI',
+        #                                     # 'iPhone': 'XBHI',
+        #                                     # 'Lenovo': 'XBFGH',
+        #                                     # 'LG': 'BCDI',
+        #                                     # 'Meizu': 'XBEFG',
+        #                                     # 'Motorola': 'XBJKQ',
+        #                                     # 'Nokia': 'BCGHJ',
+        #                                     # 'Nomi': 'XBCEF',
+        #                                     # 'OPPO': 'BCFGH',
+        #                                     # 'OnePlus': 'BCFGH',
+        #                                     # 'Oukitel': 'BCFGL',
+        #                                     # 'PIXEL': 'BCFGH',
+        #                                     # 'Realme': 'BCFGH',
+        #                                     # 'Samsung': 'BCGH',
+        #                                     # 'Sony': 'XBFGH',
+        #                                     # 'Tecno': 'BCFG',
+        #                                     # 'vivo': 'BCDEF',
+        #                                     # 'TP-Link': 'BCDE',
+        #                                     # 'XIAOMI': 'XBFG',
+        #                                     # 'ZTE': 'BCFGH',
+        #                                     }
+        # self.PRICE_SEARCH_COLUMN_NUMBERS = PriceColumns
+        # self.convert_columns_to_nums()
         self.PRICE_TRASH_IN_CELLS = ()
         # self.PRICE_TRASH_IN_CELLS = ('/', '\\', 'MI2/Mi2s', 'MI2a', 'mi3', 'Mi 9t', 'Mi Max 3',
         #                              'Red rice', 'Redmi 3', 'Redmi 4x', 'Redmi 6', 'Redmi 7', 'Redmi 7a',
@@ -221,10 +223,10 @@ class Config:
     def set_error_signal(self, signal):
         self.error = signal
 
-    def convert_columns_to_nums(self):
-        for list_name, columns in self.PRICE_SEARCH_COLUMN_SYMBOLS.items():
-            self.PRICE_SEARCH_COLUMN_NUMBERS[list_name] = *(ord(letter.upper()) - 65 for letter in columns),
-        # print(self.PRICE_SEARCH_COLUMN_NUMBERS)
+    # def convert_columns_to_nums(self):
+    #     for list_name, columns in self.PRICE_SEARCH_COLUMN_SYMBOLS.items():
+    #         self.PRICE_SEARCH_COLUMN_NUMBERS[list_name] = *(ord(letter.upper()) - 65 for letter in columns),
+    #     # print(self.PRICE_SEARCH_COLUMN_NUMBERS)
 
     def get_color_from_style(self, style):
         return self.DK9_BG_COLORS[style[style.find(':') + 1: style.find(';')]]
