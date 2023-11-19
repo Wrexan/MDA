@@ -6,6 +6,8 @@ import os
 import requests
 from datetime import datetime, timezone, timedelta
 
+from utility.config import MDAS_PATH
+
 
 # (2023, '1#31#1#Samsung#A500', 1)
 # (2023, '1#Samsung',{A500:[1,0,2],A505:[2,1,3]})
@@ -150,11 +152,11 @@ class MDAS:
         self.current_date = self.get_current_date()
         if year > self.current_date.year or (year == self.current_date.year and month > self.current_date.month):
             return stat_data
-        self.check_and_create_folder(self.C.MDAS_PATH)
+        self.check_and_create_folder(MDAS_PATH)
 
         # f'm-{year}-{month}.cache' f'y-{year}.cache'
         if 0 < month < 13:
-            stat_data = self.load_stat_file(self.C.MDAS_PATH, year, month)
+            stat_data = self.load_stat_file(MDAS_PATH, year, month)
             if stat_data:
                 return stat_data
 
@@ -164,7 +166,7 @@ class MDAS:
             if not stat_data:
                 return {}
 
-            self.save_stat_file(self.C.MDAS_PATH, stat_data, year, month)
+            self.save_stat_file(MDAS_PATH, stat_data, year, month)
         # print(f'returning: {stat_data=}')
         return stat_data
 
@@ -175,7 +177,7 @@ class MDAS:
             return stat_data
 
         # f'y-{year}.cache'
-        stat_data = self.load_stat_file(self.C.MDAS_PATH, year)
+        stat_data = self.load_stat_file(MDAS_PATH, year)
         if stat_data:
             return stat_data
 
@@ -185,7 +187,7 @@ class MDAS:
         if not stat_data:
             return {}
 
-        self.save_stat_file(self.C.MDAS_PATH, stat_data, year)
+        self.save_stat_file(MDAS_PATH, stat_data, year)
         # print(f'returning: {stat_data=}')
         return stat_data
 

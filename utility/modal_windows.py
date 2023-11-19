@@ -56,8 +56,8 @@ class ConfigWindow(QtWidgets.QDialog):
         self.ui.word_wrap_web_table.setCheckState(2 if C.WORD_WRAP_DK9 else 0)
         self.ui.word_wrap_price_table.setCheckState(2 if C.WORD_WRAP_PRICE else 0)
 
-        self.ui.chb_show_exact.setCheckState(2 if C.FILTER_SEARCH_RESULT else 0)
-        self.ui.chb_show_compatibility.setCheckState(2 if C.SHOW_COMPATIBILITY else 0)
+        # self.ui.chb_show_exact.setCheckState(2 if C.FILTER_SEARCH_RESULT else 0)
+        # self.ui.chb_show_compatibility.setCheckState(2 if C.SHOW_COMPATIBILITY else 0)
         self.ui.chb_search_eng.setCheckState(2 if C.LATIN_SEARCH else 0)
         self.ui.chb_search_narrow.setCheckState(2 if C.NARROW_SEARCH else 0)
 
@@ -96,11 +96,11 @@ class ConfigWindow(QtWidgets.QDialog):
         self.C.WORD_WRAP_DK9 = True if self.ui.word_wrap_web_table.checkState() == 2 else False
         self.C.WORD_WRAP_PRICE = True if self.ui.word_wrap_price_table.checkState() == 2 else False
 
-        self.C.FILTER_SEARCH_RESULT = True if self.ui.chb_show_exact.checkState() == 2 else False
+        # self.C.FILTER_SEARCH_RESULT = True if self.ui.chb_show_exact.checkState() == 2 else False
         # self.C.SEARCH_BY_PRICE_MODEL = True if self.ui.chb_price_name_only.checkState() == 2 else False
         self.C.LATIN_SEARCH = True if self.ui.chb_search_eng.checkState() == 2 else False
         self.C.NARROW_SEARCH = True if self.ui.chb_search_narrow.checkState() == 2 else False
-        self.C.SHOW_COMPATIBILITY = True if self.ui.chb_show_compatibility.checkState() == 2 else False
+        # self.C.SHOW_COMPATIBILITY = True if self.ui.chb_show_compatibility.checkState() == 2 else False
 
         self.C.INCOME_PARTS_MARGIN_PERC = self.ui.income_overprice_perc.value()
         # C.WIDE_MONITOR = True if self.ui.wide_monitor.checkState() == 2 else False

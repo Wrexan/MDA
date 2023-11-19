@@ -1,4 +1,5 @@
 import json
+import os.path
 from dataclasses import dataclass
 from utility.config import LANG_PATH
 
@@ -12,10 +13,10 @@ class Language:
         self.load_language()
 
     def load_language(self):
-        with open(f'{LANG_PATH}\\{self.C.LANGS[self.C.CURRENT_LANG]}', 'r', encoding='utf-8') as f:
+        with open(os.path.join(LANG_PATH, self.C.LANGS[self.C.CURRENT_LANG]), 'r', encoding='utf-8') as f:
             lang_data = json.load(f)
         for module_name, module_attrs in lang_data.items():
-            print(f'{module_name=}  {module_attrs=}  ')
+            # print(f'{module_name=}  {module_attrs=}  ')
             if module_name == self.apply_as_attrs:
                 for text_elem in lang_data[module_name].items():
                     self.__setattr__(*text_elem)
@@ -47,7 +48,7 @@ class Language:
         # module.chb_price_name_only.setText(self.MainWindow["chb_price_name_only"])
         module.chb_search_eng.setText(self.MainWindow.get("chb_search_eng"))
         module.chb_search_narrow.setText(self.MainWindow.get("chb_search_narrow"))
-        module.chb_show_compatibility.setText(self.MainWindow.get("chb_show_compatibility"))
+        # module.chb_show_compatibility.setText(self.MainWindow.get("chb_show_compatibility"))
         module.le_cash_name.setPlaceholderText(self.MainWindow.get("le_cash_name_placeholder"))
         module.update_button.setText(self.MainWindow.get("update_button"))
 
@@ -126,8 +127,8 @@ class Language:
         module.year_word = self.graph['year_word']
 
     def translate_HelpDialog_texts(self, module):
-        module.setWindowTitle(self.HelpDialog["WindowTitle"])
-        module.ui.label.setText(self.HelpDialog["label"])
-        module.ui.project_link.setText(self.HelpDialog["project_link"])
-        module.ui.label_2.setText(self.HelpDialog["label_2"])
+        module.setWindowTitle(self.HelpDialog.get("WindowTitle"))
+        module.ui.label.setText(self.HelpDialog.get("label"))
+        module.ui.project_link.setText(self.HelpDialog.get("project_link"))
+        module.ui.label_2.setText(self.HelpDialog.get("label_2"))
 

@@ -5,7 +5,7 @@ import bs4
 import traceback
 import os
 import re
-from utility.utils import save_error_file
+from utility.utils import save_error_file, DevicePart, get_optimised_brands
 
 sys.path.append(os.path.join(os.getcwd(), 'PyQt5'))
 # sys.path.append(os.path.join(os.getcwd(), 'PyQt5\\Qt5'))
@@ -177,7 +177,7 @@ class App(QMainWindow):
         # self.ui.chb_price_name_only.setToolTip(L.chb_price_name_only_ToolTip)
         self.ui.chb_search_eng.setToolTip(L.chb_search_eng_ToolTip)
         self.ui.chb_search_narrow.setToolTip(L.chb_search_narrow_ToolTip)
-        self.ui.chb_show_compatibility.setToolTip(L.chb_show_compatibility_ToolTip)
+        # self.ui.chb_show_compatibility.setToolTip(L.chb_show_compatibility_ToolTip)
         self.ui.table_price.setHorizontalHeaderLabels((L.table_price_HHL))
         self.ui.table_parts.setHorizontalHeaderLabels((L.table_parts_HHL))
         self.ui.table_accesory.setHorizontalHeaderLabels((L.table_accesory_HHL))
@@ -194,10 +194,11 @@ class App(QMainWindow):
         self.search_input.textChanged[str].connect(self.prepare_and_search)
         self.ui.bt_upd_web.clicked.connect(self.dk9_relog_or_update_cache_by_button)
         self.ui.bt_upd_price.clicked.connect(self.read_price_start_worker)
+        self.ui.bt_dk9_url.clicked.connect(self.open_dk9_url)
         self.ui.chb_show_exact.stateChanged.connect(self.upd_dk9_on_rule_change)
         self.ui.chb_show_date.stateChanged.connect(self.switch_n_upd_dk9_tables_grid)
         # self.ui.chb_price_name_only.stateChanged.connect(self.start_search_on_rule_change)
-        self.ui.chb_show_compatibility.stateChanged.connect(self.switch_compat_upd_price_tables_grid)
+        # self.ui.chb_show_compatibility.stateChanged.connect(self.switch_compat_upd_price_tables_grid)
         self.ui.chb_search_eng.stateChanged.connect(self.start_search_on_rule_change)
         self.ui.chb_search_narrow.stateChanged.connect(self.start_search_on_rule_change)
         self.ui.pb_adv_search.clicked.connect(self.open_adv_search)
@@ -285,7 +286,7 @@ class App(QMainWindow):
         # self.ui.chb_price_name_only.setCheckState(2 if C.SEARCH_BY_PRICE_MODEL else 0)
         self.ui.chb_search_eng.setCheckState(2 if C.LATIN_SEARCH else 0)
         self.ui.chb_search_narrow.setCheckState(2 if C.NARROW_SEARCH else 0)
-        self.ui.chb_show_compatibility.setCheckState(2 if C.SHOW_COMPATIBILITY else 0)
+        # self.ui.chb_show_compatibility.setCheckState(2 if C.SHOW_COMPATIBILITY else 0)
         self.freeze_ui_update = False
 
         self.dk9_request_label.move(self.ui.table_parts.width() - 84, 3)
@@ -374,7 +375,7 @@ class App(QMainWindow):
         # C.SEARCH_BY_PRICE_MODEL = True if self.ui.chb_price_name_only.checkState() == 2 else False
         C.LATIN_SEARCH = True if self.ui.chb_search_eng.checkState() == 2 else False
         C.NARROW_SEARCH = True if self.ui.chb_search_narrow.checkState() == 2 else False
-        C.SHOW_COMPATIBILITY = True if self.ui.chb_show_compatibility.checkState() == 2 else False
+        # C.SHOW_COMPATIBILITY = True if self.ui.chb_show_compatibility.checkState() == 2 else False
         self.prepare_and_search(search_req=self.search_input.text(), force_search=True)
 
     def upd_dk9_on_rule_change(self):
@@ -384,20 +385,20 @@ class App(QMainWindow):
         if self.soup:
             self.dk9_fill_tables_from_soup(use_old_soup=True)
 
-    def switch_compat_upd_price_tables_grid(self):
-        C.SHOW_COMPATIBILITY = True if self.ui.chb_show_compatibility.checkState() == 2 else False
-        self.upd_price_tables_grid()
+    # def switch_compat_upd_price_tables_grid(self):
+    #     C.SHOW_COMPATIBILITY = True if self.ui.chb_show_compatibility.checkState() == 2 else False
+    #     self.upd_price_tables_grid()
 
     def upd_price_tables_grid(self):
         table_width = (self.width() - 6)//2
         # print(f'{----------------------------------table_width=}')
-        if C.SHOW_COMPATIBILITY:
-            self.ui.table_price.showColumn(2)
-            table_width_n_percent = int(table_width / 5 + (table_width - 640) / 4)
-            # self.ui.table_price.horizontalHeader().setSectionResizeMode(2, table_width_n_percent)
-        else:
-            self.ui.table_price.hideColumn(2)
-            table_width_n_percent = int(table_width / 2.5 + (table_width - 640) / 4)
+        # if C.SHOW_COMPATIBILITY:
+        #     self.ui.table_price.showColumn(2)
+        #     table_width_n_percent = int(table_width / 5 + (table_width - 640) / 4)
+        #     # self.ui.table_price.horizontalHeader().setSectionResizeMode(2, table_width_n_percent)
+        # else:
+        # self.ui.table_price.hideColumn(2)
+        table_width_n_percent = int(table_width / 2.5 + (table_width - 640) / 4)
 
         self.ui.table_price.horizontalHeader().setDefaultSectionSize(table_width_n_percent)
         self.ui.table_price.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
@@ -1379,23 +1380,18 @@ class App(QMainWindow):
             # print(f'{_model=}')
 
             if _model in _models_of_manufacturer:
+                # Getting all the brands other than current
+                optimised_brands = get_optimised_brands(self)
                 # print(f'FOUND')
                 # print(f'{_models_of_manufacturer=}')
                 sheet, row_num, _ = _models_of_manufacturer[_model]  # [Sheet 27:<XIAOMI>, 813] - sheet, row
 
                 # Take needed columns for exact model
-
                 row = sheet.row_values(row_num, 0, MAX_PRICE_COLUMNS)
                 row_len = len(row)
                 new_row_num = 0
                 # print(f'{row_len=} {row=}')
                 # print(f'{cells_texts=}')
-                columns_for_price_table = [
-                    PriceColumns.work_type,
-                    PriceColumns.price,
-                    PriceColumns.compatible_part,
-                    PriceColumns.note,
-                ]
 
                 # Add MODEL NAME row to the first table row
                 if True:  # if model row must be shown in price table
@@ -1416,7 +1412,7 @@ class App(QMainWindow):
                 # Add other PRICE rows to the table
                 for i in range(row_num, sheet.nrows - 1):
                     # row = Price.get_row_in_pos(sheet=sheet, row_num=row_num)
-                    print(f'{row=} {row_len=} {i=}')
+                    # print(f'{row=} {row_len=} {i=}')
                     if row_len < PriceColumns.note:  # If row shorter, than we expect, then place all row in 0 column
                         print('SHORT row:' + str(row))
                         cell_text = self.list_to_string(row)
@@ -1425,20 +1421,27 @@ class App(QMainWindow):
                         self.ui.table_price.item(new_row_num, 0).setToolTip(cell_text)
                         return
                     else:
+                        columns_for_price_table = (
+                            PriceColumns.work_type,
+                            PriceColumns.price,
+                            PriceColumns.compatible_part,
+                            PriceColumns.note,
+                        )
                         # if cell is out of row, text will be empty
                         cells_texts = []
                         for column_num in columns_for_price_table:
-                            if column_num < row_len:
-                                cells_texts.append(row[column_num])
-                            else:
-                                cells_texts.append('')
-                        print(f"{cells_texts=}")
+                            cells_texts.append(row[column_num]) if column_num < row_len else cells_texts.append(None)
+                        # print(f"{cells_texts=}")
                         if cells_texts[0]:  # or len(cells_texts[1]) > 3:
                             self._add_price_table_row(table=self.ui.table_price, sheet=sheet,
                                                       columns=columns_for_price_table, cells_texts=cells_texts,
                                                       t_row_num=new_row_num, p_row_num=i,
                                                       align={1: Qt.AlignRight | Qt.AlignVCenter},
                                                       colored=C.PRICE_COLORED)
+                            part = cells_texts[2]
+                            if part:
+                                DevicePart().parse_part_string(brands=optimised_brands, compatibility_string=part)
+                                # self.compatible_parts.append(DevicePart)
 
                             new_row_num += 1
                         if i < sheet.nrows:
@@ -1456,17 +1459,25 @@ class App(QMainWindow):
     def _add_price_table_row(self, table, sheet, columns, cells_texts: list, t_row_num: int, p_row_num: int,
                              align: dict = None, colored: bool = False, bold: bool = False):
         table.insertRow(t_row_num)
+        column_qty = table.columnCount()
         # bold_font = None
         # if bold:
         #     bold_font = QtGui.QFont()
         #     bold_font.setBold(True)
         for c, txt in enumerate(cells_texts):
             # print(f'{c=} {txt=}')
+            # Adding all extra columns texts to the last column
+            if c == column_qty - 1:
+                txt = ''.join(cells_texts[c:])
+            elif c >= column_qty:
+                break
+
             if not isinstance(txt, str):
-                if isinstance(txt, float):
+                if isinstance(txt, (float, int)):
                     txt = str(int(txt))
                 else:
                     txt = ''  # str(txt)
+
             table.setItem(t_row_num, c, QTableWidgetItem(txt))
             table.item(t_row_num, c).setToolTip(txt)
             if align and c in align:
@@ -1717,6 +1728,10 @@ class App(QMainWindow):
         # for column in range(start, start + amt):
         #     cells_params[column].setForeground(color)
         #     cells_params[column].setFont(font)
+
+    @staticmethod
+    def open_dk9_url():
+        webbrowser.open_new(C.DK9_LOGGED_IN_URL)
 
     @staticmethod
     def clear_layout(layout):
