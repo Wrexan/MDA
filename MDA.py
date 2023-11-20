@@ -5,7 +5,7 @@ import bs4
 import traceback
 import os
 import re
-from utility.utils import save_error_file, DevicePart, get_optimised_brands
+from utility.utils import save_error_file, DevicePart, get_optimised_brands, get_part_by_parsing_string
 
 sys.path.append(os.path.join(os.getcwd(), 'PyQt5'))
 # sys.path.append(os.path.join(os.getcwd(), 'PyQt5\\Qt5'))
@@ -656,10 +656,12 @@ class App(QMainWindow):
         #     self.curr_model = self.search_req_ruled
 
         self.curr_model = models_for_buttons[0]
-        self.dk9_search_or_login()
+        # self.dk9_search_or_login()
         self.upd_models_list(clear=True)
         self.upd_model_buttons(models_for_buttons)
         self.update_price_table(text_lower_orig, recursive_model)
+        self.dk9_search_or_login()
+        print(f'{self.compatible_parts=}')
         self.upd_tables_row_heights(price=True)
 
     @staticmethod
@@ -1382,6 +1384,7 @@ class App(QMainWindow):
             if _model in _models_of_manufacturer:
                 # Getting all the brands other than current
                 optimised_brands = get_optimised_brands(self)
+                self.compatible_parts = []
                 # print(f'FOUND')
                 # print(f'{_models_of_manufacturer=}')
                 sheet, row_num, _ = _models_of_manufacturer[_model]  # [Sheet 27:<XIAOMI>, 813] - sheet, row
@@ -1440,8 +1443,12 @@ class App(QMainWindow):
                                                       colored=C.PRICE_COLORED)
                             part = cells_texts[2]
                             if part:
-                                DevicePart().parse_part_string(brands=optimised_brands, compatibility_string=part)
-                                # self.compatible_parts.append(DevicePart)
+                                compatible_part = get_part_by_parsing_string(
+                                    brands=optimised_brands,
+                                    compatibility_string=part
+                                )
+                                if compatible_part:
+                                    self.compatible_parts.append(compatible_part)
 
                             new_row_num += 1
                         if i < sheet.nrows:

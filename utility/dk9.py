@@ -318,13 +318,29 @@ class DK9Cache:
 
     def search_rows_in_cache_table(self, table: list):
         rows = []
-        brand_lowercase = self.app.curr_manufacturer.lower()
-        model_lowercase = self.app.curr_model.lower()
+        brand_lowercase = self.app.curr_manufacturer.casefold()
+        model_lowercase = self.app.curr_model.casefold()
+        print(f'+++{table[0]=}  {self.app.compatible_parts=}  ')
         for row in table:
-            if brand_lowercase == row[2].lower():
-                if model_lowercase in row[3].lower() \
-                        or model_lowercase in row[4].lower():
+            # print(f'{row=}')
+            part = row[1].casefold()
+            brand = row[2].casefold()
+            model = row[3].casefold()
+            note = row[4].casefold()
+            if brand_lowercase == brand:
+                if model_lowercase in model or model_lowercase in note:
                     rows.append(row)
+
+
+            for compatible_part in self.app.compatible_parts:
+                # print(f'+++{compatible_part=}')
+                if compatible_part.brand == brand and compatible_part.model == model:
+                    print(f'+++{part=}')
+                    if compatible_part.part in part:
+                        print(f'+++{row=}')
+                        # and compatible_part.note == note
+                        rows.append(row)
+
         return rows
 
     # def get_cache_update_signals(self, result_to=None):

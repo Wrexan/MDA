@@ -34,47 +34,50 @@ def get_optimised_brands(main) -> tuple:
 
 
 class DevicePart:
-    part_name: str
-    brand_name: str
-    model_name: str
-    note: str
+    def __init__(self, part: str, brand: str, model: str, note: str):
+        self.part: str = part
+        self.brand: str = brand
+        self.model: str = model
+        self.note: str = note
 
     def __str__(self) -> str:
-        return f'{self.part_name} {self.brand_name} {self.model_name} {self.note}'
+        return f'{self.part} {self.brand} {self.model}{f" ({self.note})" if self.note else ""}'
 
-    def parse_part_string(self, brands: tuple, compatibility_string: str) -> None:
-        string = compatibility_string.casefold()
-        # print(f'==={brands=}')
-        # Splitting parts by 'или' will give the list of parts
-        part_list = string.split('или')
-        print(f'==={part_list=}')
-        for part in part_list:
-            part = part.strip()
-            for brand in brands:
-                brand_position = re.search(brand, part)
-                if brand_position:
-                    # If we found BRAND in part string
-                    self.parse_part(part=part, brand=brand, brand_position=brand_position)
-                else:
-                    continue
+    def __repr__(self) -> str:
+        return self.__str__()
 
-    def parse_part(self, part: str, brand: str, brand_position: Match):
-        brand_position_start = brand_position.start()
-        brand_position_end = brand_position.end()
-        model_note = part[brand_position_end:].strip()
-        # print(f'==={model_note=}  {brand_position=}')
-        # Will not make the part without a model
-        if not model_note:
-            return
-        self.part_name = part[:brand_position_start].strip()
-        self.brand_name = brand
 
-        note_found = re.search(r'\(', model_note)
-        if note_found:
-            self.model_name = part[brand_position_end:brand_position_end + note_found.start()].strip()
-            self.note = re.search(r'\((.*?)\)', part[note_found.end():]).group(1) or ''
-        elif model_note:
-            self.model_name = model_note
-            self.note = ''
+def get_part_by_parsing_string(brands: tuple, compatibility_string: str) -> DevicePart or None:
+    string = compatibility_string.casefold()
+    # Splitting parts by 'или' will give the list of parts
+    part_list = string.split('или')
+    print(f'==={part_list=}')
+    for part in part_list:
+        part = part.strip()
+        for brand in brands:
+            brand_position = re.search(brand, part)
+            if brand_position:
+                # If we found BRAND in part string
+                return parse_part(part=part, brand=brand, brand_position=brand_position)
+            else:
+                continue
 
-        print(f'------------------------------------------------------------------{self.__dict__=}')
+
+def parse_part(part: str, brand: str, brand_position: Match):
+    brand_position_start = brand_position.start()
+    brand_position_end = brand_position.end()
+    model_note = part[brand_position_end:].strip()
+    # Will not make the part without a model
+    if not model_note:
+        return
+    part_name = part[:brand_position_start].strip()
+
+    note_found = re.search(r'\(', model_note)
+    if note_found:
+        model = part[brand_position_end:brand_position_end + note_found.start()].strip()
+        note = re.search(r'\((.*?)\)', part[note_found.end():]).group(1) or ''
+    else:
+        model = model_note
+        note = ''
+    return DevicePart(part=part_name, brand=brand, model=model, note=note)
+
