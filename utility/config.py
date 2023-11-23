@@ -168,6 +168,9 @@ class Config:
                               'Goldenrod': (218, 165, 32),
                               'Red': (255, 80, 80),
                               }
+        self.DK9_FG_COLOR_COMPATIBLE = (115, 25, 10)
+        # self.DK9_FG_COLOR_COMPATIBLE = (10, 25, 115)
+        # self.DK9_FG_COLOR_COMPATIBLE = (20, 115, 20)
 
         self.PB_STYLE_SHEET_DEFAULT = ""
         self.PB_STYLE_SHEET_WARN = "QProgressBar::chunk {background-color: orange;}"

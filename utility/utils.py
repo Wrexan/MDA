@@ -47,20 +47,30 @@ class DevicePart:
         return self.__str__()
 
 
-def get_part_by_parsing_string(brands: tuple, compatibility_string: str) -> DevicePart or None:
+def get_parts_by_parsing_string(brands: tuple, compatibility_string: str) -> [DevicePart] or None:
     string = compatibility_string.casefold()
+    parsed_parts = []
     # Splitting parts by 'или' will give the list of parts
-    part_list = string.split('или')
-    print(f'==={part_list=}')
-    for part in part_list:
+    stringed_parts = string.split('или')
+    # print(f'==={stringed_parts=}')
+    for part in stringed_parts:
         part = part.strip()
         for brand in brands:
             brand_position = re.search(brand, part)
             if brand_position:
                 # If we found BRAND in part string
-                return parse_part(part=part, brand=brand, brand_position=brand_position)
+                parsed_part = parse_part(part=part, brand=brand, brand_position=brand_position)
+                if not parsed_part:
+                    continue
+                for approved_part in parsed_parts:
+                    if parsed_part.__dict__ == approved_part.__dict__:
+                        break
+                else:
+                    parsed_parts.append(parsed_part)
             else:
                 continue
+    # print(f'==={parsed_parts=}')
+    return parsed_parts if parsed_parts else None
 
 
 def parse_part(part: str, brand: str, brand_position: Match):
@@ -75,7 +85,7 @@ def parse_part(part: str, brand: str, brand_position: Match):
     note_found = re.search(r'\(', model_note)
     if note_found:
         model = part[brand_position_end:brand_position_end + note_found.start()].strip()
-        note = re.search(r'\((.*?)\)', part[note_found.end():]).group(1) or ''
+        note = ''  # re.search(r'\((.*?)\)', part[note_found.end():]).group(1) or ''
     else:
         model = model_note
         note = ''

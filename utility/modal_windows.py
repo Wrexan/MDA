@@ -199,10 +199,10 @@ class AdvancedSearchWindow(QtWidgets.QDialog):
 
     def apply_search(self):
         print('Applying advanced search')
-        search = {'_type': self.ui.inp_name.text(),
-                  '_manufacturer': self.ui.inp_manuf.text(),
-                  '_model': self.ui.inp_model.text(),
-                  '_description': self.ui.inp_descr.text()}
-        self.Parent.search_dk9(advanced=search)
+        search = {'type': self.ui.inp_name.text(),
+                  'manufacturer': self.ui.inp_manuf.text(),
+                  'model': self.ui.inp_model.text(),
+                  'description': self.ui.inp_descr.text()}
+        self.Parent.dk9_search_start_worker(advanced=search)
 
 

@@ -5,7 +5,7 @@ import bs4
 import traceback
 import os
 import re
-from utility.utils import save_error_file, DevicePart, get_optimised_brands, get_part_by_parsing_string
+from utility.utils import save_error_file, DevicePart, get_optimised_brands, get_parts_by_parsing_string
 
 sys.path.append(os.path.join(os.getcwd(), 'PyQt5'))
 # sys.path.append(os.path.join(os.getcwd(), 'PyQt5\\Qt5'))
@@ -961,13 +961,14 @@ class App(QMainWindow):
     #     self.dk9_cache_timer.stop()
     #     self.dk9_cache_timer.start(C.DK9_CACHING_PERIOD)
 
-    def dk9_fill_tables_from_cache_dict(self):
+    def dk9_fill_tables_from_cache_dict(self, device_part: DevicePart = None):
         print(f'dk9_fill_tables_from_cache_dict. {self.web_status=}')
         # if self.web_status == DK9.STATUS.FILE_USED_OFFLINE:
         self.web_progress_bar(70)
         self.ui.table_parts.setSortingEnabled(False)
         self.ui.table_accesory.setSortingEnabled(False)
-        found_parts, found_accessories = DK9.CACHE.search_rows_in_cache_dict()
+        found_parts, found_accessories = DK9.CACHE.search_rows_in_cache_dict(device_part)
+        # found_parts, found_accessories = DK9.CACHE.search_rows_in_cache_dict(advanced)
         # print(f'search result:\n{found_parts=}\n{found_accessories=}')
         self.dk9_fill_one_table_from_dict(found_parts, self.ui.table_parts, 0,
                                           C.DK9_TABLE_NAMES, C.DK9_BG_P_COLOR1, C.DK9_BG_P_COLOR2, 6,
@@ -1081,9 +1082,11 @@ class App(QMainWindow):
                     description_cell_len = len(description_cell)
                     model_idx_in_desc = description_cell.find(self.curr_model)
                     # print(f'{description_cell=} {description_cell[model_idx_in_desc + curr_model_len]=} ')
-                    if self.curr_model not in model_cell \
-                            or model_cell_len > curr_model_len + 1 \
-                            or 4 > model_cell_len > curr_model_len:
+                    if (
+                            self.curr_model not in model_cell
+                            or model_cell_len > curr_model_len + 1
+                            or 4 > model_cell_len > curr_model_len
+                    ):
                         if model_idx_in_desc == -1:
                             continue
                         if model_idx_in_desc > 0 and description_cell[model_idx_in_desc - 1].isalpha():
@@ -1097,7 +1100,7 @@ class App(QMainWindow):
                     item_counter += int(amount)
 
                 table.insertRow(r)
-                for cell_value in row[1:]:
+                for cell_num, cell_value in enumerate(row[1:9]):
                     cell_bg_color = None
                     # print(f'{dk9_td.string} {self.curr_model=}')
                     if isinstance(cell_value, (list, tuple)):
@@ -1130,6 +1133,12 @@ class App(QMainWindow):
 
                             # dbgc = def_bg_color1 if r % 2 else def_bg_color2
                             table.item(r, c).setBackground(QtGui.QColor(dbgc[0], dbgc[1], dbgc[2]))
+                        if cell_num == 2 and len(row) > 9:
+                            table.item(r, c).setForeground(QtGui.QColor(*C.DK9_FG_COLOR_COMPATIBLE))
+                        # if cell_num == 2 and cell_text.casefold() != self.curr_model.casefold():
+                        #     table.item(r, c).setForeground(QtGui.QColor(*C.DK9_FG_COLOR_COMPATIBLE))
+                        # if cell_num == 1 and cell_text.casefold() != self.curr_manufacturer.casefold():
+                        #     table.item(r, c).setForeground(QtGui.QColor(*C.DK9_FG_COLOR_COMPATIBLE))
                     c += 1
                 r += 1
             if count_column is not None:
@@ -1443,12 +1452,17 @@ class App(QMainWindow):
                                                       colored=C.PRICE_COLORED)
                             part = cells_texts[2]
                             if part:
-                                compatible_part = get_part_by_parsing_string(
+                                parsed_parts = get_parts_by_parsing_string(
                                     brands=optimised_brands,
                                     compatibility_string=part
                                 )
-                                if compatible_part:
-                                    self.compatible_parts.append(compatible_part)
+                                if parsed_parts:
+                                    for parsed_part in parsed_parts:
+                                        for approved_part in self.compatible_parts:
+                                            if parsed_part.__dict__ == approved_part.__dict__:
+                                                break
+                                        else:
+                                            self.compatible_parts.append(parsed_part)
 
                             new_row_num += 1
                         if i < sheet.nrows:

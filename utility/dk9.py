@@ -6,7 +6,7 @@ import traceback
 from bs4 import BeautifulSoup
 
 from utility.config import DK9_CACHE_FILE_PATH
-from utility.utils import save_error_file, is_error_ignored
+from utility.utils import save_error_file, is_error_ignored, DevicePart
 
 
 class DK9Parser:
@@ -105,7 +105,7 @@ class DK9Parser:
             save_error_file(f'{err.__str__()}\n{traceback.format_exc()}')
             error.emit((f'Error while trying to login', f'{traceback.format_exc()}'))
 
-    def adv_search(self, type_: str, firm_: str, model_: str, description_: str, progress, status, error)\
+    def adv_search(self, type_: str, firm_: str, model_: str, description_: str, progress, status, error) \
             -> tuple or None:
         if not self.LOGIN_SUCCESS:
             return
@@ -305,22 +305,22 @@ class DK9Cache:
                         f'{DK9_CACHE_FILE_PATH}',
                         f'{traceback.format_exc()}'))
 
-    def search_rows_in_cache_dict(self):
+    def search_rows_in_cache_dict(self, device_fields: DevicePart = None):
+        # if device_part:
+        #     fields_to_search = device_part
+        # else:
         print(f'Searching in cache: {self.app.curr_manufacturer} {self.app.curr_model}')
         if self.app.curr_model and self.app.curr_manufacturer:
-            return \
-                self.search_rows_in_cache_table(self.cache['parts']), \
-                self.search_rows_in_cache_table(self.cache['accessories'])
+            return (self.search_rows_in_cache_table(self.cache['parts'], device_fields),
+                    self.search_rows_in_cache_table(self.cache['accessories'], device_fields))
         else:
-            return \
-                self.cache['parts'], \
-                self.cache['accessories']
+            return self.cache['parts'], self.cache['accessories']
 
-    def search_rows_in_cache_table(self, table: list):
+    def search_rows_in_cache_table(self, table: list, part: DevicePart = None) -> list:
         rows = []
         brand_lowercase = self.app.curr_manufacturer.casefold()
         model_lowercase = self.app.curr_model.casefold()
-        print(f'+++{table[0]=}  {self.app.compatible_parts=}  ')
+        # print(f'+++{table[0]=}  {self.app.compatible_parts=}  ')
         for row in table:
             # print(f'{row=}')
             part = row[1].casefold()
@@ -331,14 +331,14 @@ class DK9Cache:
                 if model_lowercase in model or model_lowercase in note:
                     rows.append(row)
 
-
             for compatible_part in self.app.compatible_parts:
                 # print(f'+++{compatible_part=}')
                 if compatible_part.brand == brand and compatible_part.model == model:
-                    print(f'+++{part=}')
+                    # print(f'+++{part=}')
                     if compatible_part.part in part:
-                        print(f'+++{row=}')
+                        # print(f'+++{row=}')
                         # and compatible_part.note == note
+                        row.append(-666)
                         rows.append(row)
 
         return rows
