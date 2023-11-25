@@ -33,8 +33,8 @@ def get_optimised_brands(main) -> tuple:
     return current_brand, *other_brands
 
 
-class DevicePart:
-    def __init__(self, part: str, brand: str, model: str, note: str):
+class PartFields:
+    def __init__(self, part: str = None, brand: str = None, model: str = None, note: str = None):
         self.part: str = part
         self.brand: str = brand
         self.model: str = model
@@ -47,7 +47,7 @@ class DevicePart:
         return self.__str__()
 
 
-def get_parts_by_parsing_string(brands: tuple, compatibility_string: str) -> [DevicePart] or None:
+def get_parts_by_parsing_string(brands: tuple, compatibility_string: str) -> [PartFields] or None:
     string = compatibility_string.casefold()
     parsed_parts = []
     # Splitting parts by 'или' will give the list of parts
@@ -89,5 +89,5 @@ def parse_part(part: str, brand: str, brand_position: Match):
     else:
         model = model_note
         note = ''
-    return DevicePart(part=part_name, brand=brand, model=model, note=note)
+    return PartFields(part=part_name, brand=brand, model=model, note=note)
 

@@ -5,7 +5,7 @@ import bs4
 import traceback
 import os
 import re
-from utility.utils import save_error_file, DevicePart, get_optimised_brands, get_parts_by_parsing_string
+from utility.utils import save_error_file, PartFields, get_optimised_brands, get_parts_by_parsing_string
 
 sys.path.append(os.path.join(os.getcwd(), 'PyQt5'))
 # sys.path.append(os.path.join(os.getcwd(), 'PyQt5\\Qt5'))
@@ -842,7 +842,8 @@ class App(QMainWindow):
 
         if C.DK9_CACHING:
             if DK9.CACHE.cache:
-                self.dk9_fill_tables_from_cache_dict()
+                search_fields = PartFields(brand=self.curr_manufacturer.casefold(), model=self.curr_model.casefold())
+                self.dk9_fill_tables_from_cache_dict(search_fields=search_fields)
                 # if C.SEARCH_BY_PRICE_MODEL:
                 self.add_to_statistic(branch=C.BRANCH, brand=manufacturer, model=self.curr_model)
             else:
@@ -927,16 +928,7 @@ class App(QMainWindow):
                                           C.DK9_TABLE_NAMES, C.DK9_BG_A_COLOR1, C.DK9_BG_A_COLOR2, 5,
                                           align={4: Qt.AlignRight | Qt.AlignVCenter})
             self.web_progress_bar(85)
-            self.ui.table_parts.sortByColumn(3, Qt.SortOrder(0))
-            self.ui.table_parts.sortByColumn(2, Qt.SortOrder(0))
-            self.ui.table_parts.sortByColumn(0, Qt.SortOrder(0))
-            self.ui.table_parts.setSortingEnabled(True)
-            self.ui.table_accesory.sortByColumn(3, Qt.SortOrder(0))
-            self.ui.table_accesory.sortByColumn(2, Qt.SortOrder(0))
-            self.ui.table_accesory.sortByColumn(0, Qt.SortOrder(0))
-            self.ui.table_accesory.setSortingEnabled(True)
-
-            self.upd_tables_row_heights(dk9=True)
+            self.sort_tables_by_columns_opd_row_height()
         else:
             self.dk9_login_start_worker()
         self.web_progress_bar(0) if use_old_soup else self.web_progress_bar(100)
@@ -961,13 +953,14 @@ class App(QMainWindow):
     #     self.dk9_cache_timer.stop()
     #     self.dk9_cache_timer.start(C.DK9_CACHING_PERIOD)
 
-    def dk9_fill_tables_from_cache_dict(self, device_part: DevicePart = None):
+    def dk9_fill_tables_from_cache_dict(self, search_fields: PartFields):
         print(f'dk9_fill_tables_from_cache_dict. {self.web_status=}')
         # if self.web_status == DK9.STATUS.FILE_USED_OFFLINE:
         self.web_progress_bar(70)
         self.ui.table_parts.setSortingEnabled(False)
         self.ui.table_accesory.setSortingEnabled(False)
-        found_parts, found_accessories = DK9.CACHE.search_rows_in_cache_dict(device_part)
+
+        found_parts, found_accessories = DK9.CACHE.search_rows_in_cache_dict(search_fields, self.compatible_parts)
         # found_parts, found_accessories = DK9.CACHE.search_rows_in_cache_dict(advanced)
         # print(f'search result:\n{found_parts=}\n{found_accessories=}')
         self.dk9_fill_one_table_from_dict(found_parts, self.ui.table_parts, 0,
@@ -978,6 +971,11 @@ class App(QMainWindow):
                                           align={4: Qt.AlignRight | Qt.AlignVCenter})
 
         self.web_progress_bar(85)
+        self.sort_tables_by_columns_opd_row_height()
+        self.web_progress_bar(100)
+        self.dk9_finish_progress_bar_status()
+
+    def sort_tables_by_columns_opd_row_height(self):
         self.ui.table_parts.sortByColumn(3, Qt.SortOrder(0))
         self.ui.table_parts.sortByColumn(2, Qt.SortOrder(0))
         self.ui.table_parts.sortByColumn(0, Qt.SortOrder(0))
@@ -988,10 +986,6 @@ class App(QMainWindow):
         self.ui.table_accesory.setSortingEnabled(True)
 
         self.upd_tables_row_heights(dk9=True)
-        # else:
-        #     self.dk9_login_start_worker()
-        self.web_progress_bar(100)
-        self.dk9_finish_progress_bar_status()
 
     def dk9_get_cache_update_signals(self, result_to=None, next_method=None):
         signals = WorkerSignals()

@@ -6,7 +6,7 @@ import traceback
 from bs4 import BeautifulSoup
 
 from utility.config import DK9_CACHE_FILE_PATH
-from utility.utils import save_error_file, is_error_ignored, DevicePart
+from utility.utils import save_error_file, is_error_ignored, PartFields
 
 
 class DK9Parser:
@@ -305,21 +305,28 @@ class DK9Cache:
                         f'{DK9_CACHE_FILE_PATH}',
                         f'{traceback.format_exc()}'))
 
-    def search_rows_in_cache_dict(self, device_fields: DevicePart = None):
+    def search_rows_in_cache_dict(
+            self,
+            device_fields: PartFields,
+            compatible_parts: [PartFields],
+    ):
         # if device_part:
         #     fields_to_search = device_part
         # else:
         print(f'Searching in cache: {self.app.curr_manufacturer} {self.app.curr_model}')
         if self.app.curr_model and self.app.curr_manufacturer:
-            return (self.search_rows_in_cache_table(self.cache['parts'], device_fields),
-                    self.search_rows_in_cache_table(self.cache['accessories'], device_fields))
+            return (self.search_rows_in_cache_table(self.cache['parts'], device_fields, compatible_parts),
+                    self.search_rows_in_cache_table(self.cache['accessories'], device_fields, compatible_parts))
         else:
             return self.cache['parts'], self.cache['accessories']
 
-    def search_rows_in_cache_table(self, table: list, part: DevicePart = None) -> list:
+    @staticmethod
+    def search_rows_in_cache_table(
+            table: list,
+            device_part: PartFields,
+            compatible_parts: [PartFields],
+    ) -> list:
         rows = []
-        brand_lowercase = self.app.curr_manufacturer.casefold()
-        model_lowercase = self.app.curr_model.casefold()
         # print(f'+++{table[0]=}  {self.app.compatible_parts=}  ')
         for row in table:
             # print(f'{row=}')
@@ -327,14 +334,13 @@ class DK9Cache:
             brand = row[2].casefold()
             model = row[3].casefold()
             note = row[4].casefold()
-            if brand_lowercase == brand:
-                if model_lowercase in model or model_lowercase in note:
+            if device_part.brand == brand:
+                if device_part.model in model or device_part.model in note:
                     rows.append(row)
 
-            for compatible_part in self.app.compatible_parts:
+            for compatible_part in compatible_parts:
                 # print(f'+++{compatible_part=}')
                 if compatible_part.brand == brand and compatible_part.model == model:
-                    # print(f'+++{part=}')
                     if compatible_part.part in part:
                         # print(f'+++{row=}')
                         # and compatible_part.note == note
