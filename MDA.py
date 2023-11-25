@@ -834,7 +834,7 @@ class App(QMainWindow):
         self.request_worker.add_task(DK9.login, signals, 2)
         self.thread.start(self.request_worker)
 
-    def dk9_search_start_worker(self, advanced: dict = None):
+    def dk9_search_start_worker(self, advanced_search_fields: PartFields = None):
 
         print(f'STARTING SEARCH... {self.web_status=}  {self.price_status=} {DK9.LOGIN_SUCCESS=}')
         # -------------------ASUS brand name filter
@@ -842,10 +842,14 @@ class App(QMainWindow):
 
         if C.DK9_CACHING:
             if DK9.CACHE.cache:
-                search_fields = PartFields(brand=self.curr_manufacturer.casefold(), model=self.curr_model.casefold())
-                self.dk9_fill_tables_from_cache_dict(search_fields=search_fields)
-                # if C.SEARCH_BY_PRICE_MODEL:
-                self.add_to_statistic(branch=C.BRANCH, brand=manufacturer, model=self.curr_model)
+                if advanced_search_fields:
+                    self.dk9_fill_tables_from_cache_dict(search_fields=advanced_search_fields, advanced=True)
+                else:
+                    search_fields = PartFields(brand=self.curr_manufacturer.casefold(),
+                                               model=self.curr_model.casefold())
+                    self.dk9_fill_tables_from_cache_dict(search_fields=search_fields)
+                    # if C.SEARCH_BY_PRICE_MODEL:
+                    self.add_to_statistic(branch=C.BRANCH, brand=manufacturer, model=self.curr_model)
             else:
                 if os.path.exists(DK9_CACHE_FILE_PATH):
                     self.dk9_read_cache_start_worker()
@@ -871,16 +875,12 @@ class App(QMainWindow):
         C.FILTER_SEARCH_RESULT = False
         self.ui.chb_show_exact.setCheckState(2 if C.FILTER_SEARCH_RESULT else 0)
         self.request_worker = Worker()
-        # TODO==============================================================================================================
-        if advanced:
+        if advanced_search_fields:
             signals = self.dk9_get_search_signals()
             self.request_worker.add_task(DK9.adv_search,
                                          signals,
                                          2,
-                                         advanced['_type'],
-                                         advanced['_manufacturer'],
-                                         advanced['_model'],
-                                         advanced['_description'])
+                                         *advanced_search_fields.fields)
         else:
 
             if self.search_again:
@@ -953,14 +953,16 @@ class App(QMainWindow):
     #     self.dk9_cache_timer.stop()
     #     self.dk9_cache_timer.start(C.DK9_CACHING_PERIOD)
 
-    def dk9_fill_tables_from_cache_dict(self, search_fields: PartFields):
-        print(f'dk9_fill_tables_from_cache_dict. {self.web_status=}')
+    def dk9_fill_tables_from_cache_dict(self, search_fields: PartFields, advanced: bool = False):
+        print(f'dk9_fill_tables_from_cache_dict. {self.web_status=} {search_fields=}')
         # if self.web_status == DK9.STATUS.FILE_USED_OFFLINE:
         self.web_progress_bar(70)
         self.ui.table_parts.setSortingEnabled(False)
         self.ui.table_accesory.setSortingEnabled(False)
 
-        found_parts, found_accessories = DK9.CACHE.search_rows_in_cache_dict(search_fields, self.compatible_parts)
+        found_parts, found_accessories = (
+            DK9.CACHE.search_rows_in_cache_dict(search_fields, self.compatible_parts, advanced=advanced)
+        )
         # found_parts, found_accessories = DK9.CACHE.search_rows_in_cache_dict(advanced)
         # print(f'search result:\n{found_parts=}\n{found_accessories=}')
         self.dk9_fill_one_table_from_dict(found_parts, self.ui.table_parts, 0,
@@ -1009,13 +1011,6 @@ class App(QMainWindow):
         self.dk9_cache_handler_worker.add_task(DK9.CACHE.cache_search_parse_save_handler, signals, 2)
         print('Starting cache handler thread')
         self.thread.start(self.dk9_cache_handler_worker, priority=QtCore.QThread.Priority.HighestPriority)
-
-    # def dk9_update_cache_start_worker(self):
-    #     self.request_worker = Worker()
-    #     signals = self.dk9_get_cache_update_signals(result_to=self.dk9_parse_and_start_saving)
-    #     self.request_worker.add_task(DK9.adv_search, signals, 2, '', '', '', '')  # Empty request to get all
-    #     print('Starting thread to search for dk9 cache')
-    #     self.thread.start(self.request_worker, priority=QtCore.QThread.Priority.HighestPriority)
 
     def dk9_read_cache_start_worker(self):
         self.file_io_worker = Worker()

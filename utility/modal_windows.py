@@ -1,10 +1,10 @@
 from PyQt5 import QtCore, QtWidgets
 
-
 from UI.window_first_start import Ui_start_window
 from UI.window_settings import Ui_settings_window
 from UI.window_help import Ui_Dialog
 from UI.adv_search import Ui_Dialog as AdvSearchDialog
+from utility.utils import PartFields, case_folded_or_none
 
 
 class HelpWindow(QtWidgets.QDialog):
@@ -199,10 +199,14 @@ class AdvancedSearchWindow(QtWidgets.QDialog):
 
     def apply_search(self):
         print('Applying advanced search')
-        search = {'type': self.ui.inp_name.text(),
-                  'manufacturer': self.ui.inp_manuf.text(),
-                  'model': self.ui.inp_model.text(),
-                  'description': self.ui.inp_descr.text()}
-        self.Parent.dk9_search_start_worker(advanced=search)
-
-
+        advanced_search_fields = PartFields(
+            part=case_folded_or_none(self.ui.inp_name.text()),
+            brand=case_folded_or_none(self.ui.inp_manuf.text()),
+            model=case_folded_or_none(self.ui.inp_model.text()),
+            note=case_folded_or_none(self.ui.inp_descr.text()),
+        )
+        # {'type': self.ui.inp_name.text(),
+        # 'manufacturer': self.ui.inp_manuf.text(),
+        # 'model': self.ui.inp_model.text(),
+        # 'description': self.ui.inp_descr.text()}
+        self.Parent.dk9_search_start_worker(advanced_search_fields=advanced_search_fields)

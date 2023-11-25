@@ -309,21 +309,22 @@ class DK9Cache:
             self,
             device_fields: PartFields,
             compatible_parts: [PartFields],
+            advanced: bool = False,
     ):
-        # if device_part:
-        #     fields_to_search = device_part
-        # else:
-        print(f'Searching in cache: {self.app.curr_manufacturer} {self.app.curr_model}')
-        if self.app.curr_model and self.app.curr_manufacturer:
-            return (self.search_rows_in_cache_table(self.cache['parts'], device_fields, compatible_parts),
-                    self.search_rows_in_cache_table(self.cache['accessories'], device_fields, compatible_parts))
-        else:
-            return self.cache['parts'], self.cache['accessories']
+        print(f'Searching in cache: {device_fields}')
+        if any(device_fields.fields):
+            if advanced:
+                return (self.advanced_search_rows_in_cache_table(self.cache['parts'], device_fields),
+                        self.advanced_search_rows_in_cache_table(self.cache['accessories'], device_fields))
+            elif device_fields.model and device_fields.brand:
+                return (self.search_rows_in_cache_table(self.cache['parts'], device_fields, compatible_parts),
+                        self.search_rows_in_cache_table(self.cache['accessories'], device_fields, compatible_parts))
+        return self.cache['parts'], self.cache['accessories']
 
     @staticmethod
     def search_rows_in_cache_table(
             table: list,
-            device_part: PartFields,
+            search_fields: PartFields,
             compatible_parts: [PartFields],
     ) -> list:
         rows = []
@@ -334,9 +335,10 @@ class DK9Cache:
             brand = row[2].casefold()
             model = row[3].casefold()
             note = row[4].casefold()
-            if device_part.brand == brand:
-                if device_part.model in model or device_part.model in note:
+            if search_fields.brand == brand:
+                if search_fields.model in model or search_fields.model in note:
                     rows.append(row)
+                    continue
 
             for compatible_part in compatible_parts:
                 # print(f'+++{compatible_part=}')
@@ -346,6 +348,27 @@ class DK9Cache:
                         # and compatible_part.note == note
                         row.append(-666)
                         rows.append(row)
+
+        return rows
+
+    @staticmethod
+    def advanced_search_rows_in_cache_table(
+            table: list,
+            search_fields: PartFields,
+    ) -> list:
+        rows = []
+        # print(f'+++{table[0]=}  {self.app.compatible_parts=}  ')
+        for row in table:
+            # print(f'{row=}')
+            part = row[1].casefold()
+            brand = row[2].casefold()
+            model = row[3].casefold()
+            note = row[4].casefold()
+            if not ((search_fields.part and search_fields.part not in part)
+                    or (search_fields.brand and search_fields.brand not in brand)
+                    or (search_fields.model and search_fields.model not in model)
+                    or (search_fields.note and search_fields.note not in note)):
+                rows.append(row)
 
         return rows
 

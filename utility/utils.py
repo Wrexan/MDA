@@ -40,11 +40,31 @@ class PartFields:
         self.model: str = model
         self.note: str = note
 
+    @property
+    def fields(self):
+        return self.part, self.brand, self.model, self.note
+
     def __str__(self) -> str:
-        return f'{self.part} {self.brand} {self.model}{f" ({self.note})" if self.note else ""}'
+        return f'part={self.part} brand={self.brand} model={self.model} note={self.note}'
 
     def __repr__(self) -> str:
         return self.__str__()
+
+
+def case_folded_or_none(string: str):
+    if isinstance(string, str) and string != '':
+        return string.casefold()
+    else:
+        return None
+
+
+# def case_fold_dict_values_or_none(dictionary: dict):
+#     for key, value in dictionary:
+#         if isinstance(value, str):
+#             dictionary[key] = value.casefold()
+#         else:
+#             dictionary[key] = None
+#     return dictionary
 
 
 def get_parts_by_parsing_string(brands: tuple, compatibility_string: str) -> [PartFields] or None:
