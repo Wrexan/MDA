@@ -91,6 +91,9 @@ class App(QMainWindow):
         self.model_list_widget.verticalHeader().hide()
         self.model_list_widget.horizontalHeader().hide()
         self.ui.update_button.hide()
+
+        self.search_history: [PartFields] = []
+        self.search_history_position: int = 0
         # widget_width = self.search_input.width()
         # self.model_list_widget.setMaximumWidth(widget_width)
         # column_0_width = int(widget_width * 0.9)
@@ -192,6 +195,9 @@ class App(QMainWindow):
 
         self.resized.connect(self.init_ui_dynamics)
         self.search_input.textChanged[str].connect(self.prepare_and_search)
+        self.ui.bt_hist_prev.clicked.connect(self.previous_search_history_request)
+        self.ui.bt_hist_next.clicked.connect(self.next_search_history_request)
+
         self.ui.bt_upd_web.clicked.connect(self.dk9_relog_or_update_cache_by_button)
         self.ui.bt_upd_price.clicked.connect(self.read_price_start_worker)
         self.ui.bt_dk9_url.clicked.connect(self.open_dk9_url)
@@ -512,7 +518,13 @@ class App(QMainWindow):
     def upd_manufacturer_wheel_connect(self):
         self.upd_manufacturer_wheel(increment=int(self.sender().objectName()[-1]) - 4)
 
-    def upd_manufacturer_wheel(self, increment: int = 0, clear: bool = False, hide_list: bool = False):
+    def upd_manufacturer_wheel(
+            self,
+            increment: int = 0,
+            clear: bool = False,
+            hide_list: bool = False,
+            by_model_brand: bool = False,
+    ):
         # print(f'upd_manufacturer_wheel({increment=}, {clear=}, {hide_list=}, ')
         for label in self.manufacturer_wheel:
             label.setText('')
@@ -531,7 +543,10 @@ class App(QMainWindow):
         if self.curr_manufacturer_idx < 0:
             self.curr_manufacturer_idx = 0
 
-        # print(f'{self.curr_manufacturer_idx=} {_len=}')
+        if by_model_brand:
+            self.manufacturer_wheel[0].setText(self.curr_manufacturer)
+            self.upd_models_list(hide_list=hide_list)
+            return
         for m, manufacturer in enumerate(self.models):
             manufs_aside = int((len(self.manufacturer_wheel) - 1) / 2)
             if self.curr_manufacturer_idx + manufs_aside >= m >= self.curr_manufacturer_idx - manufs_aside:
@@ -660,6 +675,8 @@ class App(QMainWindow):
         self.upd_models_list(clear=True)
         self.upd_model_buttons(models_for_buttons)
         self.update_price_table(text_lower_orig, recursive_model)
+
+        self.add_search_history_request()
         self.dk9_search_or_login()
         print(f'{self.compatible_parts=}')
         self.upd_tables_row_heights(price=True)
@@ -679,16 +696,43 @@ class App(QMainWindow):
                 break
         return result_string
 
-    def read_price_start_worker(self):
-        self.file_io_worker = Worker()
-        signals = WorkerSignals()
-        signals.finished.connect(self.price_read_finished)
-        signals.progress.connect(self.price_read_finished)
-        signals.status.connect(self.update_price_status)
-        signals.error.connect(self.error)
-        self.file_io_worker.add_task(self.Price.load_price, signals, 0)
-        print('Starting thread to read price')
-        self.thread.start(self.file_io_worker, priority=QtCore.QThread.Priority.HighestPriority)
+    # ========================================== Search History =================================================
+    def add_search_history_request(self):
+        self.search_history.append(PartFields(brand=self.curr_manufacturer, model=self.curr_model))
+        if len(self.search_history) > C.SEARCH_HISTORY_LEN:
+            self.search_history = self.search_history[-C.SEARCH_HISTORY_LEN:]
+        current_len = len(self.search_history)
+        self.search_history_position = current_len - 1 if current_len > 0 else 0
+        self.upd_search_history()
+        print(f'================={self.search_history_position=}  {current_len=}  {self.search_history=}')
+
+    def upd_search_history(self):
+        history_buttons_enabled = [True, True]
+        if self.search_history_position >= len(self.search_history) - 1:
+            self.search_history_position = len(self.search_history) - 1
+            history_buttons_enabled[1] = False
+        elif self.search_history_position <= 0:
+            self.search_history_position = 0
+            history_buttons_enabled[0] = False
+        self.ui.bt_hist_prev.setEnabled(history_buttons_enabled[0])
+        self.ui.bt_hist_next.setEnabled(history_buttons_enabled[1])
+
+    def previous_search_history_request(self):
+        self.search_history_position -= 1
+        self.apply_search_history_request()
+
+    def next_search_history_request(self):
+        self.search_history_position += 1
+        self.apply_search_history_request()
+
+    def apply_search_history_request(self):
+        self.upd_search_history()
+        search_fields = self.search_history[self.search_history_position]
+        if search_fields:
+            self.curr_manufacturer = search_fields.brand
+            self.curr_model = search_fields.model
+            self.search_input.setText(self.curr_model)
+            self.upd_manufacturer_wheel(by_model_brand=True)
 
     # =============================================== MDAS ======================================================
 
@@ -1310,6 +1354,7 @@ class App(QMainWindow):
     # def get_color_from_style(style):
     #     return C.DK9_BG_COLORS[style[style.find(':') + 1: style.find(';')]]
 
+    # ============================================== PRICE =====================================================
     def update_price_table(self, model, recursive_model: str = ''):  # 'xiaomi mi a2 m1804d2sg'
         try:
             # print(f'{model=}\n{self.models=}\n{self.curr_model_idx=}\n'
@@ -1396,8 +1441,8 @@ class App(QMainWindow):
 
                 # Add MODEL NAME row to the first table row
                 if True:  # if model row must be shown in price table
-                    cells_texts = [row[PriceColumns.model],
-                                   row[PriceColumns.compatible_model]]
+                    cells_texts = [str(row[PriceColumns.model]),
+                                   str(row[PriceColumns.compatible_model])]
                     # print(f'{row=} {columns=} {cells_texts=} ')
                     self._add_price_table_row(table=self.ui.table_price, sheet=sheet,
                                               columns=[
@@ -1431,7 +1476,7 @@ class App(QMainWindow):
                         # if cell is out of row, text will be empty
                         cells_texts = []
                         for column_num in columns_for_price_table:
-                            cells_texts.append(row[column_num]) if column_num < row_len else cells_texts.append(None)
+                            cells_texts.append(str(row[column_num])) if column_num < row_len else cells_texts.append('')
                         # print(f"{cells_texts=}")
                         if cells_texts[0]:  # or len(cells_texts[1]) > 3:
                             self._add_price_table_row(table=self.ui.table_price, sheet=sheet,
@@ -1522,6 +1567,17 @@ class App(QMainWindow):
                     self.dk9_login_or_update_cache_on_start()
             else:
                 self.update_price_progress_bar(progress=100, style_sheet=C.PB_STYLE_SHEET_ERROR)
+
+    def read_price_start_worker(self):
+        self.file_io_worker = Worker()
+        signals = WorkerSignals()
+        signals.finished.connect(self.price_read_finished)
+        signals.progress.connect(self.price_read_finished)
+        signals.status.connect(self.update_price_status)
+        signals.error.connect(self.error)
+        self.file_io_worker.add_task(self.Price.load_price, signals, 0)
+        print('Starting thread to read price')
+        self.thread.start(self.file_io_worker, priority=QtCore.QThread.Priority.HighestPriority)
 
     def update_web_progress_bar(self, progress: int = 0, style_sheet: str = None):
         self.ui.web_progress_bar.setValue(progress)

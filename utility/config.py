@@ -95,6 +95,8 @@ class Config:
         self.WORD_WRAP_DK9 = False
         self.WORD_WRAP_PRICE = True
 
+        self.SEARCH_HISTORY_LEN = 10
+
         self.INCOME_PARTS_MARGIN_PERC = 4
 
         # ====================PRICE====================

@@ -331,10 +331,10 @@ class DK9Cache:
         # print(f'+++{table[0]=}  {self.app.compatible_parts=}  ')
         for row in table:
             # print(f'{row=}')
-            part = row[1].casefold()
-            brand = row[2].casefold()
-            model = row[3].casefold()
-            note = row[4].casefold()
+            part: str = row[1].casefold()
+            brand: str = row[2].casefold()
+            model: str = row[3].casefold()
+            note: str = row[4].casefold()
             if search_fields.brand == brand:
                 if search_fields.model in model or search_fields.model in note:
                     rows.append(row)
@@ -343,7 +343,7 @@ class DK9Cache:
             for compatible_part in compatible_parts:
                 # print(f'+++{compatible_part=}')
                 if compatible_part.brand == brand and compatible_part.model == model:
-                    if compatible_part.part in part:
+                    if compatible_part.part == part or compatible_part.part == part.replace('ориг', '').strip():
                         # print(f'+++{row=}')
                         # and compatible_part.note == note
                         row.append(-666)
