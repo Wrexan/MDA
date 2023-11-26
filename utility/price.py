@@ -136,9 +136,9 @@ class Price:
                         if found_pos == -1:
                             break
                         # print(f'{a=} {b=} {found_pos=} {name_cell=} {manufacturer=}')
-                        if exact \
-                                and (found_pos > 1
-                                     and (manufacturer in name_cell and found_pos > len(manufacturer) + 2)):
+                        if exact and (found_pos > 1 and (
+                                manufacturer in name_cell and found_pos > len(manufacturer) + 2
+                        )):
                             break
                         # print(f'GOOD {name_cell=}')
                         if manufacturer not in models:

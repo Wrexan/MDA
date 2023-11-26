@@ -94,6 +94,7 @@ class App(QMainWindow):
 
         self.search_history: [PartFields] = []
         self.search_history_position: int = 0
+        self.prevent_search_once: bool = False
         # widget_width = self.search_input.width()
         # self.model_list_widget.setMaximumWidth(widget_width)
         # column_0_width = int(widget_width * 0.9)
@@ -396,7 +397,7 @@ class App(QMainWindow):
     #     self.upd_price_tables_grid()
 
     def upd_price_tables_grid(self):
-        table_width = (self.width() - 6)//2
+        table_width = (self.width() - 6) // 2
         # print(f'{----------------------------------table_width=}')
         # if C.SHOW_COMPATIBILITY:
         #     self.ui.table_price.showColumn(2)
@@ -460,6 +461,11 @@ class App(QMainWindow):
 
     def prepare_and_search(self, search_req: str, force_search: bool = False):
         # print(f'{search_req=} {self.search_input.isModified()=}')
+        if self.prevent_search_once:
+            self.prevent_search_once = False
+            if self.price_status >= len(C.PRICE_STATUSES):
+                self.models = self.Price.search_price_models(search_req, C.MODEL_LIST_MAX_SIZE)
+            return
         if search_req == '':
             self.models = {}
             self.curr_model = ''
@@ -534,6 +540,11 @@ class App(QMainWindow):
             self.upd_models_list(clear=True)
             return
 
+        if by_model_brand:
+            self.manufacturer_wheel[3].setText(self.curr_manufacturer)
+            self.upd_models_list(hide_list=hide_list)
+            return
+
         _len = len(self.models) - 1
         if self.model_list_widget.isHidden() or increment == 0:
             self.curr_manufacturer_idx = int(_len / 2)
@@ -543,10 +554,6 @@ class App(QMainWindow):
         if self.curr_manufacturer_idx < 0:
             self.curr_manufacturer_idx = 0
 
-        if by_model_brand:
-            self.manufacturer_wheel[0].setText(self.curr_manufacturer)
-            self.upd_models_list(hide_list=hide_list)
-            return
         for m, manufacturer in enumerate(self.models):
             manufs_aside = int((len(self.manufacturer_wheel) - 1) / 2)
             if self.curr_manufacturer_idx + manufs_aside >= m >= self.curr_manufacturer_idx - manufs_aside:
@@ -562,9 +569,17 @@ class App(QMainWindow):
             self.model_list_widget.hide()
             return
         # print(f'Upd_models_list: {self.models[self.curr_manufacturer].items()=}')
-        curr_models = [
-            f'{model}{self.recursor}{params[2]}' if params[2] else model
-            for model, params in self.models[self.curr_manufacturer].items()]
+        # curr_models = [
+        #     f'{model}{self.recursor}{params[2]}' if params[2] else model
+        #     for model, params in self.models[self.curr_manufacturer].items()]
+        curr_models = []
+        for brand, brand_models in self.models.items():
+            if brand.casefold() == self.curr_manufacturer.casefold():
+                curr_models = [
+                    f'{model}{self.recursor}{params[2]}' if params[2] else model
+                    for model, params in brand_models.items()
+                ]
+                break
         # print(f'{curr_models=} {hide_list=} {self.models[self.curr_manufacturer].items()=}')
         size = C.MODEL_LIST_MAX_SIZE if len(curr_models) > C.MODEL_LIST_MAX_SIZE else len(curr_models)
         self.model_list_widget.show()
@@ -678,7 +693,7 @@ class App(QMainWindow):
 
         self.add_search_history_request()
         self.dk9_search_or_login()
-        print(f'{self.compatible_parts=}')
+        # print(f'{self.compatible_parts=}')
         self.upd_tables_row_heights(price=True)
 
     @staticmethod
@@ -698,13 +713,16 @@ class App(QMainWindow):
 
     # ========================================== Search History =================================================
     def add_search_history_request(self):
-        self.search_history.append(PartFields(brand=self.curr_manufacturer, model=self.curr_model))
+        self.search_history.append(PartFields(
+            brand=self.curr_manufacturer.casefold(),
+            model=self.curr_model.casefold()
+        ))
         if len(self.search_history) > C.SEARCH_HISTORY_LEN:
             self.search_history = self.search_history[-C.SEARCH_HISTORY_LEN:]
         current_len = len(self.search_history)
         self.search_history_position = current_len - 1 if current_len > 0 else 0
         self.upd_search_history()
-        print(f'================={self.search_history_position=}  {current_len=}  {self.search_history=}')
+        # print(f'================={self.search_history_position=}  {current_len=}  {self.search_history=}')
 
     def upd_search_history(self):
         history_buttons_enabled = [True, True]
@@ -731,6 +749,7 @@ class App(QMainWindow):
         if search_fields:
             self.curr_manufacturer = search_fields.brand
             self.curr_model = search_fields.model
+            self.prevent_search_once = True
             self.search_input.setText(self.curr_model)
             self.upd_manufacturer_wheel(by_model_brand=True)
 
@@ -951,7 +970,7 @@ class App(QMainWindow):
         self.thread.start(self.request_worker)
 
     def dk9_fill_tables_from_soup(self, table_soups: type(bs4.BeautifulSoup) = None, use_old_soup: bool = False):
-        print(f'dk9_fill_tables_from_soup {self.web_status=} {use_old_soup=}')
+        # print(f'dk9_fill_tables_from_soup {self.web_status=} {use_old_soup=}')
         if not use_old_soup:
             if DK9.check_soups_is_broken(table_soups):
                 return
@@ -981,7 +1000,7 @@ class App(QMainWindow):
 
     def dk9_upd_cache_restart_timer(self, period=C.DK9_CACHING_PERIOD * 60_000,
                                     allow_update=True):  # * 60_000============================
-        print(f'dk9_upd_cache_restart_timer: {period // 60_000}minutes')
+        # print(f'dk9_upd_cache_restart_timer: {period // 60_000}minutes')
         self.dk9_cache_timer.stop()
         if allow_update:
             self.dk9_login_than_cash_update_workers_sequence()
@@ -990,7 +1009,7 @@ class App(QMainWindow):
         self.dk9_cache_timer.start(period)  # * 60_000
 
     def dk9_upd_cache_stop_timer(self):
-        print(f'dk9_upd_cache_stop_timer')
+        # print(f'dk9_upd_cache_stop_timer')
         self.dk9_cache_timer.stop()
 
     # def dk9_restart_caching_schedule(self):
@@ -998,7 +1017,7 @@ class App(QMainWindow):
     #     self.dk9_cache_timer.start(C.DK9_CACHING_PERIOD)
 
     def dk9_fill_tables_from_cache_dict(self, search_fields: PartFields, advanced: bool = False):
-        print(f'dk9_fill_tables_from_cache_dict. {self.web_status=} {search_fields=}')
+        # print(f'dk9_fill_tables_from_cache_dict. {self.web_status=} {search_fields=}')
         # if self.web_status == DK9.STATUS.FILE_USED_OFFLINE:
         self.web_progress_bar(70)
         self.ui.table_parts.setSortingEnabled(False)
@@ -1301,7 +1320,7 @@ class App(QMainWindow):
         self.dk9_finish_progress_bar_status()
 
     def dk9_finish_progress_bar_status(self):
-        print(f'dk9_finish_progress_bar_status {self.web_status=}')
+        # print(f'dk9_finish_progress_bar_status {self.web_status=}')
 
         if self.web_status in (DK9.STATUS.UPDATING, DK9.STATUS.OK, DK9.STATUS.FILE_UPDATED):
             # if self.web_status in (DK9.STATUS.CONNECTING, DK9.STATUS.OK):
@@ -1418,7 +1437,11 @@ class App(QMainWindow):
                         self.ui.table_price.item(0, 0).setFont(self.tab_font_bold)
                         return
             else:
-                _models_of_manufacturer = self.models[self.curr_manufacturer]
+                for brand, brand_models in self.models.items():
+                    if brand.casefold() == self.curr_manufacturer.casefold():
+                        _models_of_manufacturer = brand_models
+                        break
+                # _models_of_manufacturer = self.models[self.curr_manufacturer]
                 _model = model
 
             # print(f'{_models_of_manufacturer=}')
@@ -1446,8 +1469,8 @@ class App(QMainWindow):
                     # print(f'{row=} {columns=} {cells_texts=} ')
                     self._add_price_table_row(table=self.ui.table_price, sheet=sheet,
                                               columns=[
-                                                    PriceColumns.model,
-                                                    PriceColumns.note,
+                                                  PriceColumns.model,
+                                                  PriceColumns.note,
                                               ],
                                               cells_texts=cells_texts,
                                               t_row_num=new_row_num, p_row_num=row_num,
