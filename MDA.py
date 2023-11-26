@@ -572,14 +572,11 @@ class App(QMainWindow):
         # curr_models = [
         #     f'{model}{self.recursor}{params[2]}' if params[2] else model
         #     for model, params in self.models[self.curr_manufacturer].items()]
-        curr_models = []
-        for brand, brand_models in self.models.items():
-            if brand.casefold() == self.curr_manufacturer.casefold():
-                curr_models = [
-                    f'{model}{self.recursor}{params[2]}' if params[2] else model
-                    for model, params in brand_models.items()
-                ]
-                break
+        models = self.get_models_by_brand()
+        curr_models = [
+            f'{model}{self.recursor}{params[2]}' if params[2] else model
+            for model, params in models.items()
+        ]
         # print(f'{curr_models=} {hide_list=} {self.models[self.curr_manufacturer].items()=}')
         size = C.MODEL_LIST_MAX_SIZE if len(curr_models) > C.MODEL_LIST_MAX_SIZE else len(curr_models)
         self.model_list_widget.show()
@@ -671,7 +668,7 @@ class App(QMainWindow):
         models_for_buttons = [m.strip() for m in models_str.split(',', 4)]
         # print(f'Recursive: {models_str=} {recursor_idx=} {recursive_model=} {models_for_buttons=}')
         if recursive_model:
-            for m in self.models[self.curr_manufacturer]:
+            for m in self.get_models_by_brand():
                 if m != text_lower and recursive_model in m:
                     text_lower = m.lower()
 
@@ -1437,10 +1434,7 @@ class App(QMainWindow):
                         self.ui.table_price.item(0, 0).setFont(self.tab_font_bold)
                         return
             else:
-                for brand, brand_models in self.models.items():
-                    if brand.casefold() == self.curr_manufacturer.casefold():
-                        _models_of_manufacturer = brand_models
-                        break
+                _models_of_manufacturer = self.get_models_by_brand()
                 # _models_of_manufacturer = self.models[self.curr_manufacturer]
                 _model = model
 
@@ -1533,6 +1527,11 @@ class App(QMainWindow):
             self.error((f'Error updating price table for:\n'
                         f'{model}',
                         f'{traceback.format_exc()}'))
+
+    def get_models_by_brand(self) -> dict:
+        for brand, brand_models in self.models.items():
+            if brand.casefold() == self.curr_manufacturer.casefold():
+                return brand_models
 
     def _add_price_table_row(self, table, sheet, columns, cells_texts: list, t_row_num: int, p_row_num: int,
                              align: dict = None, colored: bool = False, bold: bool = False):
@@ -1988,17 +1987,19 @@ class SearchInput(QLineEdit):
         self.setObjectName("search_input")
 
     def mouseDoubleClickEvent(self, a0: QtGui.QMouseEvent) -> None:
-        if self.app.models \
-                and (0 <= self.app.model_list_widget.currentRow() < len(self.app.models[self.app.curr_manufacturer])
-                     or self.app.model_list_widget.isHidden()):
+        if (
+                self.app.models
+                and (0 <= self.app.model_list_widget.currentRow() < len(self.app.get_models_by_brand())
+                     or self.app.model_list_widget.isHidden())):
 
             if self.app.model_list_widget.isHidden():
                 self.app.upd_models_list()
 
     def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
         super(SearchInput, self).keyPressEvent(event)
+        brand_models_qty = self.app.get_models_by_brand()
         if self.app.models \
-                and (0 <= self.app.model_list_widget.currentRow() < len(self.app.models[self.app.curr_manufacturer])
+                and (0 <= self.app.model_list_widget.currentRow() < len(brand_models_qty)
                      or self.app.model_list_widget.isHidden()):
 
             if event.key() in (Qt.Key_Return, Qt.Key_Enter):
@@ -2010,7 +2011,7 @@ class SearchInput(QLineEdit):
             elif event.key() == Qt.Key_Up:
                 idx = self.app.model_list_widget.currentRow() - 1
                 if idx < 0:
-                    idx = len(self.app.models[self.app.curr_manufacturer]) - 1
+                    idx = len(brand_models_qty) - 1
                 # self.app.model_list_widget.setCurrentRow(idx)
                 self.app.model_list_widget.setCurrentCell(idx, 0)
 
@@ -2019,7 +2020,7 @@ class SearchInput(QLineEdit):
                     self.app.upd_models_list()
                     return
                 idx = self.app.model_list_widget.currentRow() + 1
-                if idx > len(self.app.models[self.app.curr_manufacturer]) - 1:
+                if idx > len(brand_models_qty) - 1:
                     idx = 0
                 # self.app.model_list_widget.setCurrentRow(idx)
                 self.app.model_list_widget.setCurrentCell(idx, 0)
