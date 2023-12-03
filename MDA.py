@@ -1493,7 +1493,10 @@ class App(QMainWindow):
                         # if cell is out of row, text will be empty
                         cells_texts = []
                         for column_num in columns_for_price_table:
-                            cells_texts.append(str(row[column_num])) if column_num < row_len else cells_texts.append('')
+                            cell_text = row[column_num]
+                            if isinstance(cell_text, float) and cell_text.is_integer():
+                                cell_text = int(cell_text)
+                            cells_texts.append(str(cell_text)) if column_num < row_len else cells_texts.append('')
                         # print(f"{cells_texts=}")
                         if cells_texts[0]:  # or len(cells_texts[1]) > 3:
                             self._add_price_table_row(table=self.ui.table_price, sheet=sheet,
@@ -1548,12 +1551,13 @@ class App(QMainWindow):
                 txt = ''.join(cells_texts[c:])
             elif c >= column_qty:
                 break
+            # txt = str(int(txt))
 
-            if not isinstance(txt, str):
-                if isinstance(txt, (float, int)):
-                    txt = str(int(txt))
-                else:
-                    txt = ''  # str(txt)
+            # if not isinstance(txt, str):
+            #     if isinstance(txt, (float, int)):
+            #         txt = str(int(txt))
+            #     else:
+            #         txt = ''  # str(txt)
 
             table.setItem(t_row_num, c, QTableWidgetItem(txt))
             table.item(t_row_num, c).setToolTip(txt)
