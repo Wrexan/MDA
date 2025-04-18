@@ -1,5 +1,5 @@
 ### About:
-This application was made as Pet project that must simplify job to me and my colleagues.
+This is **Data Aggregation and Search Tool**. The **MDA** application was made as Pet project that must simplify job to me and my colleagues.
 ### Purpose:
 The main purpose of the app is to reduce time for searching data - one of the most often action.
 ### Application features:
